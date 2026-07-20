@@ -120,7 +120,7 @@ def search_columns(
             raise
         raise ModelRetry(
             f"Table {resolved_table_name!r} was not found. "
-            "Call browse_tables to find its canonical name, then retry."
+            "Call browse_tables to find its canonical name."
         ) from exc
 
     columns = get_columns(table)
@@ -188,7 +188,7 @@ def describe_table(
             raise
         raise ModelRetry(
             f"Table {resolved_table_name!r} was not found. "
-            "Call browse_tables to find its canonical name, then retry."
+            "Call browse_tables to find its canonical name."
         ) from exc
 
     columns = get_columns(table)
