@@ -1,0 +1,108 @@
+name: power-quality-monitoring
+cases:
+- name: task_1
+  inputs: Which tables contain power-quality data of EV-chargers?
+  metadata:
+    case_id: 49092628-dfd8-4390-bbc7-b6e17ab9f4e6
+    query_code: ''
+    category: data discovery
+  expected_output:
+  - text:
+    - power_quality_measurements_electrix
+    - power_quality_measurements_procem
+  evaluators: []
+- name: task_2
+  inputs: What is the reporting interval in seconds of the data in power_quality_measurements_electrix?
+  metadata:
+    case_id: 4371bda7-1d8b-4e49-9e94-581ce20cca05
+    query_code: ''
+    category: data discovery
+  expected_output:
+  - value: 60.0
+  evaluators: []
+- name: task_3
+  inputs: 'What date range does the data in power_quality_measurements_procem cover?
+    Answer in format: YYYY-MM-DD to YYYY-MM-DD'
+  metadata:
+    case_id: 364d363c-d564-433f-aca0-ffe552710779
+    query_code: ''
+    category: data discovery
+  expected_output:
+  - text:
+    - 2025-03-01 to 2025-03-01
+  evaluators: []
+- name: task_4
+  inputs: Is the EV-charging data in table power_quality_measurements_procem from
+    an individual EV-charger or an EV-charging station?
+  metadata:
+    case_id: 082ba21b-5212-44ac-a86b-3dbc666ce60c
+    query_code: ''
+    category: data discovery
+  expected_output:
+  - text:
+    - charging station
+  evaluators: []
+- name: task_5
+  inputs: What are the units of the import active energy counter column in power_quality_measurements_electrix?
+  metadata:
+    case_id: ea53f49c-f224-421f-bb8c-c758a978dc64
+    query_code: ''
+    category: data discovery
+  expected_output:
+  - text:
+    - kWh
+  evaluators: []
+- name: task_6
+  inputs: Give me all the data you have for device 156 for March 1, 2025 from 12:00
+    to 18:00.
+  metadata:
+    case_id: 3161d9fd-ef2f-414a-9162-922bdfd991df
+    query_code: 'SELECT *
+
+      FROM analytics.bronze.power_quality_measurements_electrix
+
+      WHERE device_id = ''device_156''
+
+      AND timestamp >= TIMESTAMP ''2025-03-01T12:00:00Z''
+
+      AND timestamp < TIMESTAMP ''2025-03-01T18:00:00Z'''
+    category: data discovery
+  expected_output:
+  - table_path: artifacts/task_6/table.csv
+  evaluators: []
+- name: task_7
+  inputs: 'Get me the following power quality data:  frequency, supply voltage magnitude
+    across the three phases, voltage unbalances between the phases and total voltage
+    distortion across the three phases; from the solar power plants in Marjamaki for
+    01.03.2025, 12:00 - 12:05 in ascending order of time.'
+  metadata:
+    case_id: b61ec73c-4b9a-436c-a4dd-582cc53b644b
+    query_code: "SELECT device_name, timestamp, freq, ul1v, ul2v, ul3v, u12v, u23v,\
+      \ u31v, tdul1, tdul2, tdul3\nFROM analytics.bronze.power_quality_measurements_procem\n\
+      WHERE (\n    device_name == 'MarjamakiSolarPowerPlant01'\n    OR device_name\
+      \ == 'MarjamakiSolarPowerPlant02'\n)\nAND timestamp >= TIMESTAMP '2025-03-01T12:00:00'\n\
+      AND timestamp < TIMESTAMP '2025-03-01T12:05:00'\nORDER BY timestamp"
+    category: data discovery
+  expected_output:
+  - table_path: artifacts/task_7/table.csv
+  evaluators: []
+- name: task_8
+  inputs: 'Get me the following power quality data:  frequency, supply voltage magnitude
+    across the three phases, voltage unbalances between the phases and total voltage
+    distortion across the three phases; from all EV-charging stations for 01.03.2025,
+    12:00 - 12:05 in ascending order of time.'
+  metadata:
+    case_id: cb7c7341-37ed-42b0-b028-c238ecd9d36f
+    query_code: "SELECT *\nFROM (\n    SELECT device_name, timestamp, freq, ul1v,\
+      \ ul2v, ul3v, u12v, u23v, u31v, tdul1, tdul2, tdul3\n    FROM analytics.bronze.power_quality_measurements_procem\n\
+      \    WHERE device_name == 'KampusareenaEVCharging'\n\n    UNION ALL\n\n    SELECT\
+      \ device_id, timestamp, fhz, ul1v, ul2v, ul3v, ul12v, ul23v, ul31v, dl1, dl2,\
+      \ dl3\n    FROM analytics.bronze.power_quality_measurements_electrix\n)\nWHERE\
+      \ timestamp >= TIMESTAMP '2025-03-01T12:00:00'\nAND timestamp < TIMESTAMP '2025-03-01T12:05:00'\n\
+      ORDER BY timestamp"
+    category: data discovery
+  expected_output:
+  - table_path: artifacts/task_8/table.csv
+  evaluators: []
+evaluators: []
+report_evaluators: []
