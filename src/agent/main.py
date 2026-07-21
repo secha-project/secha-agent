@@ -17,6 +17,7 @@ def main() -> None:
         metrics=False,
     )
     logfire.instrument_pydantic_ai()
+    logfire.instrument_httpx(capture_all=True)
 
     deps = Deps(
         spark=get_spark_session(config),
