@@ -2,10 +2,10 @@ import os
 
 import logfire
 
+from .agent import Deps, agent
 from .catalog import UnityCatalogClient
 from .config import AppConfig, get_model
 from .spark_utils import get_spark_session
-from .agent import Deps, agent
 
 
 def main() -> None:

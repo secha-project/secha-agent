@@ -1,7 +1,11 @@
 from dataclasses import dataclass, field
+from pathlib import Path
+from tempfile import gettempdir
 from urllib.error import HTTPError
+from uuid import uuid4
 
 from pydantic_ai import Agent, ModelRetry, RunContext
+from pydantic_evals import set_eval_attribute
 from pyspark.sql import DataFrame, SparkSession
 
 from .catalog import (
@@ -28,6 +32,7 @@ class Deps:
     catalog: UnityCatalogClient
     schema_name: str
     table_column_page_size: int
+    evaluation_mode: bool = False
     outputs: dict[str, DataFrame] = field(default_factory=dict)
 
     def store_dataframe(self, value: DataFrame) -> str:
@@ -212,7 +217,7 @@ def describe_table(
     )
 
 
-@agent.tool(retries=5)
+@agent.tool(retries=3)
 def query_data(ctx: RunContext[Deps], sql: str) -> str:
     """Run Spark SQL and preview its first 10 rows and columns.
 
@@ -250,14 +255,14 @@ def query_data(ctx: RunContext[Deps], sql: str) -> str:
 
 
 @agent.tool
-def inspect_dataframe(
+def inspect_query_result(
     ctx: RunContext[Deps],
     ref: str,
     start_row: int = 1,
     end_row: int | None = None,
     column_names: list[str] | None = None,
 ) -> str:
-    """Inspect rows and columns from a dataframe saved by ``query_data``.
+    """Inspect rows and columns from dataframe ``ref`` saved by ``query_data``.
 
     The row range is 1-based and inclusive. By default, this shows 10 rows and
     the first 10 columns. ``column_names`` selects specific columns instead.
@@ -277,3 +282,23 @@ def inspect_dataframe(
         column_names=column_names,
     )
     return f"DataFrame: {ref}\n\n{preview}"
+
+@agent.tool
+def return_result_to_user(ctx: RunContext[Deps], ref: str) -> bool:
+    """Display the result of a query ``ref`` to the user as your final answer. 
+    
+    Use this tool when the answer to a user question is the result of a SQL query.
+
+    Args:
+        ref: A saved dataframe tag such as ``Out[1]``.
+    """
+    dataframe = ctx.deps.get_dataframe(ref)
+
+    if not ctx.deps.evaluation_mode:
+        pass
+    else:
+        path = Path(gettempdir()) / f"eval-result-{uuid4()}.csv"
+        dataframe.toPandas().to_csv(path, index=False)
+        set_eval_attribute("csv_path", str(path))
+
+    return True
