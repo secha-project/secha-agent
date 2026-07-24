@@ -1,10 +1,10 @@
 from pydantic_ai import ModelRetry
 from pyspark.sql import DataFrame, SparkSession
 
-from .config import AppConfig
+from .config import AgentConfig
 
 
-def get_spark_session(app_config: AppConfig) -> SparkSession:
+def get_spark_session(app_config: AgentConfig) -> SparkSession:
     spark: SparkSession = (
         SparkSession.builder.config(
             f"spark.sql.catalog.{app_config.catalog_name}",
@@ -49,7 +49,9 @@ def dataframe_to_markdown(
     column_names: list[str] | None = None,
 ) -> str:
     """Render a 1-based inclusive range of dataframe rows as Markdown sections."""
+    range_was_requested = end_row is not None
     end_row = end_row or start_row + 9
+    requested_row_count = end_row - start_row + 1
     available_columns = dataframe.schema.fieldNames()
     selected_columns = column_names or available_columns[:10]
 
@@ -64,28 +66,37 @@ def dataframe_to_markdown(
             f"Available columns: {', '.join(available_columns)}."
         )
 
-    rows = (
-        dataframe.select(*selected_columns)
-        .limit(end_row)
-        .collect()[start_row - 1 : end_row]
-    )
+    total_rows = dataframe.count()
+    collected_rows = dataframe.select(*selected_columns).limit(end_row).collect()
+    rows = collected_rows[start_row - 1 : end_row]
+    has_more_rows = total_rows > requested_row_count
+    has_more_columns = len(selected_columns) < len(available_columns)
     table_rows = [
         [row_number, *row] for row_number, row in enumerate(rows, start=start_row)
     ]
     table = table_to_markdown("Row", selected_columns, table_rows)
 
-    if column_names:
-        column_summary = f"{len(selected_columns)} requested columns"
-    elif len(selected_columns) == len(available_columns):
-        column_summary = f"all {len(available_columns)} columns"
-    else:
-        column_summary = (
-            f"top {len(selected_columns)} out of {len(available_columns)} columns"
+    overflow_messages = []
+    if has_more_rows:
+        row_selection = "requested" if range_was_requested else "default"
+        row_label = "row" if len(rows) == 1 else "rows"
+        overflow_messages.append(
+            f"showing only the {row_selection} {len(rows)} {row_label} "
+            f"out of the {total_rows} available"
         )
-    footer = (
-        f"[showing {len(rows)} rows from requested range "
-        f"{start_row}-{end_row}, {column_summary}]"
-    )
+    if has_more_columns:
+        column_selection = "requested" if column_names else "default"
+        column_label = "column" if len(selected_columns) == 1 else "columns"
+        overflow_messages.append(
+            f"showing only the {column_selection} {len(selected_columns)} "
+            f"{column_label} "
+            f"out of the {len(available_columns)} available"
+        )
+
+    if not overflow_messages:
+        return table
+
+    footer = f"[{', '.join(overflow_messages)}]"
     return "\n\n".join([table, footer]) if table else footer
 
 
@@ -98,5 +109,7 @@ def spark_error_type(exc: Exception) -> str:
     """Return Spark's structured error class when one is available."""
     get_error_class = getattr(exc, "getErrorClass", None)
     if callable(get_error_class):
-        return get_error_class() or type(exc).__name__
+        error_class = get_error_class()
+        if isinstance(error_class, str) and error_class:
+            return error_class
     return type(exc).__name__

@@ -1,8 +1,13 @@
 from collections import Counter
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
-from pydantic_evals.evaluators import Evaluator, EvaluatorContext, EvaluatorOutput
+from pydantic_evals.evaluators import (
+    Evaluator,
+    EvaluatorContext,
+    EvaluatorOutput,
+)
 
 from .eval_models import BenchmarkOutput, CaseMetadata, TableOutput
 
@@ -179,4 +184,74 @@ def classify_table_match(
     return "no_match", coverage
 
 
-# TODO: add two evaluators for tables: ValidateTableIncluded and ValidateTableValues, using the helpers above
+def _table_outputs(expected_output):
+    if not isinstance(expected_output, list):
+        return []
+
+    return [item for item in expected_output if isinstance(item, TableOutput)]
+
+
+@dataclass
+class ValidateTableIncluded(Evaluator[str, BenchmarkOutput, CaseMetadata]):
+    """Check that the agent selected a table to return to the user."""
+
+    def evaluate(
+        self, ctx: EvaluatorContext[str, BenchmarkOutput, CaseMetadata]
+    ) -> EvaluatorOutput:
+        if not _table_outputs(ctx.expected_output):
+            return {}
+
+        return "csv_path" in ctx.attributes
+
+
+@dataclass
+class ValidateTableValues(Evaluator[str, BenchmarkOutput, CaseMetadata]):
+    """Compare the selected table with every expected table."""
+
+    artifact_base_path: Path = Path()
+    min_coverage: float = 0.5
+
+    def evaluate(
+        self, ctx: EvaluatorContext[str, BenchmarkOutput, CaseMetadata]
+    ) -> EvaluatorOutput:
+        table_outputs = _table_outputs(ctx.expected_output)
+        if not table_outputs:
+            return {}
+
+        csv_path = ctx.attributes.get("csv_path")
+        if not isinstance(csv_path, (str, Path)):
+            return {
+                "ValidateTableValues": False,
+                "TableMatchType": "no_match",
+            }
+
+        candidate_table = pd.read_csv(csv_path)
+        overall_match_type = "exact_match"
+
+        for table_output in table_outputs:
+            target_path = Path(table_output.table_path)
+            if not target_path.is_absolute():
+                target_path = self.artifact_base_path / target_path
+
+            target_table = pd.read_csv(target_path)
+            match_type, _ = classify_table_match(
+                target_table,
+                candidate_table,
+                min_coverage=self.min_coverage,
+            )
+
+            if match_type != "exact_match" and not (
+                match_type == "match_up_to_ordering" and not table_output.ordered
+            ):
+                return {
+                    "ValidateTableValues": False,
+                    "TableMatchType": match_type,
+                }
+
+            if match_type == "match_up_to_ordering":
+                overall_match_type = match_type
+
+        return {
+            "ValidateTableValues": True,
+            "TableMatchType": overall_match_type,
+        }

@@ -15,6 +15,7 @@ cases:
     category: data discovery
   expected_output:
   - table_path: artifacts/task_1/table.csv
+    ordered: true
   evaluators: []
 - name: task_2
   inputs: Give me the frequency and power data of device 156 for March 1, 2025 from
@@ -33,6 +34,7 @@ cases:
     category: data discovery
   expected_output:
   - table_path: artifacts/task_2/table.csv
+    ordered: false
   - explanation: The data is provided in 1-minute intervals. During these 10 minutes,
       the frequency was stable around 50 Hz while the power decreased every minute
       from around 16.3 kW to around 14.2 kW.

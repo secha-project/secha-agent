@@ -23,6 +23,7 @@ class NumberOutput(BaseModel):
 class TableOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     table_path: str
+    ordered: bool
 
 
 class ExplanationOutput(BaseModel):

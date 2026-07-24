@@ -69,6 +69,7 @@ cases:
     category: data discovery
   expected_output:
   - table_path: artifacts/task_6/table.csv
+    ordered: false
   evaluators: []
 - name: task_7
   inputs: 'Get me the following power quality data:  frequency, supply voltage magnitude
@@ -85,6 +86,7 @@ cases:
     category: data discovery
   expected_output:
   - table_path: artifacts/task_7/table.csv
+    ordered: true
   evaluators: []
 - name: task_8
   inputs: 'Get me the following power quality data:  frequency, supply voltage magnitude
@@ -103,6 +105,7 @@ cases:
     category: data discovery
   expected_output:
   - table_path: artifacts/task_8/table.csv
+    ordered: true
   evaluators: []
 evaluators: []
 report_evaluators: []

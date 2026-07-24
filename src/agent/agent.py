@@ -1,8 +1,7 @@
+from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
 from pathlib import Path
-from tempfile import gettempdir
 from urllib.error import HTTPError
-from uuid import uuid4
 
 from pydantic_ai import Agent, ModelRetry, RunContext
 from pydantic_evals import set_eval_attribute
@@ -24,6 +23,22 @@ from .spark_utils import (
     dataframe_to_markdown,
     spark_error_type,
 )
+
+
+_evaluation_csv_path = ContextVar[Path | None](
+    "evaluation_csv_path",
+    default=None,
+)
+
+
+def set_evaluation_csv_path(path: Path) -> Token[Path | None]:
+    """Set the CSV artifact path for the evaluation case in the current context."""
+    return _evaluation_csv_path.set(path)
+
+
+def reset_evaluation_csv_path(token: Token[Path | None]) -> None:
+    """Restore the CSV artifact path from before the evaluation case."""
+    _evaluation_csv_path.reset(token)
 
 
 @dataclass
@@ -54,13 +69,18 @@ agent = Agent(
     deps_type=Deps,
     name="secha_agent",
     instructions=(
-        "You are a data analytics assistant. "
-        "You have access to a schema in a Spark catalog, which you can explore "
-        "using tools to answer user questions. "
-        "Table names may be uncertain, and users may refer to columns "
-        "using wording from their comments rather than their exact identifiers. "
-        "Browse tables to resolve table names, search columns to resolve descriptive "
-        "wording, and describe tables only for known identifiers."
+        """
+        You are a data analytics assistant. You have access to a schema in a Spark catalog,
+        which you can explore using tools to answer user questions.
+        Table names and device identifiers may be uncertain, and users may refer to columns
+        using wording from their comments rather than their exact identifiers.
+        - Browse tables to resolve table names
+        - Search columns to resolve descriptive
+        - Query device metadata tables to resolve device identifiers
+        - Describe tables only for known identifiers
+        - Inspect query results if a result's preview is too limited
+        - Return result to user when they ask for data, instead of generating markdown tables as strings
+        """
     ),
 )
 
@@ -284,9 +304,9 @@ def inspect_query_result(
     return f"DataFrame: {ref}\n\n{preview}"
 
 @agent.tool
-def return_result_to_user(ctx: RunContext[Deps], ref: str) -> bool:
-    """Display the result of a query ``ref`` to the user as your final answer. 
-    
+def return_result_to_user(ctx: RunContext[Deps], ref: str) -> str:
+    """Display the result of a query ``ref`` to the user as your final answer.
+
     Use this tool when the answer to a user question is the result of a SQL query.
 
     Args:
@@ -297,8 +317,12 @@ def return_result_to_user(ctx: RunContext[Deps], ref: str) -> bool:
     if not ctx.deps.evaluation_mode:
         pass
     else:
-        path = Path(gettempdir()) / f"eval-result-{uuid4()}.csv"
+        path = _evaluation_csv_path.get()
+        if path is None:
+            raise RuntimeError(
+                "No CSV artifact path was configured for this evaluation case."
+            )
         dataframe.toPandas().to_csv(path, index=False)
         set_eval_attribute("csv_path", str(path))
 
-    return True
+    return f"{ref} was displayed to the user. Return a brief confirmation."

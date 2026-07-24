@@ -2,6 +2,10 @@
 .venv/
 __pycache__/
 *.py[cod]
+#Local experiments
+experiments/
 # Local observability databases
 telemetry.duckdb*
 phoenix.db*
+# Benchmark results
+benchmark-results/

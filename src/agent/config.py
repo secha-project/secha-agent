@@ -1,46 +1,90 @@
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class AppConfig(BaseSettings):
+@dataclass(frozen=True)
+class TuniInferenceConfig:
+    url: str
+    api_key: str = field(repr=False)
+    model_name: str = "granite4-32b"
+
+
+@dataclass(frozen=True)
+class OpenAIConfig:
+    api_key: str = field(repr=False)
+    model_name: str = "gpt-5.4-mini"
+
+
+ModelProviderConfig = TuniInferenceConfig | OpenAIConfig
+
+
+class AgentConfig(BaseSettings):
     catalog_url: str
     catalog_token: str
     catalog_name: str = "analytics"
     spark_url: str
     schema_name: str = "bronze"
     table_column_page_size: int = 20
-    model_provider: Literal["tuni", "openai"] = "tuni"
-    tuni_inference_url: str
-    tuni_inference_api_key: str
-    tuni_inference_model_name: str = "granite4-32b"
-    openai_api_key: str | None = None
-    openai_model_name: str = "gpt-5.4-mini"
-    otel_exporter_otlp_endpoint: str = "http://localhost:6006"
+    model_provider: Literal["tuni", "openai"]
+    tuni_inference: TuniInferenceConfig | None = None
+    openai: OpenAIConfig | None = None
+    temperature: float = 0.0
+    request_limit: int = 50
+    otel_exporter_otlp_endpoint: str
     logfire_service_name: str = "secha-agent"
 
     model_config = SettingsConfigDict(
-        env_file=Path(__file__).resolve().parents[2] / ".env"
+        env_file=Path(__file__).resolve().parents[2] / ".env",
+        env_nested_delimiter="_",
+        env_nested_max_split=1,
     )
 
+    def get_provider_config(self) -> ModelProviderConfig:
+        """Return the selected provider config, failing clearly if it is missing."""
+        if self.model_provider == "tuni":
+            if self.tuni_inference is None:
+                raise ValueError(
+                    "TUNI_INFERENCE_URL and TUNI_INFERENCE_API_KEY are required "
+                    "when model_provider='tuni'."
+                )
+            return self.tuni_inference
 
-def get_model(app_config: AppConfig) -> OpenAIChatModel:
-    if app_config.model_provider == "tuni":
-        model_name = app_config.tuni_inference_model_name
+        if self.openai is None:
+            raise ValueError(
+                "OPENAI_API_KEY is required when model_provider='openai'."
+            )
+        return self.openai
+
+    def experiment_metadata(self) -> dict[str, Any]:
+        """Return task-relevant metadata without credentials or inactive providers."""
+        provider_settings = asdict(self.get_provider_config())
+        provider_settings.pop("api_key")
+
+        return {
+            "model_provider": self.model_provider,
+            "provider_settings": provider_settings,
+            "temperature": self.temperature,
+            "request_limit": self.request_limit,
+            "catalog_name": self.catalog_name,
+            "schema_name": self.schema_name,
+            "table_column_page_size": self.table_column_page_size,
+        }
+
+
+def get_model(app_config: AgentConfig) -> OpenAIChatModel:
+    provider_config = app_config.get_provider_config()
+
+    if isinstance(provider_config, TuniInferenceConfig):
         provider = OpenAIProvider(
-            base_url=app_config.tuni_inference_url,
-            api_key=app_config.tuni_inference_api_key,
+            base_url=provider_config.url,
+            api_key=provider_config.api_key,
         )
-    elif app_config.model_provider == "openai":
-        model_name = app_config.openai_model_name
-        provider = OpenAIProvider(api_key=app_config.openai_api_key)
     else:
-        raise ValueError(
-            f"Unknown model provider {app_config.model_provider!r}; "
-            "use 'tuni' or 'openai'."
-        )
+        provider = OpenAIProvider(api_key=provider_config.api_key)
 
-    return OpenAIChatModel(model_name, provider=provider)
+    return OpenAIChatModel(provider_config.model_name, provider=provider)

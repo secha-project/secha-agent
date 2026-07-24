@@ -13,5 +13,11 @@ dependencies = [
     "pydantic-settings>=2.14.2",
     "pyspark>=4.2.0",
     "pyspark-client>=4.2.0",
+    "pyyaml>=6.0.3",
     "python-dotenv>=1.2.2",
+]
+
+[dependency-groups]
+dev = [
+    "jupyter>=1.1.1",
 ]

@@ -1,15 +1,19 @@
 import os
 
 import logfire
+from pydantic_ai import ModelSettings, UsageLimits
 
 from .agent import Deps, agent
 from .catalog import UnityCatalogClient
-from .config import AppConfig, get_model
+from .config import AgentConfig, get_model
 from .spark_utils import get_spark_session
 
 
 def main() -> None:
-    config = AppConfig()  # type: ignore[call-arg]
+    config = AgentConfig(  # type: ignore[call-arg]
+        model_provider="openai",
+        openai={"model_name": "gpt-5.4-mini"},
+    )
     os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = config.otel_exporter_otlp_endpoint
     logfire.configure(
         send_to_logfire=False,
@@ -30,6 +34,7 @@ def main() -> None:
         table_column_page_size=config.table_column_page_size,
     )
     model = get_model(config)
+    
 
     user_prompt = """What are the units of the import active energy counter column 
     in power_quality_mesurements_electrix?"""
@@ -38,6 +43,8 @@ def main() -> None:
         user_prompt,
         deps=deps,
         model=model,
+        model_settings = ModelSettings(temperature=config.temperature),
+        usage_limits=UsageLimits(request_limit=config.request_limit)
     )
     print(result.output)
 
