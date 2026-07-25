@@ -1,13 +1,11 @@
-"""Configuration models and loading helpers for benchmark runs."""
-
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from src.agent.config import AgentConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BENCHMARKS_DIR = Path(__file__).parent / "benchmark"
@@ -20,11 +18,20 @@ class BenchmarkRunConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    agent: dict[str, Any] = Field(default_factory=dict)
+    agent: AgentConfig = Field(default_factory=AgentConfig)
     dataset: str
     repetitions: int = Field(default=1, ge=1)
     max_concurrency: int = Field(default=4, ge=1)
     task_max_attempts: int = Field(default=3, ge=1)
+
+    @field_validator("agent", mode="before")
+    @classmethod
+    def load_agent_settings(cls, value: object) -> AgentConfig:
+        if isinstance(value, AgentConfig):
+            return value
+        if not isinstance(value, dict):
+            raise ValueError("agent must contain a YAML mapping")
+        return AgentConfig(**value)
 
     @field_validator("dataset")
     @classmethod
@@ -39,9 +46,7 @@ class BenchmarkRunConfig(BaseModel):
 def load_run_config(config_name: str) -> tuple[str, BenchmarkRunConfig]:
     name = config_name.removesuffix(".yaml").removesuffix(".yml")
     if not name or name in {".", ".."} or Path(name).name != name:
-        raise ValueError(
-            "config must be a file name from src/validation/run_configs"
-        )
+        raise ValueError("config must be a file name from src/validation/run_configs")
 
     path = RUN_CONFIGS_DIR / f"{name}.yaml"
     if not path.is_file():

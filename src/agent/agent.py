@@ -24,7 +24,6 @@ from .spark_utils import (
     spark_error_type,
 )
 
-
 _evaluation_csv_path = ContextVar[Path | None](
     "evaluation_csv_path",
     default=None,
@@ -302,6 +301,7 @@ def inspect_query_result(
         column_names=column_names,
     )
     return f"DataFrame: {ref}\n\n{preview}"
+
 
 @agent.tool
 def return_result_to_user(ctx: RunContext[Deps], ref: str) -> str:

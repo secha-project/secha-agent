@@ -1,5 +1,3 @@
-"""Persisted pydantic-evals types used by benchmark datasets."""
-
 from __future__ import annotations
 
 from enum import Enum

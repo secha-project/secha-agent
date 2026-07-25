@@ -11,6 +11,7 @@ FRACTION_PATTERN = re.compile(r"([+-]?\d+)\s*/\s*([+-]?\d+)")
 PERCENTAGE_PATTERN = re.compile(r"([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*%")
 NUMBER_PATTERN = re.compile(r"[+-]?(?:\d+\.\d+|\d+)")
 
+
 def extract_numbers(text: str) -> list[float]:
     """Extract fractions, percentages, decimals, and integers from text."""
     values: list[float] = []
@@ -35,6 +36,7 @@ def extract_numbers(text: str) -> list[float]:
         values.append(float(number))
 
     return values
+
 
 @dataclass
 class ValidateNumberOutput(Evaluator[str, BenchmarkOutput, CaseMetadata]):

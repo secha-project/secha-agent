@@ -34,7 +34,6 @@ def main() -> None:
         table_column_page_size=config.table_column_page_size,
     )
     model = get_model(config)
-    
 
     user_prompt = """What are the units of the import active energy counter column 
     in power_quality_mesurements_electrix?"""
@@ -43,8 +42,8 @@ def main() -> None:
         user_prompt,
         deps=deps,
         model=model,
-        model_settings = ModelSettings(temperature=config.temperature),
-        usage_limits=UsageLimits(request_limit=config.request_limit)
+        model_settings=ModelSettings(temperature=config.temperature),
+        usage_limits=UsageLimits(request_limit=config.request_limit),
     )
     print(result.output)
 

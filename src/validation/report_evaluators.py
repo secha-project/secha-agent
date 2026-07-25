@@ -1,5 +1,3 @@
-"""Report-level accuracy and pass@k metrics for benchmark runs."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -35,10 +33,7 @@ def pass_at_k(n: int, c: int, k: int) -> float:
     if n - c < k:
         return 1.0
 
-    return 1.0 - prod(
-        1.0 - k / denominator
-        for denominator in range(n - c + 1, n + 1)
-    )
+    return 1.0 - prod(1.0 - k / denominator for denominator in range(n - c + 1, n + 1))
 
 
 def _task_results(
@@ -51,8 +46,10 @@ def _task_results(
         result = results_by_name.setdefault(task_name, _TaskResult(task_name))
         result.samples += 1
 
-        if not case.evaluator_failures and case.assertions and all(
-            assertion.value for assertion in case.assertions.values()
+        if (
+            not case.evaluator_failures
+            and case.assertions
+            and all(assertion.value for assertion in case.assertions.values())
         ):
             result.correct += 1
 
@@ -65,9 +62,7 @@ def _task_results(
 
 
 @dataclass
-class PerTaskAccuracyEvaluator(
-    ReportEvaluator[str, BenchmarkOutput, CaseMetadata]
-):
+class PerTaskAccuracyEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetadata]):
     """Report each task's accuracy across all of its repeats."""
 
     def evaluate(
@@ -88,9 +83,7 @@ class PerTaskAccuracyEvaluator(
 
 
 @dataclass
-class PerTaskPassAtKEvaluator(
-    ReportEvaluator[str, BenchmarkOutput, CaseMetadata]
-):
+class PerTaskPassAtKEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetadata]):
     """Report pass@k for every task and every k supported by its sample count."""
 
     def evaluate(
@@ -121,9 +114,7 @@ class PerTaskPassAtKEvaluator(
 
 
 @dataclass
-class AverageAccuracyEvaluator(
-    ReportEvaluator[str, BenchmarkOutput, CaseMetadata]
-):
+class AverageAccuracyEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetadata]):
     """Report the macro-average of the per-task accuracies."""
 
     def evaluate(
@@ -144,9 +135,7 @@ class AverageAccuracyEvaluator(
 
 
 @dataclass
-class AveragePassAtKEvaluator(
-    ReportEvaluator[str, BenchmarkOutput, CaseMetadata]
-):
+class AveragePassAtKEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetadata]):
     """Report the macro-average of per-task pass@k for each supported k."""
 
     def evaluate(
@@ -168,8 +157,7 @@ class AveragePassAtKEvaluator(
         return TableResult(
             title="Average pass@k",
             description=(
-                "Macro-average of per-task pass@k over tasks with at least k "
-                "samples."
+                "Macro-average of per-task pass@k over tasks with at least k samples."
             ),
             columns=["k", "Tasks", "Average Pass@k"],
             rows=rows,

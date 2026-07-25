@@ -55,9 +55,7 @@ class AgentConfig(BaseSettings):
             return self.tuni_inference
 
         if self.openai is None:
-            raise ValueError(
-                "OPENAI_API_KEY is required when model_provider='openai'."
-            )
+            raise ValueError("OPENAI_API_KEY is required when model_provider='openai'.")
         return self.openai
 
     def experiment_metadata(self) -> dict[str, Any]:
