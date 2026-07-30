@@ -1,47 +1,8 @@
 import json
-import re
-from typing import Literal
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
-from pydantic import BaseModel
-
-
-class TableSummary(BaseModel):
-    name: str
-    description: str | None
-
-
-class BrowseTablesResult(BaseModel):
-    schema_name: str
-    tables: list[TableSummary]
-
-
-class ColumnMetadata(BaseModel):
-    position: int
-    name: str
-    data_type: str
-    comment: str | None
-
-
-class ColumnMatch(ColumnMetadata):
-    matched_in: list[Literal["name", "comment"]]
-
-
-class SearchColumnsResult(BaseModel):
-    table_name: str
-    query: str
-    searched_columns: int
-    total_matches: int
-    matches: list[ColumnMatch]
-
-
-class DescribeTableResult(BaseModel):
-    table_name: str
-    description: str | None
-    total_columns: int
-    columns: list[ColumnMetadata]
-    missing_columns: list[str]
+from .models import ColumnMetadata
 
 
 class UnityCatalogClient:
@@ -86,20 +47,7 @@ class UnityCatalogClient:
         return self._get(f"/tables/{quote(full_table_name, safe='.')}")
 
 
-def truncate_description(description: str | None, max_length: int = 200) -> str | None:
-    if not description:
-        return None
-    description = " ".join(description.split())
-    if len(description) <= max_length:
-        return description
-    return f"{description[: max_length - 1].rstrip()}…"
-
-
-def normalize_search_text(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", " ", value.casefold()).strip()
-
-
-def get_columns(table: dict) -> list[ColumnMetadata]:
+def parse_columns(table: dict) -> list[ColumnMetadata]:
     return [
         ColumnMetadata(
             position=position,

@@ -30,7 +30,7 @@ class BenchmarkRunConfig(BaseModel):
         if isinstance(value, AgentConfig):
             return value
         if not isinstance(value, dict):
-            raise ValueError("agent must contain a YAML mapping")
+            raise TypeError("agent must contain a YAML mapping")
         return AgentConfig(**value)
 
     @field_validator("dataset")
@@ -56,7 +56,7 @@ def load_run_config(config_name: str) -> tuple[str, BenchmarkRunConfig]:
         values = yaml.safe_load(config_file)
 
     if not isinstance(values, dict):
-        raise ValueError(f"Run config {path} must contain a YAML mapping")
+        raise TypeError(f"Run config {path} must contain a YAML mapping")
 
     config = BenchmarkRunConfig.model_validate(values)
     dataset_path = BENCHMARKS_DIR / config.dataset / "dataset.yaml"

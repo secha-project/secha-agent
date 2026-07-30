@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+from pydantic_ai import ModelRetry, RunContext, ToolReturn
+
+from src.app.runtime import run_spark_with_timeout
+
+from ..dataframe_preview import dataframe_to_markdown
+from ..deps import Deps
+from ..models import InspectQueryResult, QueryDataResult
+from ..spark import concise_spark_error, spark_error_type
+
+
+async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
+    """Run Spark SQL and preview its first 10 rows and columns.
+
+    Use this for questions about row data, calculations, aggregates, or data
+    values. Do not use it to search catalog metadata. The lazy dataframe is
+    saved and Spark validates the query before the preview is read.
+
+    Args:
+        sql: The Spark SQL query to execute.
+    """
+    deps = ctx.deps
+    if not sql.strip():
+        raise ModelRetry("SQL validation failed (EmptySql): SQL text is empty.")
+
+    try:
+        result = deps.spark.sql(sql)
+        result.schema
+    except Exception as exc:
+        raise ModelRetry(
+            f"SQL validation failed ({spark_error_type(exc)}): "
+            f"{concise_spark_error(exc)}. "
+        ) from exc
+
+    try:
+        preview = await run_spark_with_timeout(
+            deps.spark,
+            lambda: dataframe_to_markdown(result),
+        )
+    except Exception as exc:
+        raise ModelRetry(
+            "SQL execution failed while reading the preview "
+            f"({spark_error_type(exc)}): {concise_spark_error(exc)}. "
+        ) from exc
+
+    ref = deps.dataframe_references.create(sql, result)
+    return QueryDataResult(
+        dataframe_ref=ref,
+        preview_markdown=preview,
+    )
+
+
+async def inspect_query_result(
+    ctx: RunContext[Deps],
+    ref: str,
+    start_row: int = 1,
+    end_row: int | None = None,
+    column_names: list[str] | None = None,
+) -> InspectQueryResult:
+    """Inspect rows and columns from dataframe ``ref`` saved by ``query_data``.
+
+    The row range is 1-based and inclusive. By default, this shows 10 rows and
+    the first 10 columns. ``column_names`` selects specific columns instead.
+    Row positions are only deterministic when the original SQL defines an order.
+
+    Args:
+        ref: A saved dataframe tag such as ``df-17``.
+        start_row: First row to show (1-based and inclusive).
+        end_row: Last row to show (1-based and inclusive).
+        column_names: Specific columns to show instead of the first 10.
+    """
+    deps = ctx.deps
+    dataframe = deps.dataframe_references.resolve(ref)
+    if column_names:
+        available_columns = dataframe.schema.fieldNames()
+        unknown_columns = [
+            column_name
+            for column_name in column_names
+            if column_name not in available_columns
+        ]
+        if unknown_columns:
+            raise ModelRetry(
+                f"Unknown dataframe columns: {', '.join(unknown_columns)}. "
+                f"Available columns: {', '.join(available_columns)}."
+            )
+
+    try:
+        preview = await run_spark_with_timeout(
+            deps.spark,
+            lambda: dataframe_to_markdown(
+                dataframe,
+                start_row=start_row,
+                end_row=end_row,
+                column_names=column_names,
+            ),
+        )
+    except Exception as exc:
+        raise ModelRetry(
+            "SQL execution failed while inspecting the result "
+            f"({spark_error_type(exc)}): {concise_spark_error(exc)}."
+        ) from exc
+    return InspectQueryResult(
+        dataframe_ref=ref,
+        preview_markdown=preview,
+    )
+
+
+async def display_query_result(
+    ctx: RunContext[Deps],
+    ref: str,
+) -> ToolReturn[str]:
+    """Display a saved query result as a full dataframe in the user interface.
+
+    Use this when the user requests data, rows, records, a table, or
+    downloadable data. Do not use it for a scalar answer or explanation alone.
+    Displaying the dataframe does not replace the rest of the response: after
+    it succeeds, continue with any explanation, interpretation, caveats, or
+    other parts the user requested.
+
+    Args:
+        ref: A saved dataframe tag such as ``df-17``.
+    """
+    deps = ctx.deps
+    dataframe = deps.dataframe_references.resolve(ref)
+
+    if deps.dataframe_exporter is not None:
+        await deps.dataframe_exporter(deps.spark, dataframe)
+
+    return ToolReturn(
+        return_value=(
+            f"Query result {ref} was displayed to the user as a dataframe. "
+            "Continue with any explanation or other requested parts of the answer. "
+            "If nothing else was requested, briefly confirm the display."
+        ),
+        metadata={"ui_kind": "dataframe", "dataframe_ref": ref},
+    )

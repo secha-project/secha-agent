@@ -1,12 +1,18 @@
 import os
+from uuid import uuid4
 
 import logfire
 from pydantic_ai import ModelSettings, UsageLimits
 
-from .agent import Deps, agent
+from src.app.dataframes import DataFrameReferences
+from src.app.storage import ChatRepository
+
+from .agent import agent
 from .catalog import UnityCatalogClient
-from .config import AgentConfig, get_model
-from .spark_utils import get_spark_session
+from .config import AgentConfig
+from .deps import Deps
+from .providers import get_model
+from .spark import get_spark_session
 
 
 def main() -> None:
@@ -23,8 +29,13 @@ def main() -> None:
     logfire.instrument_pydantic_ai()
     logfire.instrument_httpx(capture_all=True)
 
+    spark = get_spark_session(config)
+    repository = ChatRepository()
+    repository.initialize()
+    user = repository.create_user(f"cli-{uuid4().hex}", uuid4().hex)
+    conversation = repository.create_conversation(user.id)
     deps = Deps(
-        spark=get_spark_session(config),
+        spark=spark,
         catalog=UnityCatalogClient(
             config.catalog_url,
             config.catalog_token,
@@ -32,6 +43,11 @@ def main() -> None:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
+        dataframe_references=DataFrameReferences(
+            spark,
+            repository,
+            conversation.id,
+        ),
     )
     model = get_model(config)
 

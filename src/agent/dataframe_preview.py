@@ -1,33 +1,7 @@
-from pydantic_ai import ModelRetry
-from pyspark.sql import DataFrame, SparkSession
-
-from .config import AgentConfig
+from pyspark.sql import DataFrame
 
 
-def get_spark_session(app_config: AgentConfig) -> SparkSession:
-    spark: SparkSession = (
-        SparkSession.builder.config(
-            f"spark.sql.catalog.{app_config.catalog_name}",
-            "io.unitycatalog.spark.UCSingleCatalog",
-        )
-        .config(
-            f"spark.sql.catalog.{app_config.catalog_name}.uri",
-            app_config.catalog_url,
-        )
-        .config(
-            f"spark.sql.catalog.{app_config.catalog_name}.token",
-            app_config.catalog_token,
-        )
-        .config("spark.sql.defaultCatalog", app_config.catalog_name)
-        .remote(app_config.spark_url)
-        .getOrCreate()
-    )
-    spark.catalog.setCurrentDatabase(app_config.schema_name)
-
-    return spark
-
-
-def table_to_markdown(
+def _rows_to_markdown_sections(
     section_name: str,
     field_names: list[str],
     rows: list[list[object]],
@@ -61,7 +35,7 @@ def dataframe_to_markdown(
         if column_name not in available_columns
     ]
     if unknown_columns:
-        raise ModelRetry(
+        raise ValueError(
             f"Unknown dataframe columns: {', '.join(unknown_columns)}. "
             f"Available columns: {', '.join(available_columns)}."
         )
@@ -74,7 +48,7 @@ def dataframe_to_markdown(
     table_rows = [
         [row_number, *row] for row_number, row in enumerate(rows, start=start_row)
     ]
-    table = table_to_markdown("Row", selected_columns, table_rows)
+    table = _rows_to_markdown_sections("Row", selected_columns, table_rows)
 
     overflow_messages = []
     if has_more_rows:
@@ -97,19 +71,4 @@ def dataframe_to_markdown(
         return table
 
     footer = f"[{', '.join(overflow_messages)}]"
-    return "\n\n".join([table, footer]) if table else footer
-
-
-def concise_spark_error(exc: Exception) -> str:
-    """Return Spark's useful error details without the noisy JVM stack trace."""
-    return str(exc).partition("JVM stacktrace:")[0].rstrip()
-
-
-def spark_error_type(exc: Exception) -> str:
-    """Return Spark's structured error class when one is available."""
-    get_error_class = getattr(exc, "getErrorClass", None)
-    if callable(get_error_class):
-        error_class = get_error_class()
-        if isinstance(error_class, str) and error_class:
-            return error_class
-    return type(exc).__name__
+    return f"{table}\n\n{footer}" if table else footer

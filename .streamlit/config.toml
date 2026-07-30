@@ -1,0 +1,3 @@
+[server]
+# Keep a disconnected browser session available for refresh/reconnect.
+disconnectedSessionTTL = 3600

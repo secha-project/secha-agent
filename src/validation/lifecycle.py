@@ -1,10 +1,33 @@
-from contextvars import Token
+from contextvars import ContextVar, Token
 from pathlib import Path
 
+from pydantic_evals import set_eval_attribute
 from pydantic_evals.lifecycle import CaseLifecycle
+from pyspark.sql import DataFrame, SparkSession
 
-from src.agent.agent import reset_evaluation_csv_path, set_evaluation_csv_path
+from src.app.runtime import run_spark_with_timeout
 from src.validation.eval_models import BenchmarkCase, BenchmarkOutput, CaseMetadata
+
+_evaluation_csv_path = ContextVar[Path | None](
+    "evaluation_csv_path",
+    default=None,
+)
+
+
+async def export_evaluation_dataframe(
+    spark: SparkSession,
+    dataframe: DataFrame,
+) -> None:
+    path = _evaluation_csv_path.get()
+    if path is None:
+        raise RuntimeError("No CSV artifact path was configured for this evaluation case.")
+
+    materialized = await run_spark_with_timeout(
+        spark,
+        dataframe.toPandas,
+    )
+    materialized.to_csv(path, index=False)
+    set_eval_attribute("csv_path", str(path))
 
 
 class EvaluationLifecycle(CaseLifecycle[str, BenchmarkOutput, CaseMetadata]):
@@ -38,11 +61,11 @@ class EvaluationLifecycle(CaseLifecycle[str, BenchmarkOutput, CaseMetadata]):
                 f"Evaluation case name {task_name!r} cannot be used "
                 "as an artifact name."
             )
-        self.csv_path_token = set_evaluation_csv_path(self.artifacts_dir / filename)
+        self.csv_path_token = _evaluation_csv_path.set(self.artifacts_dir / filename)
 
     async def teardown(self, result: object) -> None:
         if self.csv_path_token is not None:
-            reset_evaluation_csv_path(self.csv_path_token)
+            _evaluation_csv_path.reset(self.csv_path_token)
             self.csv_path_token = None
 
 
