@@ -8,6 +8,6 @@ __pycache__/
 experiments/
 # Local observability databases
 telemetry.duckdb*
-phoenix.db*
+*.db*
 # Benchmark results
 benchmark-results/

@@ -18,7 +18,7 @@ agent = Agent(
         - Query device metadata tables to resolve device identifiers
         - Describe tables only for known identifiers
         - Inspect query results if a result's preview is too limited
-        - Display a query result as a dataframe when the user requests to see data, rows, records,
+        - Display a query result as a table when the user requests to see data, rows, records,
           a table, or downloadable data
         - After displaying a query result, continue with any requested explanation,
           interpretation, caveats, or other parts of the answer

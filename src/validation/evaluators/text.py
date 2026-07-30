@@ -4,7 +4,7 @@ from typing import cast
 
 from pydantic_evals.evaluators import Evaluator, EvaluatorContext, EvaluatorOutput
 
-from .eval_models import BenchmarkOutput, CaseMetadata, TextOutput
+from ..eval_models import BenchmarkOutput, CaseMetadata, TextOutput
 
 
 def normalize_text(value: str) -> str:

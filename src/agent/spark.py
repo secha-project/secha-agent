@@ -3,25 +3,25 @@ from pyspark.sql import SparkSession
 from .config import AgentConfig
 
 
-def get_spark_session(app_config: AgentConfig) -> SparkSession:
+def get_spark_session(config: AgentConfig) -> SparkSession:
     spark: SparkSession = (
         SparkSession.builder.config(
-            f"spark.sql.catalog.{app_config.catalog_name}",
+            f"spark.sql.catalog.{config.catalog_name}",
             "io.unitycatalog.spark.UCSingleCatalog",
         )
         .config(
-            f"spark.sql.catalog.{app_config.catalog_name}.uri",
-            app_config.catalog_url,
+            f"spark.sql.catalog.{config.catalog_name}.uri",
+            config.catalog_url,
         )
         .config(
-            f"spark.sql.catalog.{app_config.catalog_name}.token",
-            app_config.catalog_token,
+            f"spark.sql.catalog.{config.catalog_name}.token",
+            config.catalog_token,
         )
-        .config("spark.sql.defaultCatalog", app_config.catalog_name)
-        .remote(app_config.spark_url)
+        .config("spark.sql.defaultCatalog", config.catalog_name)
+        .remote(config.spark_url)
         .getOrCreate()
     )
-    spark.catalog.setCurrentDatabase(app_config.schema_name)
+    spark.catalog.setCurrentDatabase(config.schema_name)
 
     return spark
 

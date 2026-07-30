@@ -5,7 +5,7 @@ from typing import cast
 
 from pydantic_evals.evaluators import Evaluator, EvaluatorContext, EvaluatorOutput
 
-from .eval_models import BenchmarkOutput, CaseMetadata, NumberOutput
+from ..eval_models import BenchmarkOutput, CaseMetadata, NumberOutput
 
 FRACTION_PATTERN = re.compile(r"([+-]?\d+)\s*/\s*([+-]?\d+)")
 PERCENTAGE_PATTERN = re.compile(r"([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*%")

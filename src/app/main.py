@@ -15,16 +15,11 @@ from src.agent.config import AgentConfig
 from src.agent.deps import Deps
 from src.agent.providers import get_model
 from src.agent.spark import get_spark_session
-from src.app.dataframe_display import render_artifact
-from src.app.dataframes import DataFrameReferences
 from src.app.models import (
-    DataframeDisplayPart,
     DisplayMessage,
-    TextDisplayPart,
-    ToolDisplayPart,
     User,
-    UserDisplayMessage,
 )
+from src.app.query_results import ConversationResultRegistry, render_snapshot
 from src.app.storage import (
     ArtifactNotFoundError,
     ChatRepository,
@@ -42,7 +37,7 @@ AUTH_SESSION_KEYS = (
     "current_conversation_id",
     "display_messages",
     "model_messages",
-    "dataframe_references",
+    "result_registry",
 )
 
 APP_STYLES = """
@@ -56,6 +51,26 @@ header {
 }
 [data-testid="stMainBlockContainer"] {
     padding-top: 0 !important;
+}
+[data-testid^="stChatMessageAvatar"] {
+    display: none;
+}
+[data-testid="stChatMessage"]:has(
+        [data-testid="stChatMessageAvatarUser"]
+    ) {
+    margin-left: auto;
+    max-width: 75%;
+    width: fit-content;
+}
+@media (max-width: 640px) {
+    [data-testid="stChatMessage"]:has(
+            [data-testid="stChatMessageAvatarUser"]
+        ) {
+        max-width: 90%;
+    }
+}
+div[class*="st-key-empty-chat-state"] {
+    min-height: calc(100dvh - 4rem);
 }
 [data-testid="stSidebarUserContent"] {
     /* Reclaim most of Streamlit's sidebar header without covering its
@@ -305,29 +320,31 @@ def render_message(
     user_id: str,
     conversation_id: str,
 ) -> None:
-    if isinstance(message, UserDisplayMessage):
+    # Session-state objects can survive a hot reload and retain their previous
+    # Python class identity. Discriminator fields remain stable across reloads.
+    if message.role == "user":
         st.chat_message("user").markdown(message.content)
         return
 
     container = st.chat_message("assistant")
     for part in message.parts:
-        if isinstance(part, TextDisplayPart):
+        if part.kind == "text":
             container.markdown(part.content)
-        elif isinstance(part, ToolDisplayPart):
+        elif part.kind == "tool":
             render_tool(container, part)
-        elif isinstance(part, DataframeDisplayPart):
+        elif part.kind == "dataframe":
             try:
-                artifact = resources.repository.load_artifact(
+                snapshot = resources.repository.load_artifact(
                     user_id,
                     conversation_id,
                     part.artifact_id,
                 )
             except ArtifactNotFoundError:
-                container.error("This saved dataframe artifact is unavailable.")
+                container.error("This saved table snapshot is unavailable.")
             else:
-                render_artifact(
+                render_snapshot(
                     container,
-                    artifact,
+                    snapshot,
                     key=f"download-history-{part.artifact_id}",
                 )
 
@@ -348,7 +365,7 @@ def activate_conversation(
     st.session_state.current_conversation_id = conversation.id
     st.session_state.display_messages = conversation.display_messages
     st.session_state.model_messages = conversation.model_messages
-    st.session_state.dataframe_references = DataFrameReferences(
+    st.session_state.result_registry = ConversationResultRegistry(
         resources.spark,
         resources.repository,
         conversation.id,
@@ -362,9 +379,18 @@ def start_new_conversation() -> None:
     st.session_state.current_conversation_id = None
     st.session_state.display_messages = []
     st.session_state.model_messages = []
-    st.session_state.dataframe_references = None
+    st.session_state.result_registry = None
     if "chat" in st.query_params:
         del st.query_params["chat"]
+
+
+def create_conversation(
+    resources: AppResources,
+    user_id: str,
+) -> None:
+    """Create and select a conversation before its first prompt is handled."""
+    conversation = resources.repository.create_conversation(user_id)
+    activate_conversation(resources, user_id, conversation.id)
 
 
 def delete_conversation(
@@ -396,13 +422,13 @@ def _ensure_active_conversation(
 ) -> str | None:
     requested_id = st.query_params.get("chat")
     current_id = st.session_state.get("current_conversation_id")
-    references = st.session_state.get("dataframe_references")
+    registry = st.session_state.get("result_registry")
 
     if requested_id:
         requested_id = str(requested_id)
         if requested_id != current_id or (
-            not isinstance(references, DataFrameReferences)
-            or references.conversation_id != current_id
+            not isinstance(registry, ConversationResultRegistry)
+            or registry.conversation_id != current_id
         ):
             if activate_conversation(resources, user_id, requested_id):
                 return requested_id
@@ -412,12 +438,12 @@ def _ensure_active_conversation(
         if current_id is None:
             st.session_state.setdefault("display_messages", [])
             st.session_state.setdefault("model_messages", [])
-            st.session_state["dataframe_references"] = None
+            st.session_state["result_registry"] = None
             return None
         if isinstance(current_id, str):
             if (
-                isinstance(references, DataFrameReferences)
-                and references.conversation_id == current_id
+                isinstance(registry, ConversationResultRegistry)
+                and registry.conversation_id == current_id
             ) or activate_conversation(
                 resources,
                 user_id,
@@ -503,14 +529,14 @@ def _render_sidebar(
 
 def _fresh_deps(
     resources: AppResources,
-    references: DataFrameReferences,
+    registry: ConversationResultRegistry,
 ) -> Deps:
     return Deps(
         spark=resources.spark,
         catalog=resources.catalog,
         schema_name=resources.config.schema_name,
         table_column_page_size=resources.config.table_column_page_size,
-        dataframe_references=references,
+        result_registry=registry,
     )
 
 
@@ -529,11 +555,28 @@ def run_app() -> None:
     resources = load_resources()
     conversation_id = _ensure_active_conversation(resources, user.id)
 
-    st.title("SECHA")
-    st.caption("Ask questions about the configured analytics catalog.")
     _render_sidebar(resources, user)
 
-    if conversation_id is not None:
+    if conversation_id is None:
+        with st.container(
+            key="empty-chat-state",
+            horizontal_alignment="center",
+            vertical_alignment="center",
+            gap="medium",
+        ):
+            st.subheader(
+                "Ask questions about SECHA's data platform",
+                text_alignment="center",
+            )
+            prompt = st.chat_input(
+                "Ask SECHA Agent",
+                key="chat-prompt",
+                submit_mode="stop",
+                on_submit=create_conversation,
+                args=(resources, user.id),
+                width=720,
+            )
+    else:
         for message in st.session_state.display_messages:
             render_message(
                 message,
@@ -541,18 +584,16 @@ def run_app() -> None:
                 user_id=user.id,
                 conversation_id=conversation_id,
             )
-
-    prompt = st.chat_input(
-        "Ask a question about your data",
-        submit_mode="stop",
-    )
+        prompt = st.chat_input(
+            "Ask SECHA Agent",
+            key="chat-prompt",
+            submit_mode="stop",
+        )
     if not prompt:
         return
 
     if conversation_id is None:
-        conversation = resources.repository.create_conversation(user.id)
-        activate_conversation(resources, user.id, conversation.id)
-        conversation_id = conversation.id
+        conversation_id = st.session_state.current_conversation_id
 
     # First save: the submitted user message is durable before agent work begins.
     saved = resources.repository.append_user(
@@ -570,8 +611,8 @@ def run_app() -> None:
     )
 
     container = st.chat_message("assistant")
-    references: DataFrameReferences = st.session_state.dataframe_references
-    deps = _fresh_deps(resources, references)
+    registry: ConversationResultRegistry = st.session_state.result_registry
+    deps = _fresh_deps(resources, registry)
     try:
         result = asyncio.run(
             stream_agent_response(
@@ -600,7 +641,7 @@ def run_app() -> None:
         conversation_id,
         result.assistant_message,
         result.model_messages,
-        result.artifacts,
+        result.snapshots,
     )
     st.session_state.display_messages = completed.display_messages
     st.session_state.model_messages = completed.model_messages

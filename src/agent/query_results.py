@@ -1,4 +1,59 @@
+from abc import ABC, abstractmethod
+
+from pydantic_ai import ModelRetry
 from pyspark.sql import DataFrame
+
+
+class QueryResultRegistry(ABC):
+    """Map stable result references to live Spark query results."""
+
+    def __init__(self) -> None:
+        self._live: dict[str, DataFrame] = {}
+
+    def create(self, sql: str, result: DataFrame) -> str:
+        ref = self._allocate_reference(sql)
+        self._live[ref] = result
+        return ref
+
+    def resolve(self, ref: str) -> DataFrame:
+        cached = self._live.get(ref)
+        if cached is not None:
+            return cached
+
+        result = self._resolve_missing(ref)
+        self._live[ref] = result
+        return result
+
+    def clear(self) -> None:
+        self._live.clear()
+
+    @abstractmethod
+    def _allocate_reference(self, sql: str) -> str:
+        """Return a new reference for a query."""
+
+    @abstractmethod
+    def _resolve_missing(self, ref: str) -> DataFrame:
+        """Resolve a reference that is absent from the live cache."""
+
+
+class InMemoryResultRegistry(QueryResultRegistry):
+    """Run-scoped query result references with no durable recovery."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._next_id = 1
+
+    def _allocate_reference(self, sql: str) -> str:
+        del sql
+        ref = f"df-{self._next_id}"
+        self._next_id += 1
+        return ref
+
+    def _resolve_missing(self, ref: str) -> DataFrame:
+        raise ModelRetry(
+            f"Unknown result reference {ref!r}. "
+            "Use a reference returned by query_data in this run."
+        )
 
 
 def _rows_to_markdown_sections(
@@ -16,17 +71,17 @@ def _rows_to_markdown_sections(
     return "\n\n".join(sections)
 
 
-def dataframe_to_markdown(
-    dataframe: DataFrame,
+def render_result_preview(
+    result: DataFrame,
     start_row: int = 1,
     end_row: int | None = None,
     column_names: list[str] | None = None,
 ) -> str:
-    """Render a 1-based inclusive range of dataframe rows as Markdown sections."""
+    """Render a 1-based inclusive range of query-result rows as Markdown sections."""
     range_was_requested = end_row is not None
     end_row = end_row or start_row + 9
     requested_row_count = end_row - start_row + 1
-    available_columns = dataframe.schema.fieldNames()
+    available_columns = result.schema.fieldNames()
     selected_columns = column_names or available_columns[:10]
 
     unknown_columns = [
@@ -36,12 +91,12 @@ def dataframe_to_markdown(
     ]
     if unknown_columns:
         raise ValueError(
-            f"Unknown dataframe columns: {', '.join(unknown_columns)}. "
+            f"Unknown result columns: {', '.join(unknown_columns)}. "
             f"Available columns: {', '.join(available_columns)}."
         )
 
-    total_rows = dataframe.count()
-    collected_rows = dataframe.select(*selected_columns).limit(end_row).collect()
+    total_rows = result.count()
+    collected_rows = result.select(*selected_columns).limit(end_row).collect()
     rows = collected_rows[start_row - 1 : end_row]
     has_more_rows = total_rows > requested_row_count
     has_more_columns = len(selected_columns) < len(available_columns)

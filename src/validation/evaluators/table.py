@@ -9,7 +9,7 @@ from pydantic_evals.evaluators import (
     EvaluatorOutput,
 )
 
-from .eval_models import BenchmarkOutput, CaseMetadata, TableOutput
+from ..eval_models import BenchmarkOutput, CaseMetadata, TableOutput
 
 _MISSING = object()
 

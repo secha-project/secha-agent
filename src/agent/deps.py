@@ -3,11 +3,10 @@ from dataclasses import dataclass
 
 from pyspark.sql import DataFrame, SparkSession
 
-from src.app.dataframes import DataFrameReferences
-
 from .catalog import UnityCatalogClient
+from .query_results import QueryResultRegistry
 
-DataframeExporter = Callable[[SparkSession, DataFrame], Awaitable[None]]
+ResultExporter = Callable[[SparkSession, DataFrame], Awaitable[None]]
 
 
 @dataclass
@@ -16,5 +15,5 @@ class Deps:
     catalog: UnityCatalogClient
     schema_name: str
     table_column_page_size: int
-    dataframe_references: DataFrameReferences
-    dataframe_exporter: DataframeExporter | None = None
+    result_registry: QueryResultRegistry
+    result_exporter: ResultExporter | None = None

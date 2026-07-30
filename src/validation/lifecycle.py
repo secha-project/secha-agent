@@ -5,7 +5,7 @@ from pydantic_evals import set_eval_attribute
 from pydantic_evals.lifecycle import CaseLifecycle
 from pyspark.sql import DataFrame, SparkSession
 
-from src.app.runtime import run_spark_with_timeout
+from src.agent.runtime import run_spark_with_timeout
 from src.validation.eval_models import BenchmarkCase, BenchmarkOutput, CaseMetadata
 
 _evaluation_csv_path = ContextVar[Path | None](

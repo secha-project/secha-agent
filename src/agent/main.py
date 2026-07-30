@@ -1,39 +1,21 @@
-import os
-from uuid import uuid4
+import argparse
+import sys
+from collections.abc import Sequence
 
-import logfire
 from pydantic_ai import ModelSettings, UsageLimits
-
-from src.app.dataframes import DataFrameReferences
-from src.app.storage import ChatRepository
 
 from .agent import agent
 from .catalog import UnityCatalogClient
 from .config import AgentConfig
 from .deps import Deps
 from .providers import get_model
+from .query_results import InMemoryResultRegistry
 from .spark import get_spark_session
 
 
-def main() -> None:
-    config = AgentConfig(  # type: ignore[call-arg]
-        model_provider="openai",
-        openai={"model_name": "gpt-5.4-mini"},
-    )
-    os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = config.otel_exporter_otlp_endpoint
-    logfire.configure(
-        send_to_logfire=False,
-        service_name=config.logfire_service_name,
-        metrics=False,
-    )
-    logfire.instrument_pydantic_ai()
-    logfire.instrument_httpx(capture_all=True)
-
+def run(prompt: str, config: AgentConfig | None = None) -> str:
+    config = config or AgentConfig()  # type: ignore[call-arg]
     spark = get_spark_session(config)
-    repository = ChatRepository()
-    repository.initialize()
-    user = repository.create_user(f"cli-{uuid4().hex}", uuid4().hex)
-    conversation = repository.create_conversation(user.id)
     deps = Deps(
         spark=spark,
         catalog=UnityCatalogClient(
@@ -43,25 +25,35 @@ def main() -> None:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
-        dataframe_references=DataFrameReferences(
-            spark,
-            repository,
-            conversation.id,
-        ),
+        result_registry=InMemoryResultRegistry(),
     )
-    model = get_model(config)
-
-    user_prompt = """What are the units of the import active energy counter column 
-    in power_quality_mesurements_electrix?"""
-
     result = agent.run_sync(
-        user_prompt,
+        prompt,
         deps=deps,
-        model=model,
+        model=get_model(config),
         model_settings=ModelSettings(temperature=config.temperature),
         usage_limits=UsageLimits(request_limit=config.request_limit),
     )
-    print(result.output)
+    return result.output
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Run the SECHA agent once.")
+    parser.add_argument(
+        "prompt",
+        nargs="?",
+        help="Question for the agent. Reads stdin when omitted.",
+    )
+    args = parser.parse_args(argv)
+    prompt = (
+        sys.stdin.read().strip()
+        if args.prompt is None
+        else args.prompt.strip()
+    )
+    if not prompt:
+        parser.error("provide a prompt argument or pipe a prompt on stdin")
+
+    print(run(prompt))
 
 
 if __name__ == "__main__":

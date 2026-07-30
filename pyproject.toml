@@ -1,7 +1,7 @@
 [project]
 name = "secha-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "AI data agent for the SECHA data platform"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

@@ -20,13 +20,13 @@ class ToolDisplayPart(BaseModel):
     state: Literal["running", "complete", "error"] = "running"
 
 
-class DataframeDisplayPart(BaseModel):
+class TableDisplayPart(BaseModel):
     kind: Literal["dataframe"] = "dataframe"
     artifact_id: str
 
 
 DisplayPart = Annotated[
-    TextDisplayPart | ToolDisplayPart | DataframeDisplayPart,
+    TextDisplayPart | ToolDisplayPart | TableDisplayPart,
     Field(discriminator="kind"),
 ]
 

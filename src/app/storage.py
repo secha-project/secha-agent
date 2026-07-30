@@ -13,7 +13,6 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from pydantic_ai import ModelMessage, ModelMessagesTypeAdapter
 
-from .dataframes import DataframeArtifact
 from .models import (
     DISPLAY_MESSAGES_ADAPTER,
     AssistantDisplayMessage,
@@ -23,6 +22,7 @@ from .models import (
     User,
     UserDisplayMessage,
 )
+from .table_artifacts import TableSnapshot
 
 DEFAULT_DB_PATH = Path(".data/secha_chat.sqlite3")
 MIN_PASSWORD_LENGTH = 8
@@ -424,9 +424,9 @@ class ChatRepository:
         conversation_id: str,
         assistant: AssistantDisplayMessage,
         model_messages: list[ModelMessage],
-        artifacts: Iterable[DataframeArtifact] = (),
+        snapshots: Iterable[TableSnapshot] = (),
     ) -> Conversation:
-        """Second save: atomically persist a terminal assistant turn and artifacts."""
+        """Second save: atomically persist a terminal turn and table snapshots."""
         conversation = self.load_conversation(user_id, conversation_id)
         display_messages = [*conversation.display_messages, assistant]
         now = self._now()
@@ -444,16 +444,16 @@ class ChatRepository:
                 serialized_model,
                 now,
             )
-            for artifact in artifacts:
+            for snapshot in snapshots:
                 self._insert_artifact(
                     connection,
                     conversation_id,
-                    artifact,
+                    snapshot,
                     now,
                 )
         return self.load_conversation(user_id, conversation_id)
 
-    def save_dataframe_query(self, conversation_id: str, sql: str) -> int:
+    def save_query_recipe(self, conversation_id: str, sql: str) -> int:
         with self._connect() as connection:
             cursor = connection.execute(
                 """
@@ -468,7 +468,7 @@ class ChatRepository:
                 raise ConversationNotFoundError(conversation_id)
             return int(cursor.lastrowid)
 
-    def load_dataframe_query(
+    def load_query_recipe(
         self,
         conversation_id: str,
         query_id: int,
@@ -488,8 +488,8 @@ class ChatRepository:
         self,
         user_id: str,
         conversation_id: str,
-        artifact: DataframeArtifact,
-    ) -> DataframeArtifact:
+        artifact: TableSnapshot,
+    ) -> TableSnapshot:
         with self._connect() as connection:
             owner = connection.execute(
                 """
@@ -512,7 +512,7 @@ class ChatRepository:
     def _insert_artifact(
         connection: sqlite3.Connection,
         conversation_id: str,
-        artifact: DataframeArtifact,
+        artifact: TableSnapshot,
         created_at: str,
     ) -> None:
         connection.execute(
@@ -538,7 +538,7 @@ class ChatRepository:
         user_id: str,
         conversation_id: str,
         artifact_id: str,
-    ) -> DataframeArtifact:
+    ) -> TableSnapshot:
         with self._connect() as connection:
             row = connection.execute(
                 """
@@ -553,7 +553,7 @@ class ChatRepository:
             ).fetchone()
         if row is None:
             raise ArtifactNotFoundError(artifact_id)
-        return DataframeArtifact(
+        return TableSnapshot(
             id=row["id"],
             arrow_bytes=bytes(row["arrow_bytes"]),
             visible_row_count=row["visible_row_count"],

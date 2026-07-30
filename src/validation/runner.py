@@ -2,7 +2,6 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from uuid import uuid4
 
 import logfire
 from pydantic_ai import ModelSettings, UsageLimits
@@ -16,9 +15,8 @@ from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
 from src.agent.providers import get_model
+from src.agent.query_results import InMemoryResultRegistry
 from src.agent.spark import get_spark_session
-from src.app.dataframes import DataFrameReferences
-from src.app.storage import ChatRepository
 from src.validation.config import BENCHMARKS_DIR, RESULTS_DIR, BenchmarkRunConfig
 from src.validation.eval_models import (
     BenchmarkDataset,
@@ -26,12 +24,15 @@ from src.validation.eval_models import (
     TableOutput,
     TextOutput,
 )
+from src.validation.evaluators import (
+    DEFAULT_REPORT_EVALUATORS,
+    ValidateNumberOutput,
+    ValidateTableIncluded,
+    ValidateTableValues,
+    ValidateTextOutput,
+)
 from src.validation.lifecycle import LifecycleFactory, export_evaluation_dataframe
-from src.validation.number_validation import ValidateNumberOutput
-from src.validation.report_evaluators import DEFAULT_REPORT_EVALUATORS
 from src.validation.reporting import BenchmarkReport, save_report
-from src.validation.table_validation import ValidateTableIncluded, ValidateTableValues
-from src.validation.text_validation import ValidateTextOutput
 
 CUSTOM_EVALUATOR_TYPES = (
     ValidateTextOutput,
@@ -70,10 +71,6 @@ def configure_observability(config: AgentConfig) -> None:
 
 def create_dependencies(config: AgentConfig) -> Deps:
     spark = get_spark_session(config)
-    repository = ChatRepository()
-    repository.initialize()
-    user = repository.create_user(f"evaluation-{uuid4().hex}", uuid4().hex)
-    conversation = repository.create_conversation(user.id)
     return Deps(
         spark=spark,
         catalog=UnityCatalogClient(
@@ -83,12 +80,8 @@ def create_dependencies(config: AgentConfig) -> Deps:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
-        dataframe_references=DataFrameReferences(
-            spark,
-            repository,
-            conversation.id,
-        ),
-        dataframe_exporter=export_evaluation_dataframe,
+        result_registry=InMemoryResultRegistry(),
+        result_exporter=export_evaluation_dataframe,
     )
 
 

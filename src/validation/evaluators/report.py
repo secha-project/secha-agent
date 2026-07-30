@@ -7,7 +7,7 @@ from pydantic_evals.evaluators import ReportEvaluator, ReportEvaluatorContext
 from pydantic_evals.reporting import EvaluationReport
 from pydantic_evals.reporting.analyses import ScalarResult, TableResult
 
-from .eval_models import BenchmarkOutput, CaseMetadata
+from ..eval_models import BenchmarkOutput, CaseMetadata
 
 
 @dataclass
