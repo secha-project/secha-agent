@@ -11,3 +11,5 @@ telemetry.duckdb*
 *.db*
 # Benchmark results
 benchmark-results/
+# Agents stuff
+AGENTS.md
