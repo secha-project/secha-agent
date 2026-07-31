@@ -1,17 +1,22 @@
-from abc import ABC, abstractmethod
+from uuid import uuid4
 
-from pydantic_ai import ModelRetry
 from pyspark.sql import DataFrame
 
 
-class QueryResultRegistry(ABC):
-    """Map stable result references to live Spark query results."""
+class UnknownQueryResultReferenceError(LookupError):
+    def __init__(self, ref: str) -> None:
+        self.ref = ref
+        super().__init__(f"Unknown query-result reference {ref!r}.")
+
+
+class QueryResultRegistry:
+    """Map temporary references to live Spark query results."""
 
     def __init__(self) -> None:
         self._live: dict[str, DataFrame] = {}
 
-    def create(self, sql: str, result: DataFrame) -> str:
-        ref = self._allocate_reference(sql)
+    def create(self, result: DataFrame) -> str:
+        ref = f"df-{uuid4().hex}"
         self._live[ref] = result
         return ref
 
@@ -20,40 +25,7 @@ class QueryResultRegistry(ABC):
         if cached is not None:
             return cached
 
-        result = self._resolve_missing(ref)
-        self._live[ref] = result
-        return result
-
-    def clear(self) -> None:
-        self._live.clear()
-
-    @abstractmethod
-    def _allocate_reference(self, sql: str) -> str:
-        """Return a new reference for a query."""
-
-    @abstractmethod
-    def _resolve_missing(self, ref: str) -> DataFrame:
-        """Resolve a reference that is absent from the live cache."""
-
-
-class InMemoryResultRegistry(QueryResultRegistry):
-    """Run-scoped query result references with no durable recovery."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._next_id = 1
-
-    def _allocate_reference(self, sql: str) -> str:
-        del sql
-        ref = f"df-{self._next_id}"
-        self._next_id += 1
-        return ref
-
-    def _resolve_missing(self, ref: str) -> DataFrame:
-        raise ModelRetry(
-            f"Unknown result reference {ref!r}. "
-            "Use a reference returned by query_data in this run."
-        )
+        raise UnknownQueryResultReferenceError(ref)
 
 
 def _rows_to_markdown_sections(

@@ -133,7 +133,7 @@ async def stream_agent_response(
 ) -> StreamResult | None:
     """Render ordered run events and return output only after terminal success."""
     assistant_message = AssistantDisplayMessage()
-    result_display = ResultDisplayHandler(deps.result_registry)
+    result_display = ResultDisplayHandler(deps.spark, deps.result_registry)
     text_parts: dict[int, tuple[TextDisplayPart, Any]] = {}
     tool_parts: dict[str, tuple[ToolDisplayPart, ToolStatusView]] = {}
 

@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 
@@ -14,8 +14,8 @@ from src.agent.agent import agent
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
-from src.agent.providers import get_model
-from src.agent.query_results import InMemoryResultRegistry
+from src.agent.providers import create_model
+from src.agent.query_results import QueryResultRegistry
 from src.agent.spark import get_spark_session
 from src.validation.config import BENCHMARKS_DIR, RESULTS_DIR, BenchmarkRunConfig
 from src.validation.eval_models import (
@@ -50,9 +50,13 @@ class AgentTask:
     usage_limits: UsageLimits
 
     def __call__(self, prompt: str) -> str:
+        run_deps = replace(
+            self.deps,
+            result_registry=QueryResultRegistry(),
+        )
         return agent.run_sync(
             prompt,
-            deps=self.deps,
+            deps=run_deps,
             model=self.model,
             model_settings=self.model_settings,
             usage_limits=self.usage_limits,
@@ -80,7 +84,7 @@ def create_dependencies(config: AgentConfig) -> Deps:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
-        result_registry=InMemoryResultRegistry(),
+        result_registry=QueryResultRegistry(),
         result_exporter=export_evaluation_dataframe,
     )
 
@@ -162,7 +166,7 @@ def run_benchmark(run_name: str, run_config: BenchmarkRunConfig) -> Path:
 
     task = AgentTask(
         deps=create_dependencies(run_config.agent),
-        model=get_model(run_config.agent),
+        model=create_model(run_config.agent),
         model_settings=ModelSettings(temperature=run_config.agent.temperature),
         usage_limits=UsageLimits(request_limit=run_config.agent.request_limit),
     )

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import re
-from typing import Any, Protocol
+from typing import Any
 
-from pydantic_ai import ModelRetry
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import SparkSession
 
 from src.agent.query_results import QueryResultRegistry
 from src.agent.runtime import run_spark_with_timeout
@@ -19,65 +17,15 @@ from .table_artifacts import (
 )
 
 
-class QueryRecipeRepository(Protocol):
-    def save_query_recipe(self, conversation_id: str, sql: str) -> int: ...
-
-    def load_query_recipe(
-        self,
-        conversation_id: str,
-        query_id: int,
-    ) -> str | None: ...
-
-
-class ConversationResultRegistry(QueryResultRegistry):
-    """Conversation-scoped Spark results backed by durable SQL recipes."""
-
-    _REFERENCE_PATTERN = re.compile(r"df-([1-9][0-9]*)")
+class ResultDisplayHandler:
+    """Turn query-result tool metadata into ordered, persistable UI output."""
 
     def __init__(
         self,
         spark: SparkSession,
-        repository: QueryRecipeRepository,
-        conversation_id: str,
+        registry: QueryResultRegistry,
     ) -> None:
-        super().__init__()
         self.spark = spark
-        self.repository = repository
-        self.conversation_id = conversation_id
-
-    def _allocate_reference(self, sql: str) -> str:
-        query_id = self.repository.save_query_recipe(self.conversation_id, sql)
-        return f"df-{query_id}"
-
-    def _resolve_missing(self, ref: str) -> DataFrame:
-        match = self._REFERENCE_PATTERN.fullmatch(ref)
-        if match is None:
-            raise ModelRetry(
-                f"Invalid result reference {ref!r}. Use a reference such as 'df-17'."
-            )
-
-        sql = self.repository.load_query_recipe(
-            self.conversation_id,
-            int(match.group(1)),
-        )
-        if sql is None:
-            raise ModelRetry(
-                f"Result reference {ref!r} does not belong to this conversation."
-            )
-
-        try:
-            result = self.spark.sql(sql)
-        except Exception as exc:
-            raise ModelRetry(
-                f"Could not recreate result reference {ref!r}: {exc}"
-            ) from exc
-        return result
-
-
-class ResultDisplayHandler:
-    """Turn query-result tool metadata into ordered, persistable UI output."""
-
-    def __init__(self, registry: ConversationResultRegistry) -> None:
         self.registry = registry
         self.snapshots: list[TableSnapshot] = []
 
@@ -93,7 +41,11 @@ class ResultDisplayHandler:
         if not isinstance(ref, str):
             raise TypeError("The query-result tool returned invalid display metadata.")
 
-        snapshot = await materialize_table_snapshot(self.registry, ref)
+        snapshot = await materialize_table_snapshot(
+            self.spark,
+            self.registry,
+            ref,
+        )
         self.snapshots.append(snapshot)
         render_snapshot(
             container,
@@ -104,13 +56,14 @@ class ResultDisplayHandler:
 
 
 async def materialize_table_snapshot(
-    registry: ConversationResultRegistry,
+    spark: SparkSession,
+    registry: QueryResultRegistry,
     ref: str,
 ) -> TableSnapshot:
     """Materialize one extra row so the persisted snapshot records truncation."""
     result = registry.resolve(ref)
     materialized = await run_spark_with_timeout(
-        registry.spark,
+        spark,
         lambda: result.limit(MAX_DISPLAY_ROWS + 1).toPandas(),
     )
     return snapshot_table(materialized, max_rows=MAX_DISPLAY_ROWS)

@@ -4,9 +4,13 @@ from pydantic_ai import ModelRetry, RunContext, ToolReturn
 
 from ..deps import Deps
 from ..models import InspectQueryResult, QueryDataResult
-from ..query_results import render_result_preview
+from ..query_results import (
+    UnknownQueryResultReferenceError,
+    render_result_preview,
+)
 from ..runtime import run_spark_with_timeout
 from ..spark import concise_spark_error, spark_error_type
+from ..sql_safety import ReadOnlySqlError, require_read_only_sql
 
 
 async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
@@ -22,6 +26,16 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
     deps = ctx.deps
     if not sql.strip():
         raise ModelRetry("SQL validation failed (EmptySql): SQL text is empty.")
+
+    # Temporary application-layer protection until the catalog credentials enforce
+    # read-only access. Remove this call/import and src.agent.sql_safety once those
+    # permissions are the authoritative safeguard.
+    try:
+        require_read_only_sql(sql)
+    except ReadOnlySqlError as exc:
+        raise ModelRetry(
+            f"SQL validation failed (ReadOnlyQueryRequired): {exc}"
+        ) from exc
 
     try:
         result = deps.spark.sql(sql)
@@ -43,7 +57,7 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
             f"({spark_error_type(exc)}): {concise_spark_error(exc)}. "
         ) from exc
 
-    ref = deps.result_registry.create(sql, result)
+    ref = deps.result_registry.create(result)
     return QueryDataResult(
         dataframe_ref=ref,
         preview_markdown=preview,
@@ -64,13 +78,20 @@ async def inspect_query_result(
     Row positions are only deterministic when the original SQL defines an order.
 
     Args:
-        ref: A saved result tag such as ``df-17``.
+        ref: A result reference available in the current live session.
         start_row: First row to show (1-based and inclusive).
         end_row: Last row to show (1-based and inclusive).
         column_names: Specific columns to show instead of the first 10.
     """
     deps = ctx.deps
-    result = deps.result_registry.resolve(ref)
+    try:
+        result = deps.result_registry.resolve(ref)
+    except UnknownQueryResultReferenceError as exc:
+        raise ModelRetry(
+            f"Query-result reference {ref!r} is stale and no longer exists "
+            "in memory. Call query_data again to create a new reference; "
+            "do not retry with the stale reference."
+        ) from exc
     if column_names:
         available_columns = result.schema.fieldNames()
         unknown_columns = [
@@ -118,10 +139,17 @@ async def display_query_result(
     other parts the user requested.
 
     Args:
-        ref: A saved result tag such as ``df-17``.
+        ref: A result reference available in the current live session.
     """
     deps = ctx.deps
-    result = deps.result_registry.resolve(ref)
+    try:
+        result = deps.result_registry.resolve(ref)
+    except UnknownQueryResultReferenceError as exc:
+        raise ModelRetry(
+            f"Query-result reference {ref!r} is stale and no longer exists "
+            "in memory. Call query_data again to create a new reference; "
+            "do not retry with the stale reference."
+        ) from exc
 
     if deps.result_exporter is not None:
         await deps.result_exporter(deps.spark, result)

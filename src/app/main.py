@@ -13,13 +13,14 @@ from src.agent.agent import agent
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
-from src.agent.providers import get_model
+from src.agent.providers import create_model
+from src.agent.query_results import QueryResultRegistry
 from src.agent.spark import get_spark_session
 from src.app.models import (
     DisplayMessage,
     User,
 )
-from src.app.query_results import ConversationResultRegistry, render_snapshot
+from src.app.query_results import render_snapshot
 from src.app.storage import (
     ArtifactNotFoundError,
     ChatRepository,
@@ -29,6 +30,14 @@ from src.app.storage import (
     WeakPasswordError,
 )
 from src.app.streaming import render_tool, stream_agent_response
+
+CONVERSATION_BUTTON_LABEL_MAX_LENGTH = 26
+
+
+def _conversation_button_label(title: str) -> str:
+    if len(title) <= CONVERSATION_BUTTON_LABEL_MAX_LENGTH:
+        return title
+    return title[: CONVERSATION_BUTTON_LABEL_MAX_LENGTH - 1] + "…"
 
 APP_MODEL_PROVIDER = "openai"
 AUTHENTICATED_USER_KEY = "authenticated_user_id"
@@ -128,7 +137,13 @@ div[class*="st-key-conversation-row-"] {
     position: relative;
 }
 div[class*="st-key-conversation-row-"] div[class*="st-key-conversation-"] button {
+    justify-content: flex-start !important;
     padding-right: 2.75rem;
+}
+div[class*="st-key-conversation-row-"]
+    div[class*="st-key-conversation-"]
+    button > div {
+    justify-content: flex-start !important;
 }
 div[class*="st-key-conversation-row-"]
     div[class*="st-key-delete-conversation-"] {
@@ -365,11 +380,7 @@ def activate_conversation(
     st.session_state.current_conversation_id = conversation.id
     st.session_state.display_messages = conversation.display_messages
     st.session_state.model_messages = conversation.model_messages
-    st.session_state.result_registry = ConversationResultRegistry(
-        resources.spark,
-        resources.repository,
-        conversation.id,
-    )
+    st.session_state.result_registry = QueryResultRegistry()
     st.query_params["chat"] = conversation.id
     return True
 
@@ -426,13 +437,18 @@ def _ensure_active_conversation(
 
     if requested_id:
         requested_id = str(requested_id)
-        if requested_id != current_id or (
-            not isinstance(registry, ConversationResultRegistry)
-            or registry.conversation_id != current_id
-        ):
+        state_is_loaded = (
+            requested_id == current_id
+            and isinstance(st.session_state.get("display_messages"), list)
+            and isinstance(st.session_state.get("model_messages"), list)
+            and isinstance(registry, QueryResultRegistry)
+        )
+        if not state_is_loaded:
             if activate_conversation(resources, user_id, requested_id):
                 return requested_id
             del st.query_params["chat"]
+        else:
+            return requested_id
 
     if "current_conversation_id" in st.session_state:
         if current_id is None:
@@ -441,13 +457,13 @@ def _ensure_active_conversation(
             st.session_state["result_registry"] = None
             return None
         if isinstance(current_id, str):
-            if (
-                isinstance(registry, ConversationResultRegistry)
-                and registry.conversation_id == current_id
-            ) or activate_conversation(
-                resources,
-                user_id,
-                current_id,
+            state_is_loaded = (
+                isinstance(st.session_state.get("display_messages"), list)
+                and isinstance(st.session_state.get("model_messages"), list)
+                and isinstance(registry, QueryResultRegistry)
+            )
+            if state_is_loaded or activate_conversation(
+                resources, user_id, current_id
             ):
                 return current_id
 
@@ -485,8 +501,9 @@ def _render_sidebar(
                     gap=None,
                 ):
                     st.button(
-                        conversation.title,
+                        _conversation_button_label(conversation.title),
                         key=f"conversation-{conversation.id}",
+                        help=conversation.title,
                         type=(
                             "primary"
                             if conversation.id
@@ -529,7 +546,7 @@ def _render_sidebar(
 
 def _fresh_deps(
     resources: AppResources,
-    registry: ConversationResultRegistry,
+    registry: QueryResultRegistry,
 ) -> Deps:
     return Deps(
         spark=resources.spark,
@@ -611,7 +628,9 @@ def run_app() -> None:
     )
 
     container = st.chat_message("assistant")
-    registry: ConversationResultRegistry = st.session_state.result_registry
+    registry = st.session_state.result_registry
+    if not isinstance(registry, QueryResultRegistry):
+        raise RuntimeError("The active conversation has no result registry.")
     deps = _fresh_deps(resources, registry)
     try:
         result = asyncio.run(
@@ -620,7 +639,7 @@ def run_app() -> None:
                 message_history=st.session_state.model_messages,
                 deps=deps,
                 agent_instance=agent,
-                model=get_model(resources.config),
+                model=create_model(resources.config),
                 model_settings=ModelSettings(temperature=resources.config.temperature),
                 usage_limits=UsageLimits(request_limit=resources.config.request_limit),
                 container=container,

@@ -4,7 +4,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from .config import AgentConfig, TuniInferenceConfig
 
 
-def get_model(app_config: AgentConfig) -> OpenAIChatModel:
+def create_model(app_config: AgentConfig) -> OpenAIChatModel:
     provider_config = app_config.get_provider_config()
 
     if isinstance(provider_config, TuniInferenceConfig):

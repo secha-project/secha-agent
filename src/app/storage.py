@@ -128,19 +128,6 @@ class ChatRepository:
                 CREATE INDEX IF NOT EXISTS conversations_user_updated_idx
                     ON conversations (user_id, updated_at DESC);
 
-                CREATE TABLE IF NOT EXISTS dataframe_queries (
-                    id INTEGER PRIMARY KEY,
-                    conversation_id TEXT NOT NULL,
-                    sql TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    FOREIGN KEY (conversation_id)
-                        REFERENCES conversations (id)
-                        ON DELETE CASCADE
-                );
-
-                CREATE INDEX IF NOT EXISTS dataframe_queries_conversation_idx
-                    ON dataframe_queries (conversation_id, id);
-
                 CREATE TABLE IF NOT EXISTS dataframe_artifacts (
                     id TEXT PRIMARY KEY,
                     conversation_id TEXT NOT NULL,
@@ -157,7 +144,9 @@ class ChatRepository:
                 CREATE INDEX IF NOT EXISTS artifacts_conversation_idx
                     ON dataframe_artifacts (conversation_id, id);
 
-                PRAGMA user_version = 2;
+                DROP TABLE IF EXISTS dataframe_queries;
+
+                PRAGMA user_version = 3;
                 """
             )
         self.db_path.chmod(0o600)
@@ -452,37 +441,6 @@ class ChatRepository:
                     now,
                 )
         return self.load_conversation(user_id, conversation_id)
-
-    def save_query_recipe(self, conversation_id: str, sql: str) -> int:
-        with self._connect() as connection:
-            cursor = connection.execute(
-                """
-                INSERT INTO dataframe_queries (conversation_id, sql, created_at)
-                SELECT id, ?, ?
-                FROM conversations
-                WHERE id = ?
-                """,
-                (sql, self._now(), conversation_id),
-            )
-            if cursor.rowcount != 1 or cursor.lastrowid is None:
-                raise ConversationNotFoundError(conversation_id)
-            return int(cursor.lastrowid)
-
-    def load_query_recipe(
-        self,
-        conversation_id: str,
-        query_id: int,
-    ) -> str | None:
-        with self._connect() as connection:
-            row = connection.execute(
-                """
-                SELECT sql
-                FROM dataframe_queries
-                WHERE conversation_id = ? AND id = ?
-                """,
-                (conversation_id, query_id),
-            ).fetchone()
-        return None if row is None else str(row["sql"])
 
     def save_artifact(
         self,

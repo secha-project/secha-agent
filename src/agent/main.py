@@ -8,8 +8,8 @@ from .agent import agent
 from .catalog import UnityCatalogClient
 from .config import AgentConfig
 from .deps import Deps
-from .providers import get_model
-from .query_results import InMemoryResultRegistry
+from .providers import create_model
+from .query_results import QueryResultRegistry
 from .spark import get_spark_session
 
 
@@ -25,12 +25,12 @@ def run(prompt: str, config: AgentConfig | None = None) -> str:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
-        result_registry=InMemoryResultRegistry(),
+        result_registry=QueryResultRegistry(),
     )
     result = agent.run_sync(
         prompt,
         deps=deps,
-        model=get_model(config),
+        model=create_model(config),
         model_settings=ModelSettings(temperature=config.temperature),
         usage_limits=UsageLimits(request_limit=config.request_limit),
     )

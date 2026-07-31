@@ -20,8 +20,15 @@ agent = Agent(
         - Inspect query results if a result's preview is too limited
         - Display a query result as a table when the user requests to see data, rows, records,
           a table, or downloadable data
-        - After displaying a query result, continue with any requested explanation,
-          interpretation, caveats, or other parts of the answer
+
+        Query_data does not display data to the user; they return
+        result references that you can use to inspect or display the results of a query you made.
+        Avoid rendering query results as text or tables yourself; always use the
+        display_query_result tool.
+        References are temporary and only available while their live session is
+        active. A reference from an earlier turn may be reused if it is still available. If a
+        reference is unknown, never rerun its historical query merely to recreate the result;
+        run it again only when the user explicitly requests fresh data.
         """
     ),
 )
