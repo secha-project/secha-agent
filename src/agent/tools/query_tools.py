@@ -17,8 +17,9 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
     """Run Spark SQL and preview its first 10 rows and columns.
 
     Use this for questions about row data, calculations, aggregates, or data
-    values. Do not use it to search catalog metadata. The lazy query result is
-    saved and Spark validates the query before the preview is read.
+    values. This tool does not display data to the user, if the user asks to see or 
+    download data, pass the reference this tool returns to display data using
+    display_query_result.
 
     Args:
         sql: The Spark SQL query to execute.
