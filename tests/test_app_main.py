@@ -51,6 +51,29 @@ def test_short_conversation_button_label_is_unchanged() -> None:
     )
 
 
+def test_current_user_is_restored_from_auth_cookie(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = SessionState()
+    user = SimpleNamespace(id="user-1")
+    fake_streamlit = SimpleNamespace(
+        session_state=state,
+        query_params={},
+        context=SimpleNamespace(
+            cookies={app_module.AUTH_COOKIE_NAME: "session-token"}
+        ),
+    )
+    repository = SimpleNamespace(
+        get_user_by_auth_session=lambda token: (
+            user if token == "session-token" else None
+        )
+    )
+    monkeypatch.setattr(app_module, "st", fake_streamlit)
+
+    assert app_module._current_user(cast(Any, repository)) is user
+    assert state[app_module.AUTHENTICATED_USER_KEY] == user.id
+
+
 def test_active_conversation_reuses_its_live_registry_across_turns(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

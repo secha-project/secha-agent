@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 import os
 import re
+import secrets
 import sqlite3
 from collections.abc import Iterable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from pathlib import Path
 from uuid import uuid4
 
@@ -27,6 +29,10 @@ from .table_artifacts import TableSnapshot
 DEFAULT_DB_PATH = Path(".data/secha_chat.sqlite3")
 MIN_PASSWORD_LENGTH = 8
 MAX_PASSWORD_LENGTH = 128
+AUTH_SESSION_TOKEN_BYTES = 32
+AUTH_SESSION_TOKEN_LENGTH = 43
+AUTH_SESSION_TTL = timedelta(days=7)
+AUTH_SESSION_TTL_SECONDS = int(AUTH_SESSION_TTL.total_seconds())
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$")
 PASSWORD_HASHER = PasswordHasher()
 
@@ -128,6 +134,19 @@ class ChatRepository:
                 CREATE INDEX IF NOT EXISTS conversations_user_updated_idx
                     ON conversations (user_id, updated_at DESC);
 
+                CREATE TABLE IF NOT EXISTS auth_sessions (
+                    token_hash TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    FOREIGN KEY (user_id)
+                        REFERENCES users (id)
+                        ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS auth_sessions_user_idx
+                    ON auth_sessions (user_id, expires_at);
+
                 CREATE TABLE IF NOT EXISTS dataframe_artifacts (
                     id TEXT PRIMARY KEY,
                     conversation_id TEXT NOT NULL,
@@ -146,7 +165,7 @@ class ChatRepository:
 
                 DROP TABLE IF EXISTS dataframe_queries;
 
-                PRAGMA user_version = 3;
+                PRAGMA user_version = 4;
                 """
             )
         self.db_path.chmod(0o600)
@@ -224,6 +243,72 @@ class ChatRepository:
                 (user_id,),
             ).fetchone()
         return None if row is None else User(**dict(row))
+
+    @staticmethod
+    def _auth_session_token_hash(token: str) -> str | None:
+        if len(token) != AUTH_SESSION_TOKEN_LENGTH or not token.isascii():
+            return None
+        return sha256(token.encode("ascii")).hexdigest()
+
+    def create_auth_session(self, user_id: str) -> str:
+        token = secrets.token_urlsafe(AUTH_SESSION_TOKEN_BYTES)
+        token_hash = self._auth_session_token_hash(token)
+        if token_hash is None:  # pragma: no cover - token_urlsafe is ASCII.
+            raise RuntimeError("Unable to create a valid authentication token.")
+        created_at = datetime.now(UTC)
+        expires_at = created_at + AUTH_SESSION_TTL
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM auth_sessions WHERE expires_at <= ?",
+                (created_at.isoformat(),),
+            )
+            connection.execute(
+                """
+                INSERT INTO auth_sessions (
+                    token_hash, user_id, created_at, expires_at
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    token_hash,
+                    user_id,
+                    created_at.isoformat(),
+                    expires_at.isoformat(),
+                ),
+            )
+        return token
+
+    def get_user_by_auth_session(self, token: str) -> User | None:
+        token_hash = self._auth_session_token_hash(token)
+        if token_hash is None:
+            return None
+        now = datetime.now(UTC).isoformat()
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM auth_sessions WHERE expires_at <= ?",
+                (now,),
+            )
+            row = connection.execute(
+                """
+                SELECT users.id, users.username, users.created_at
+                FROM auth_sessions
+                JOIN users ON users.id = auth_sessions.user_id
+                WHERE auth_sessions.token_hash = ?
+                    AND auth_sessions.expires_at > ?
+                """,
+                (token_hash, now),
+            ).fetchone()
+        return None if row is None else User(**dict(row))
+
+    def revoke_auth_session(self, token: str) -> None:
+        token_hash = self._auth_session_token_hash(token)
+        if token_hash is None:
+            return
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM auth_sessions WHERE token_hash = ?",
+                (token_hash,),
+            )
 
     def create_conversation(self, user_id: str) -> Conversation:
         conversation_id = uuid4().hex

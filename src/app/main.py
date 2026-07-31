@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 from dataclasses import dataclass
 
@@ -16,6 +17,12 @@ from src.agent.deps import Deps
 from src.agent.providers import create_model
 from src.agent.query_results import QueryResultRegistry
 from src.agent.spark import get_spark_session
+from src.app.auth import (
+    AUTH_COOKIE_NAME,
+    AUTH_LOGOUT_ENDPOINT,
+    AUTH_REQUEST_HEADER,
+    AUTH_SESSION_ENDPOINT,
+)
 from src.app.models import (
     DisplayMessage,
     User,
@@ -220,6 +227,50 @@ def _set_authenticated_user(user: User) -> None:
     st.session_state[AUTHENTICATED_USER_KEY] = user.id
 
 
+def _auth_cookie_token() -> str | None:
+    token = st.context.cookies.get(AUTH_COOKIE_NAME)
+    return token if isinstance(token, str) else None
+
+
+def _render_auth_request(endpoint: str, token: str | None = None) -> None:
+    body = "null" if token is None else json.dumps(token)
+    st.html(
+        f"""
+        <p id="auth-transition">Updating your session…</p>
+        <script>
+        (async () => {{
+            const options = {{
+                method: "POST",
+                credentials: "same-origin",
+                headers: {{{json.dumps(AUTH_REQUEST_HEADER)}: "1"}},
+            }};
+            const body = {body};
+            if (body !== null) {{
+                options.headers["Content-Type"] = "text/plain";
+                options.body = body;
+            }}
+            const response = await fetch({json.dumps(endpoint)}, options);
+            if (!response.ok) {{
+                document.getElementById("auth-transition").textContent =
+                    "Unable to update the login cookie. Start the app via " +
+                    "src/app/server.py and try again.";
+                return;
+            }}
+            window.location.reload();
+        }})();
+        </script>
+        """,
+        unsafe_allow_javascript=True,
+    )
+    st.stop()
+
+
+def _complete_login(repository: ChatRepository, user: User) -> None:
+    _set_authenticated_user(user)
+    token = repository.create_auth_session(user.id)
+    _render_auth_request(AUTH_SESSION_ENDPOINT, token)
+
+
 def _clear_authenticated_session() -> None:
     for key in AUTH_SESSION_KEYS:
         st.session_state.pop(key, None)
@@ -228,11 +279,18 @@ def _clear_authenticated_session() -> None:
 
 def _current_user(repository: ChatRepository) -> User | None:
     user_id = st.session_state.get(AUTHENTICATED_USER_KEY)
-    if not isinstance(user_id, str):
+    if isinstance(user_id, str):
+        user = repository.get_user(user_id)
+        if user is None:
+            _clear_authenticated_session()
+        return user
+
+    token = _auth_cookie_token()
+    if token is None:
         return None
-    user = repository.get_user(user_id)
-    if user is None:
-        _clear_authenticated_session()
+    user = repository.get_user_by_auth_session(token)
+    if user is not None:
+        _set_authenticated_user(user)
     return user
 
 
@@ -294,8 +352,7 @@ def _render_authentication(repository: ChatRepository) -> None:
             ) as exc:
                 st.error(str(exc))
                 return
-            _set_authenticated_user(user)
-            st.rerun()
+            _complete_login(repository, user)
 
         st.subheader("Log in")
         with st.form("login-form", border=False):
@@ -324,8 +381,7 @@ def _render_authentication(repository: ChatRepository) -> None:
         if user is None:
             st.error("Invalid username or password.")
             return
-        _set_authenticated_user(user)
-        st.rerun()
+        _complete_login(repository, user)
 
 
 def render_message(
@@ -535,13 +591,17 @@ def _render_sidebar(
                 gap="small",
             ):
                 st.markdown(f":material/account_circle: **{user.username}**")
-                st.button(
+                if st.button(
                     "Sign out",
                     icon=":material/logout:",
                     type="tertiary",
-                    on_click=_clear_authenticated_session,
                     width="content",
-                )
+                ):
+                    token = _auth_cookie_token()
+                    if token is not None:
+                        resources.repository.revoke_auth_session(token)
+                    _clear_authenticated_session()
+                    _render_auth_request(AUTH_LOGOUT_ENDPOINT)
 
 
 def _fresh_deps(

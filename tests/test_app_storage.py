@@ -1,5 +1,7 @@
 import sqlite3
 import stat
+from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -63,6 +65,42 @@ def test_registration_validates_credentials_and_unique_usernames(
         repository.create_user("no spaces allowed", "correct-horse")
     with pytest.raises(WeakPasswordError):
         repository.create_user("Charlie", "short")
+
+
+def test_auth_sessions_are_hashed_and_can_be_revoked(
+    repository: ChatRepository,
+) -> None:
+    alice = repository.create_user("Alice", "correct-horse")
+    token = repository.create_auth_session(alice.id)
+
+    assert repository.get_user_by_auth_session(token) == alice
+    assert repository.get_user_by_auth_session("not-a-session-token") is None
+
+    with sqlite3.connect(repository.db_path) as connection:
+        stored_hash = connection.execute(
+            "SELECT token_hash FROM auth_sessions WHERE user_id = ?",
+            (alice.id,),
+        ).fetchone()[0]
+    assert stored_hash == sha256(token.encode("ascii")).hexdigest()
+    assert token != stored_hash
+
+    repository.revoke_auth_session(token)
+    assert repository.get_user_by_auth_session(token) is None
+
+
+def test_expired_auth_sessions_are_rejected(
+    repository: ChatRepository,
+) -> None:
+    alice = repository.create_user("Alice", "correct-horse")
+    token = repository.create_auth_session(alice.id)
+    expired_at = (datetime.now(UTC) - timedelta(seconds=1)).isoformat()
+    with sqlite3.connect(repository.db_path) as connection:
+        connection.execute(
+            "UPDATE auth_sessions SET expires_at = ?",
+            (expired_at,),
+        )
+
+    assert repository.get_user_by_auth_session(token) is None
 
 
 def test_user_ownership_for_conversations_and_artifacts(
@@ -228,4 +266,4 @@ def test_initialize_removes_legacy_query_recipes(tmp_path: Path) -> None:
         schema_version = connection.execute("PRAGMA user_version").fetchone()[0]
 
     assert legacy_table is None
-    assert schema_version == 3
+    assert schema_version == 4

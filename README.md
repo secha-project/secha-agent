@@ -34,11 +34,13 @@ Configure the required catalog, Spark Connect, OpenAI, and OpenTelemetry values
 in `.env`, then start the Streamlit app:
 
 ```bash
-uv run python -m streamlit run src/app/main.py
+uv run python -m streamlit run src/app/server.py
 ```
 
 The app uses OpenAI as its model provider and stores chat history locally by
-default. Users must create an account in the app.
+default. Users must create an account in the app. Login sessions are kept for
+seven days in an HTTP-only browser cookie. If the app is served over HTTPS,
+set `SECHA_AUTH_SECURE_COOKIE=true` so the cookie is only sent over HTTPS.
 
 ## Telemetry
 
