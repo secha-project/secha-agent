@@ -1,8 +1,8 @@
 from pydantic_ai import Agent
 
 from .deps import Deps
-from .tools.catalog_tools import browse_tables, describe_table, search_columns
-from .tools.query_tools import display_query_result, inspect_query_result, query_data
+from .tools.catalog_tools import catalog_toolset
+from .tools.query_tools import query_toolset
 
 agent = Agent(
     deps_type=Deps,
@@ -25,11 +25,5 @@ agent = Agent(
         display_query_result tool.
         """
     ),
+    toolsets=[catalog_toolset, query_toolset],
 )
-
-agent.tool(browse_tables)
-agent.tool(search_columns)
-agent.tool(describe_table)
-agent.tool(retries=3, sequential=True)(query_data)
-agent.tool(sequential=True)(inspect_query_result)
-agent.tool(sequential=True)(display_query_result)

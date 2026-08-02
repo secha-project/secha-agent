@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pydantic_ai import ModelRetry, RunContext, ToolReturn
+from pydantic_ai.toolsets import FunctionToolset
 
 from ..artifacts.base import (
     ArtifactRef,
@@ -14,7 +15,10 @@ from ..models import InspectQueryResult, QueryDataResult
 from ..spark import concise_spark_error, spark_error_type
 from ..sql_safety import ReadOnlySqlError, require_read_only_sql
 
+query_toolset = FunctionToolset[Deps]()
 
+
+@query_toolset.tool(retries=3, sequential=True)
 async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
     """Run Spark SQL and preview its first 10 rows and columns.
 
@@ -70,6 +74,7 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
     )
 
 
+@query_toolset.tool(sequential=True)
 async def inspect_query_result(
     ctx: RunContext[Deps],
     ref: ArtifactRef,
@@ -118,6 +123,7 @@ async def inspect_query_result(
     )
 
 
+@query_toolset.tool(sequential=True)
 async def display_query_result(
     ctx: RunContext[Deps],
     ref: ArtifactRef,

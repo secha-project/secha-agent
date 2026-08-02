@@ -4,6 +4,7 @@ import re
 from urllib.error import HTTPError
 
 from pydantic_ai import ModelRetry, RunContext
+from pydantic_ai.toolsets import FunctionToolset
 
 from ..catalog import parse_columns
 from ..deps import Deps
@@ -14,6 +15,8 @@ from ..models import (
     SearchColumnsResult,
     TableSummary,
 )
+
+catalog_toolset = FunctionToolset[Deps]()
 
 
 def _truncate_description(
@@ -46,6 +49,7 @@ def _full_table_name(
     return f"{catalog_name}.{resolved_table_name}"
 
 
+@catalog_toolset.tool
 def browse_tables(ctx: RunContext[Deps]) -> BrowseTablesResult:
     """List tables in the configured schema with canonical names and short descriptions.
 
@@ -67,6 +71,7 @@ def browse_tables(ctx: RunContext[Deps]) -> BrowseTablesResult:
     )
 
 
+@catalog_toolset.tool
 def search_columns(
     ctx: RunContext[Deps],
     table_name: str,
@@ -138,6 +143,7 @@ def search_columns(
     )
 
 
+@catalog_toolset.tool
 def describe_table(
     ctx: RunContext[Deps],
     table_name: str,
