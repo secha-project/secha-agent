@@ -1,21 +1,29 @@
 import argparse
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from pydantic_ai import ModelSettings, UsageLimits
 
 from .agent import agent
+from .artifacts.base import Artifact, ArtifactContext
 from .catalog import UnityCatalogClient
 from .config import AgentConfig
 from .deps import Deps
 from .providers import create_model
-from .query_results import QueryResultRegistry
 from .spark import get_spark_session
 
 
-def run(prompt: str, config: AgentConfig | None = None) -> str:
+@dataclass(frozen=True)
+class AgentOutcome:
+    output: str
+    artifacts: tuple[Artifact, ...]
+
+
+def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
     config = config or AgentConfig()  # type: ignore[call-arg]
     spark = get_spark_session(config)
+    artifact_context = ArtifactContext()
     deps = Deps(
         spark=spark,
         catalog=UnityCatalogClient(
@@ -25,7 +33,7 @@ def run(prompt: str, config: AgentConfig | None = None) -> str:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
-        result_registry=QueryResultRegistry(),
+        artifact_context=artifact_context,
     )
     result = agent.run_sync(
         prompt,
@@ -34,7 +42,10 @@ def run(prompt: str, config: AgentConfig | None = None) -> str:
         model_settings=ModelSettings(temperature=config.temperature),
         usage_limits=UsageLimits(request_limit=config.request_limit),
     )
-    return result.output
+    return AgentOutcome(
+        output=result.output,
+        artifacts=artifact_context.published_artifacts,
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -53,7 +64,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     if not prompt:
         parser.error("provide a prompt argument or pipe a prompt on stdin")
 
-    print(run(prompt))
+    print(run(prompt).output)
 
 
 if __name__ == "__main__":

@@ -14,17 +14,10 @@ from pydantic_ai import (
     UsageLimits,
 )
 
+from src.agent.artifacts.base import ArtifactContext, ArtifactRef
 from src.agent.deps import Deps
-from src.app.models import TableDisplayPart, ToolDisplayPart
+from src.app.models import ArtifactDisplayPart, ToolDisplayPart
 from src.app.streaming import stream_agent_response
-
-
-class MaterializedDataframe:
-    def limit(self, _value: int) -> "MaterializedDataframe":
-        return self
-
-    def toPandas(self) -> list[dict[str, int]]:
-        return [{"id": 1}]
 
 
 class TaggedSpark:
@@ -33,11 +26,6 @@ class TaggedSpark:
 
     def removeTag(self, _tag: str) -> None:
         pass
-
-
-class ResultRegistryStub:
-    def resolve(self, _ref: str) -> MaterializedDataframe:
-        return MaterializedDataframe()
 
 
 class StatusContainer:
@@ -83,6 +71,9 @@ class StreamingContainer:
 
 
 class AgentStub:
+    def __init__(self, artifact_ref: ArtifactRef) -> None:
+        self.artifact_ref = artifact_ref
+
     @asynccontextmanager
     async def run_stream_events(
         self,
@@ -102,10 +93,7 @@ class AgentStub:
                     tool_name="display_query_result",
                     content="displayed",
                     tool_call_id="call-1",
-                    metadata={
-                        "ui_kind": "dataframe",
-                        "dataframe_ref": "df-1",
-                    },
+                    metadata=self.artifact_ref,
                 )
             )
             yield AgentRunResultEvent(AgentRunResult(output="done"))
@@ -113,12 +101,18 @@ class AgentStub:
         yield events()
 
 
-def test_stream_returns_owned_assistant_and_pending_artifacts() -> None:
+def test_stream_returns_owned_assistant_and_pending_artifacts(
+    make_table_artifact: Any,
+) -> None:
+    artifact_context = ArtifactContext()
+    artifact = make_table_artifact([{"id": 1}])
+    artifact_context.registry.add(artifact)
+    artifact_ref = asyncio.run(artifact_context.publish(artifact.ref))
     deps = cast(
         Deps,
         SimpleNamespace(
             spark=TaggedSpark(),
-            result_registry=ResultRegistryStub(),
+            artifact_context=artifact_context,
         ),
     )
     container = StreamingContainer()
@@ -128,7 +122,7 @@ def test_stream_returns_owned_assistant_and_pending_artifacts() -> None:
             prompt="show rows",
             message_history=[],
             deps=deps,
-            agent_instance=AgentStub(),
+            agent_instance=AgentStub(artifact_ref),
             model=object(),
             model_settings=ModelSettings(),
             usage_limits=UsageLimits(),
@@ -140,8 +134,8 @@ def test_stream_returns_owned_assistant_and_pending_artifacts() -> None:
     assert container.status_args == ("Used display query result",)
     assert container.status_kwargs["type"] == "compact"
     assert container.status_container.container_kwargs == {"gap": "xsmall"}
-    assert len(result.snapshots) == 1
+    assert len(result.artifacts) == 1
     assert isinstance(result.assistant_message.parts[0], ToolDisplayPart)
-    table_part = result.assistant_message.parts[1]
-    assert isinstance(table_part, TableDisplayPart)
-    assert table_part.artifact_id == result.snapshots[0].id
+    artifact_part = result.assistant_message.parts[1]
+    assert isinstance(artifact_part, ArtifactDisplayPart)
+    assert artifact_part.artifact_id == result.artifacts[0].id

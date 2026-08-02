@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from pydantic_ai import ModelRetry, RunContext, ToolReturn
 
+from ..artifacts.base import (
+    ArtifactRef,
+    ArtifactSourceUnavailableError,
+    UnexpectedArtifactSourceTypeError,
+    UnknownArtifactError,
+)
+from ..artifacts.table import SparkTableSource
 from ..deps import Deps
 from ..models import InspectQueryResult, QueryDataResult
-from ..query_results import (
-    UnknownQueryResultReferenceError,
-    render_result_preview,
-)
-from ..runtime import run_spark_with_timeout
 from ..spark import concise_spark_error, spark_error_type
 from ..sql_safety import ReadOnlySqlError, require_read_only_sql
 
@@ -17,7 +19,7 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
     """Run Spark SQL and preview its first 10 rows and columns.
 
     Use this for questions about row data, calculations, aggregates, or data
-    values. This tool does not display data to the user, if the user asks to see or 
+    values. This tool does not display data to the user, if the user asks to see or
     download data, pass the reference this tool returns to display data using
     display_query_result.
 
@@ -47,27 +49,30 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
             f"{concise_spark_error(exc)}. "
         ) from exc
 
+    source = SparkTableSource(
+        spark=deps.spark,
+        dataframe=result,
+    )
     try:
-        preview = await run_spark_with_timeout(
-            deps.spark,
-            lambda: render_result_preview(result),
-        )
+        preview = await source.preview()
     except Exception as exc:
         raise ModelRetry(
             "SQL execution failed while reading the preview "
             f"({spark_error_type(exc)}): {concise_spark_error(exc)}. "
         ) from exc
 
-    ref = deps.result_registry.create(result)
+    ref = deps.artifact_context.create(
+        source
+    )
     return QueryDataResult(
-        dataframe_ref=ref,
-        preview_markdown=preview,
+        artifact_ref=ref,
+        preview_markdown=preview.to_markdown(),
     )
 
 
 async def inspect_query_result(
     ctx: RunContext[Deps],
-    ref: str,
+    ref: ArtifactRef,
     start_row: int = 1,
     end_row: int | None = None,
     column_names: list[str] | None = None,
@@ -86,35 +91,21 @@ async def inspect_query_result(
     """
     deps = ctx.deps
     try:
-        result = deps.result_registry.resolve(ref)
-    except UnknownQueryResultReferenceError as exc:
+        source = deps.artifact_context.resolve_source(ref, SparkTableSource)
+    except (UnknownArtifactError, ArtifactSourceUnavailableError) as exc:
         raise ModelRetry(
-            f"Query-result reference {ref!r} is stale and no longer exists "
-            "in memory. Call query_data again to create a new reference; "
-            "do not retry with the stale reference."
+            f"The live source for table artifact {ref.artifact_id!r} is no "
+            "longer available. Call query_data again to create a new artifact; "
+            "do not retry with this reference."
         ) from exc
-    if column_names:
-        available_columns = result.schema.fieldNames()
-        unknown_columns = [
-            column_name
-            for column_name in column_names
-            if column_name not in available_columns
-        ]
-        if unknown_columns:
-            raise ModelRetry(
-                f"Unknown result columns: {', '.join(unknown_columns)}. "
-                f"Available columns: {', '.join(available_columns)}."
-            )
+    except UnexpectedArtifactSourceTypeError as exc:
+        raise ModelRetry(str(exc)) from exc
 
     try:
-        preview = await run_spark_with_timeout(
-            deps.spark,
-            lambda: render_result_preview(
-                result,
-                start_row=start_row,
-                end_row=end_row,
-                column_names=column_names,
-            ),
+        preview = await source.preview(
+            start_row=start_row,
+            end_row=end_row,
+            column_names=column_names,
         )
     except Exception as exc:
         raise ModelRetry(
@@ -122,14 +113,14 @@ async def inspect_query_result(
             f"({spark_error_type(exc)}): {concise_spark_error(exc)}."
         ) from exc
     return InspectQueryResult(
-        dataframe_ref=ref,
-        preview_markdown=preview,
+        artifact_ref=ref,
+        preview_markdown=preview.to_markdown(),
     )
 
 
 async def display_query_result(
     ctx: RunContext[Deps],
-    ref: str,
+    ref: ArtifactRef,
 ) -> ToolReturn[str]:
     """Display a saved query result as a table in the user interface.
 
@@ -143,23 +134,26 @@ async def display_query_result(
         ref: A result reference available in the current live session.
     """
     deps = ctx.deps
-    try:
-        result = deps.result_registry.resolve(ref)
-    except UnknownQueryResultReferenceError as exc:
+    if ref.artifact_kind != "table":
         raise ModelRetry(
-            f"Query-result reference {ref!r} is stale and no longer exists "
-            "in memory. Call query_data again to create a new reference; "
-            "do not retry with the stale reference."
+            f"Artifact {ref.artifact_id!r} is not a table artifact."
+        )
+    try:
+        artifact_ref = await deps.artifact_context.publish(ref)
+    except (UnknownArtifactError, ArtifactSourceUnavailableError) as exc:
+        raise ModelRetry(
+            f"Table artifact {ref.artifact_id!r} is no longer available in "
+            "memory. Call query_data again to create a new artifact; "
+            "do not retry with this reference."
         ) from exc
-
-    if deps.result_exporter is not None:
-        await deps.result_exporter(deps.spark, result)
+    except TypeError as exc:
+        raise ModelRetry(str(exc)) from exc
 
     return ToolReturn(
         return_value=(
-            f"Query result {ref} was displayed to the user as a table. "
+            f"Table artifact {ref.artifact_id} was published. "
             "Continue with any explanation or other requested parts of the answer. "
-            "If nothing else was requested, briefly confirm the display."
+            "If nothing else was requested, briefly confirm that it is available."
         ),
-        metadata={"ui_kind": "dataframe", "dataframe_ref": ref},
+        metadata=artifact_ref,
     )

@@ -21,14 +21,14 @@ from pydantic_ai import (
 )
 
 from src.agent.deps import Deps
+from src.agent.artifacts.base import Artifact
 
+from .artifact_renderer import ArtifactRenderer
 from .models import (
     AssistantDisplayMessage,
     TextDisplayPart,
     ToolDisplayPart,
 )
-from .query_results import ResultDisplayHandler
-from .table_artifacts import TableSnapshot
 
 TOOL_TO_DISPLAY_NAME = {
     "browse_tables": "browse tables",
@@ -44,7 +44,7 @@ TOOL_TO_DISPLAY_NAME = {
 class StreamResult:
     assistant_message: AssistantDisplayMessage
     model_messages: list[ModelMessage]
-    snapshots: list[TableSnapshot]
+    artifacts: tuple[Artifact, ...]
 
 
 @dataclass(frozen=True)
@@ -133,7 +133,7 @@ async def stream_agent_response(
 ) -> StreamResult | None:
     """Render ordered run events and return output only after terminal success."""
     assistant_message = AssistantDisplayMessage()
-    result_display = ResultDisplayHandler(deps.spark, deps.result_registry)
+    artifact_renderer = ArtifactRenderer(deps.artifact_context.registry)
     text_parts: dict[int, tuple[TextDisplayPart, Any]] = {}
     tool_parts: dict[str, tuple[ToolDisplayPart, ToolStatusView]] = {}
 
@@ -201,17 +201,17 @@ async def stream_agent_response(
 
                 output = json_for_display(event.part.content)
                 try:
-                    table_part = await result_display.render_tool_result(
+                    artifact_part = artifact_renderer.render_tool_result(
                         event.part.metadata,
                         container,
                     )
-                    if table_part is not None:
-                        assistant_message.parts.append(table_part)
+                    if artifact_part is not None:
+                        assistant_message.parts.append(artifact_part)
                 except Exception as exc:
                     _finish_tool(
                         view,
                         part,
-                        output=f"Failed to display table: {exc}",
+                        output=f"Failed to display artifact: {exc}",
                         state="error",
                     )
                     raise
@@ -227,7 +227,7 @@ async def stream_agent_response(
                 return StreamResult(
                     assistant_message=assistant_message,
                     model_messages=event.result.all_messages(),
-                    snapshots=result_display.snapshots,
+                    artifacts=deps.artifact_context.published_artifacts,
                 )
 
     return None

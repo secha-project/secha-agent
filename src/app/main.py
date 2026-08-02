@@ -11,12 +11,18 @@ from pydantic_ai import ModelSettings, UsageLimits
 from pyspark.sql import SparkSession
 
 from src.agent.agent import agent
+from src.agent.artifacts.base import (
+    DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
+    ArtifactContext,
+    ArtifactPolicy,
+    ArtifactRegistry,
+)
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
 from src.agent.providers import create_model
-from src.agent.query_results import QueryResultRegistry
 from src.agent.spark import get_spark_session
+from src.app.artifact_renderer import ArtifactRenderer
 from src.app.auth import (
     AUTH_COOKIE_NAME,
     AUTH_LOGOUT_ENDPOINT,
@@ -27,7 +33,6 @@ from src.app.models import (
     DisplayMessage,
     User,
 )
-from src.app.query_results import render_snapshot
 from src.app.storage import (
     ArtifactNotFoundError,
     ChatRepository,
@@ -53,7 +58,7 @@ AUTH_SESSION_KEYS = (
     "current_conversation_id",
     "display_messages",
     "model_messages",
-    "result_registry",
+    "artifact_registry",
 )
 
 APP_STYLES = """
@@ -388,6 +393,7 @@ def render_message(
     message: DisplayMessage,
     *,
     resources: AppResources,
+    artifact_renderer: ArtifactRenderer,
     user_id: str,
     conversation_id: str,
 ) -> None:
@@ -403,19 +409,19 @@ def render_message(
             container.markdown(part.content)
         elif part.kind == "tool":
             render_tool(container, part)
-        elif part.kind == "dataframe":
+        elif part.kind == "artifact":
             try:
-                snapshot = resources.repository.load_artifact(
+                artifact = resources.repository.load_artifact(
                     user_id,
                     conversation_id,
                     part.artifact_id,
                 )
             except ArtifactNotFoundError:
-                container.error("This saved table snapshot is unavailable.")
+                container.error("This saved artifact is unavailable.")
             else:
-                render_snapshot(
+                artifact_renderer.render(
                     container,
-                    snapshot,
+                    artifact,
                     key=f"download-history-{part.artifact_id}",
                 )
 
@@ -436,7 +442,7 @@ def activate_conversation(
     st.session_state.current_conversation_id = conversation.id
     st.session_state.display_messages = conversation.display_messages
     st.session_state.model_messages = conversation.model_messages
-    st.session_state.result_registry = QueryResultRegistry()
+    st.session_state.artifact_registry = ArtifactRegistry()
     st.query_params["chat"] = conversation.id
     return True
 
@@ -446,7 +452,7 @@ def start_new_conversation() -> None:
     st.session_state.current_conversation_id = None
     st.session_state.display_messages = []
     st.session_state.model_messages = []
-    st.session_state.result_registry = None
+    st.session_state.artifact_registry = None
     if "chat" in st.query_params:
         del st.query_params["chat"]
 
@@ -489,7 +495,7 @@ def _ensure_active_conversation(
 ) -> str | None:
     requested_id = st.query_params.get("chat")
     current_id = st.session_state.get("current_conversation_id")
-    registry = st.session_state.get("result_registry")
+    artifact_registry = st.session_state.get("artifact_registry")
 
     if requested_id:
         requested_id = str(requested_id)
@@ -497,7 +503,7 @@ def _ensure_active_conversation(
             requested_id == current_id
             and isinstance(st.session_state.get("display_messages"), list)
             and isinstance(st.session_state.get("model_messages"), list)
-            and isinstance(registry, QueryResultRegistry)
+            and isinstance(artifact_registry, ArtifactRegistry)
         )
         if not state_is_loaded:
             if activate_conversation(resources, user_id, requested_id):
@@ -510,13 +516,13 @@ def _ensure_active_conversation(
         if current_id is None:
             st.session_state.setdefault("display_messages", [])
             st.session_state.setdefault("model_messages", [])
-            st.session_state["result_registry"] = None
+            st.session_state["artifact_registry"] = None
             return None
         if isinstance(current_id, str):
             state_is_loaded = (
                 isinstance(st.session_state.get("display_messages"), list)
                 and isinstance(st.session_state.get("model_messages"), list)
-                and isinstance(registry, QueryResultRegistry)
+                and isinstance(artifact_registry, ArtifactRegistry)
             )
             if state_is_loaded or activate_conversation(
                 resources, user_id, current_id
@@ -606,14 +612,19 @@ def _render_sidebar(
 
 def _fresh_deps(
     resources: AppResources,
-    registry: QueryResultRegistry,
+    artifact_registry: ArtifactRegistry,
 ) -> Deps:
     return Deps(
         spark=resources.spark,
         catalog=resources.catalog,
         schema_name=resources.config.schema_name,
         table_column_page_size=resources.config.table_column_page_size,
-        result_registry=registry,
+        artifact_context=ArtifactContext(
+            registry=artifact_registry,
+            policy=ArtifactPolicy(
+                table_max_rows=DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
+            ),
+        ),
     )
 
 
@@ -631,6 +642,12 @@ def run_app() -> None:
 
     resources = load_resources()
     conversation_id = _ensure_active_conversation(resources, user.id)
+    artifact_renderer: ArtifactRenderer | None = None
+    if conversation_id is not None:
+        artifact_registry = st.session_state.artifact_registry
+        if not isinstance(artifact_registry, ArtifactRegistry):
+            raise RuntimeError("The active conversation has no artifact registry.")
+        artifact_renderer = ArtifactRenderer(artifact_registry)
 
     _render_sidebar(resources, user)
 
@@ -654,10 +671,13 @@ def run_app() -> None:
                 width=720,
             )
     else:
+        if artifact_renderer is None:
+            raise RuntimeError("The active conversation has no artifact renderer.")
         for message in st.session_state.display_messages:
             render_message(
                 message,
                 resources=resources,
+                artifact_renderer=artifact_renderer,
                 user_id=user.id,
                 conversation_id=conversation_id,
             )
@@ -671,6 +691,11 @@ def run_app() -> None:
 
     if conversation_id is None:
         conversation_id = st.session_state.current_conversation_id
+    if artifact_renderer is None:
+        artifact_registry = st.session_state.artifact_registry
+        if not isinstance(artifact_registry, ArtifactRegistry):
+            raise RuntimeError("The active conversation has no artifact registry.")
+        artifact_renderer = ArtifactRenderer(artifact_registry)
 
     # First save: the submitted user message is durable before agent work begins.
     saved = resources.repository.append_user(
@@ -683,15 +708,13 @@ def run_app() -> None:
     render_message(
         saved.display_messages[-1],
         resources=resources,
+        artifact_renderer=artifact_renderer,
         user_id=user.id,
         conversation_id=conversation_id,
     )
 
     container = st.chat_message("assistant")
-    registry = st.session_state.result_registry
-    if not isinstance(registry, QueryResultRegistry):
-        raise RuntimeError("The active conversation has no result registry.")
-    deps = _fresh_deps(resources, registry)
+    deps = _fresh_deps(resources, artifact_renderer.registry)
     try:
         result = asyncio.run(
             stream_agent_response(
@@ -720,7 +743,7 @@ def run_app() -> None:
         conversation_id,
         result.assistant_message,
         result.model_messages,
-        result.snapshots,
+        result.artifacts,
     )
     st.session_state.display_messages = completed.display_messages
     st.session_state.model_messages = completed.model_messages

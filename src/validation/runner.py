@@ -11,11 +11,11 @@ from pydantic_ai.retries import RetryConfig
 from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from src.agent.agent import agent
+from src.agent.artifacts.base import ArtifactContext, ArtifactPolicy
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
 from src.agent.providers import create_model
-from src.agent.query_results import QueryResultRegistry
 from src.agent.spark import get_spark_session
 from src.validation.config import BENCHMARKS_DIR, RESULTS_DIR, BenchmarkRunConfig
 from src.validation.eval_models import (
@@ -31,7 +31,7 @@ from src.validation.evaluators import (
     ValidateTableValues,
     ValidateTextOutput,
 )
-from src.validation.lifecycle import LifecycleFactory, export_evaluation_dataframe
+from src.validation.lifecycle import LifecycleFactory, write_evaluation_artifacts
 from src.validation.reporting import BenchmarkReport, save_report
 
 CUSTOM_EVALUATOR_TYPES = (
@@ -50,17 +50,22 @@ class AgentTask:
     usage_limits: UsageLimits
 
     def __call__(self, prompt: str) -> str:
+        artifact_context = ArtifactContext(
+            policy=ArtifactPolicy(table_max_rows=None),
+        )
         run_deps = replace(
             self.deps,
-            result_registry=QueryResultRegistry(),
+            artifact_context=artifact_context,
         )
-        return agent.run_sync(
+        result = agent.run_sync(
             prompt,
             deps=run_deps,
             model=self.model,
             model_settings=self.model_settings,
             usage_limits=self.usage_limits,
-        ).output
+        )
+        write_evaluation_artifacts(artifact_context.published_artifacts)
+        return result.output
 
 
 def configure_observability(config: AgentConfig) -> None:
@@ -84,8 +89,6 @@ def create_dependencies(config: AgentConfig) -> Deps:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
-        result_registry=QueryResultRegistry(),
-        result_exporter=export_evaluation_dataframe,
     )
 
 

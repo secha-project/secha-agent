@@ -15,6 +15,12 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from pydantic_ai import ModelMessage, ModelMessagesTypeAdapter
 
+from src.agent.artifacts.base import (
+    Artifact,
+    ArtifactRef,
+)
+from src.agent.artifacts.table import ARROW_STREAM_MEDIA_TYPE, TableContent
+
 from .models import (
     DISPLAY_MESSAGES_ADAPTER,
     AssistantDisplayMessage,
@@ -24,7 +30,6 @@ from .models import (
     User,
     UserDisplayMessage,
 )
-from .table_artifacts import TableSnapshot
 
 DEFAULT_DB_PATH = Path(".data/secha_chat.sqlite3")
 MIN_PASSWORD_LENGTH = 8
@@ -147,13 +152,13 @@ class ChatRepository:
                 CREATE INDEX IF NOT EXISTS auth_sessions_user_idx
                     ON auth_sessions (user_id, expires_at);
 
-                CREATE TABLE IF NOT EXISTS dataframe_artifacts (
+                CREATE TABLE IF NOT EXISTS artifacts (
                     id TEXT PRIMARY KEY,
                     conversation_id TEXT NOT NULL,
-                    arrow_bytes BLOB NOT NULL,
-                    visible_row_count INTEGER NOT NULL
-                        CHECK (visible_row_count >= 0),
-                    truncated INTEGER NOT NULL CHECK (truncated IN (0, 1)),
+                    kind TEXT NOT NULL,
+                    media_type TEXT NOT NULL,
+                    payload BLOB NOT NULL,
+                    metadata_json TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     FOREIGN KEY (conversation_id)
                         REFERENCES conversations (id)
@@ -161,11 +166,9 @@ class ChatRepository:
                 );
 
                 CREATE INDEX IF NOT EXISTS artifacts_conversation_idx
-                    ON dataframe_artifacts (conversation_id, id);
+                    ON artifacts (conversation_id, id);
 
-                DROP TABLE IF EXISTS dataframe_queries;
-
-                PRAGMA user_version = 4;
+                PRAGMA user_version = 5;
                 """
             )
         self.db_path.chmod(0o600)
@@ -498,9 +501,9 @@ class ChatRepository:
         conversation_id: str,
         assistant: AssistantDisplayMessage,
         model_messages: list[ModelMessage],
-        snapshots: Iterable[TableSnapshot] = (),
+        artifacts: Iterable[Artifact] = (),
     ) -> Conversation:
-        """Second save: atomically persist a terminal turn and table snapshots."""
+        """Second save: atomically persist a terminal turn and its artifacts."""
         conversation = self.load_conversation(user_id, conversation_id)
         display_messages = [*conversation.display_messages, assistant]
         now = self._now()
@@ -518,11 +521,11 @@ class ChatRepository:
                 serialized_model,
                 now,
             )
-            for snapshot in snapshots:
+            for artifact in artifacts:
                 self._insert_artifact(
                     connection,
                     conversation_id,
-                    snapshot,
+                    artifact,
                     now,
                 )
         return self.load_conversation(user_id, conversation_id)
@@ -531,8 +534,8 @@ class ChatRepository:
         self,
         user_id: str,
         conversation_id: str,
-        artifact: TableSnapshot,
-    ) -> TableSnapshot:
+        artifact: Artifact,
+    ) -> Artifact:
         with self._connect() as connection:
             owner = connection.execute(
                 """
@@ -555,38 +558,73 @@ class ChatRepository:
     def _insert_artifact(
         connection: sqlite3.Connection,
         conversation_id: str,
-        artifact: TableSnapshot,
+        artifact: Artifact,
         created_at: str,
     ) -> None:
-        connection.execute(
-            """
-            INSERT INTO dataframe_artifacts (
-                id, conversation_id, arrow_bytes, visible_row_count,
-                truncated, created_at
+        content = artifact.require_content()
+        if isinstance(content, TableContent):
+            payload = content.arrow_bytes
+            metadata = {
+                "row_count": content.row_count,
+                "truncated": content.truncated,
+            }
+        else:
+            raise TypeError(
+                f"SQLite storage does not support {artifact.kind!r} artifacts yet."
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+        metadata_json = json.dumps(metadata)
+        cursor = connection.execute(
+            """
+            INSERT INTO artifacts (
+                id, conversation_id, kind, media_type,
+                payload, metadata_json, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO NOTHING
             """,
             (
                 artifact.id,
                 conversation_id,
-                artifact.arrow_bytes,
-                artifact.visible_row_count,
-                int(artifact.truncated),
+                artifact.kind,
+                content.media_type,
+                payload,
+                metadata_json,
                 created_at,
             ),
         )
+        if cursor.rowcount == 1:
+            return
+
+        existing = connection.execute(
+            """
+            SELECT conversation_id, kind, media_type, payload, metadata_json
+            FROM artifacts
+            WHERE id = ?
+            """,
+            (artifact.id,),
+        ).fetchone()
+        if existing is None or (
+            existing["conversation_id"] != conversation_id
+            or existing["kind"] != artifact.kind
+            or existing["media_type"] != content.media_type
+            or bytes(existing["payload"]) != payload
+            or json.loads(existing["metadata_json"]) != metadata
+        ):
+            raise sqlite3.IntegrityError(
+                f"Artifact id {artifact.id!r} is already used by different content."
+            )
 
     def load_artifact(
         self,
         user_id: str,
         conversation_id: str,
         artifact_id: str,
-    ) -> TableSnapshot:
+    ) -> Artifact:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT a.id, a.arrow_bytes, a.visible_row_count, a.truncated
-                FROM dataframe_artifacts AS a
+                SELECT a.id, a.kind, a.media_type, a.payload, a.metadata_json
+                FROM artifacts AS a
                 JOIN conversations AS c ON c.id = a.conversation_id
                 WHERE c.user_id = ?
                   AND a.conversation_id = ?
@@ -596,9 +634,21 @@ class ChatRepository:
             ).fetchone()
         if row is None:
             raise ArtifactNotFoundError(artifact_id)
-        return TableSnapshot(
-            id=row["id"],
-            arrow_bytes=bytes(row["arrow_bytes"]),
-            visible_row_count=row["visible_row_count"],
-            truncated=bool(row["truncated"]),
+        if row["kind"] == "table" and row["media_type"] == ARROW_STREAM_MEDIA_TYPE:
+            metadata = json.loads(row["metadata_json"])
+            ref = ArtifactRef(
+                artifact_id=row["id"],
+                artifact_kind="table",
+            )
+            return Artifact(
+                ref=ref,
+                content=TableContent(
+                    arrow_bytes=bytes(row["payload"]),
+                    row_count=int(metadata["row_count"]),
+                    truncated=bool(metadata["truncated"]),
+                ),
+            )
+        raise TypeError(
+            f"SQLite storage cannot load artifact kind {row['kind']!r} "
+            f"with media type {row['media_type']!r}."
         )

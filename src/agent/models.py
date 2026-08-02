@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from .artifacts.base import ArtifactRef
+
 
 class TableSummary(BaseModel):
     name: str
@@ -41,10 +43,10 @@ class DescribeTableResult(BaseModel):
 
 
 class QueryDataResult(BaseModel):
-    dataframe_ref: str
+    artifact_ref: ArtifactRef
     preview_markdown: str
 
 
 class InspectQueryResult(BaseModel):
-    dataframe_ref: str
+    artifact_ref: ArtifactRef
     preview_markdown: str

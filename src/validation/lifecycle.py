@@ -1,37 +1,63 @@
 from contextvars import ContextVar, Token
+from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic_evals import set_eval_attribute
 from pydantic_evals.lifecycle import CaseLifecycle
-from pyspark.sql import DataFrame, SparkSession
 
-from src.agent.runtime import run_spark_with_timeout
+from src.agent.artifacts.base import Artifact
+from src.agent.artifacts.table import TableContent
 from src.validation.eval_models import BenchmarkCase, BenchmarkOutput, CaseMetadata
 
-_evaluation_csv_path = ContextVar[Path | None](
-    "evaluation_csv_path",
+
+@dataclass(frozen=True)
+class EvaluationArtifactScope:
+    directory: Path
+    basename: str
+
+
+_evaluation_artifact_scope = ContextVar[EvaluationArtifactScope | None](
+    "evaluation_artifact_scope",
     default=None,
 )
 
 
-async def export_evaluation_dataframe(
-    spark: SparkSession,
-    dataframe: DataFrame,
-) -> None:
-    path = _evaluation_csv_path.get()
-    if path is None:
-        raise RuntimeError("No CSV artifact path was configured for this evaluation case.")
+def write_evaluation_artifacts(
+    artifacts: tuple[Artifact, ...],
+) -> tuple[Path, ...]:
+    """Write one successful evaluation run's in-memory artifacts to disk."""
+    if not artifacts:
+        return ()
 
-    materialized = await run_spark_with_timeout(
-        spark,
-        dataframe.toPandas,
-    )
-    materialized.to_csv(path, index=False)
-    set_eval_attribute("csv_path", str(path))
+    scope = _evaluation_artifact_scope.get()
+    if scope is None:
+        raise RuntimeError("No artifact scope was configured for this evaluation case.")
+
+    paths: list[Path] = []
+    table_paths: list[Path] = []
+    for index, artifact in enumerate(artifacts, start=1):
+        suffix = "" if index == 1 else f"_{index}"
+        content = artifact.require_content()
+        if isinstance(content, TableContent):
+            path = scope.directory / f"{scope.basename}{suffix}.csv"
+            path.write_bytes(content.to_csv())
+            table_paths.append(path)
+        else:
+            raise TypeError(
+                f"Evaluation output does not support {artifact.kind!r} artifacts yet."
+            )
+        paths.append(path)
+
+    set_eval_attribute("artifact_paths", [str(path) for path in paths])
+    if table_paths:
+        # Keep the existing evaluator contract while the richer manifest allows
+        # additional artifacts to be added without another lifecycle redesign.
+        set_eval_attribute("csv_path", str(table_paths[0]))
+    return tuple(paths)
 
 
 class EvaluationLifecycle(CaseLifecycle[str, BenchmarkOutput, CaseMetadata]):
-    """Configure the CSV output path for one evaluation case."""
+    """Configure the artifact scope for one concurrent evaluation case."""
 
     def __init__(
         self,
@@ -43,30 +69,34 @@ class EvaluationLifecycle(CaseLifecycle[str, BenchmarkOutput, CaseMetadata]):
         super().__init__(case)
         self.artifacts_dir = artifacts_dir
         self.repetition_index = repetition_index
-        self.csv_path_token: Token[Path | None] | None = None
+        self.artifact_scope_token: Token[EvaluationArtifactScope | None] | None = None
 
     async def setup(self) -> None:
         task_name = self.case.name
         if task_name is None:
-            raise ValueError("Evaluation cases must have names to store CSV artifacts.")
+            raise ValueError("Evaluation cases must have names to store artifacts.")
 
         artifact_name = (
             task_name
             if self.repetition_index is None
             else f"{task_name}_{self.repetition_index}"
         )
-        filename = f"{artifact_name}.csv"
-        if Path(filename).name != filename:
+        if Path(artifact_name).name != artifact_name:
             raise ValueError(
                 f"Evaluation case name {task_name!r} cannot be used "
                 "as an artifact name."
             )
-        self.csv_path_token = _evaluation_csv_path.set(self.artifacts_dir / filename)
+        self.artifact_scope_token = _evaluation_artifact_scope.set(
+            EvaluationArtifactScope(
+                directory=self.artifacts_dir,
+                basename=artifact_name,
+            )
+        )
 
     async def teardown(self, result: object) -> None:
-        if self.csv_path_token is not None:
-            _evaluation_csv_path.reset(self.csv_path_token)
-            self.csv_path_token = None
+        if self.artifact_scope_token is not None:
+            _evaluation_artifact_scope.reset(self.artifact_scope_token)
+            self.artifact_scope_token = None
 
 
 class LifecycleFactory:

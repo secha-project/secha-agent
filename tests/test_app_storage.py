@@ -16,7 +16,6 @@ from src.app.storage import (
     UsernameAlreadyExistsError,
     WeakPasswordError,
 )
-from src.app.table_artifacts import snapshot_table
 
 
 @pytest.fixture
@@ -106,6 +105,7 @@ def test_expired_auth_sessions_are_rejected(
 def test_user_ownership_for_conversations_and_artifacts(
     repository: ChatRepository,
     users: tuple[User, User],
+    make_table_artifact,
 ) -> None:
     alice, bob = users
     alpha = repository.create_conversation(alice.id)
@@ -113,7 +113,7 @@ def test_user_ownership_for_conversations_and_artifacts(
     with pytest.raises(ConversationNotFoundError):
         repository.load_conversation(bob.id, alpha.id)
 
-    artifact = snapshot_table([{"value": 1}])
+    artifact = make_table_artifact([{"value": 1}])
     repository.save_artifact(alice.id, alpha.id, artifact)
     with pytest.raises(ArtifactNotFoundError):
         repository.load_artifact(bob.id, alpha.id, artifact.id)
@@ -122,6 +122,7 @@ def test_user_ownership_for_conversations_and_artifacts(
 def test_user_and_completed_assistant_are_saved_in_two_steps(
     repository: ChatRepository,
     users: tuple[User, User],
+    make_table_artifact,
 ) -> None:
     alice, _ = users
     conversation = repository.create_conversation(alice.id)
@@ -137,7 +138,7 @@ def test_user_and_completed_assistant_are_saved_in_two_steps(
     model_history = [
         ModelRequest(parts=[UserPromptPart(content="Show measurements")])
     ]
-    artifact = snapshot_table([{"measurement": 1}])
+    artifact = make_table_artifact([{"measurement": 1}])
     completed = repository.commit_assistant(
         alice.id,
         conversation.id,
@@ -178,15 +179,20 @@ def test_conversation_appears_in_history_only_after_first_user_message(
 def test_assistant_and_artifacts_are_committed_atomically(
     repository: ChatRepository,
     users: tuple[User, User],
+    make_table_artifact,
 ) -> None:
     alice, _ = users
     conversation = repository.create_conversation(alice.id)
     repository.append_user(alice.id, conversation.id, "Show measurements")
-    duplicate_artifact = snapshot_table([{"measurement": 1}])
+    existing_artifact = make_table_artifact([{"measurement": 1}])
     repository.save_artifact(
         alice.id,
         conversation.id,
-        duplicate_artifact,
+        existing_artifact,
+    )
+    conflicting_artifact = make_table_artifact(
+        [{"measurement": 2}],
+        artifact_id=existing_artifact.id,
     )
 
     with pytest.raises(sqlite3.IntegrityError):
@@ -197,7 +203,7 @@ def test_assistant_and_artifacts_are_committed_atomically(
                 parts=[TextDisplayPart(content="Here are the measurements.")]
             ),
             [ModelRequest(parts=[UserPromptPart(content="Show measurements")])],
-            [duplicate_artifact],
+            [conflicting_artifact],
         )
 
     restored = repository.load_conversation(alice.id, conversation.id)
@@ -205,13 +211,33 @@ def test_assistant_and_artifacts_are_committed_atomically(
     assert restored.model_messages == []
 
 
+def test_persisting_the_same_logical_artifact_again_is_idempotent(
+    repository: ChatRepository,
+    users: tuple[User, User],
+    make_table_artifact,
+) -> None:
+    alice, _ = users
+    conversation = repository.create_conversation(alice.id)
+    artifact = make_table_artifact([{"measurement": 1}])
+    repository.save_artifact(alice.id, conversation.id, artifact)
+
+    repository.save_artifact(alice.id, conversation.id, artifact)
+
+    assert repository.load_artifact(
+        alice.id,
+        conversation.id,
+        artifact.id,
+    ) == artifact
+
+
 def test_delete_conversation_is_user_scoped_and_cascades(
     repository: ChatRepository,
     users: tuple[User, User],
+    make_table_artifact,
 ) -> None:
     alice, bob = users
     conversation = repository.create_conversation(alice.id)
-    artifact = snapshot_table([{"value": 1}])
+    artifact = make_table_artifact([{"value": 1}])
     repository.save_artifact(
         alice.id,
         conversation.id,
@@ -231,39 +257,3 @@ def test_delete_conversation_is_user_scoped_and_cascades(
             conversation.id,
             artifact.id,
         )
-
-
-def test_initialize_removes_legacy_query_recipes(tmp_path: Path) -> None:
-    db_path = tmp_path / "legacy.sqlite3"
-    with sqlite3.connect(db_path) as connection:
-        connection.execute(
-            """
-            CREATE TABLE dataframe_queries (
-                id INTEGER PRIMARY KEY,
-                conversation_id TEXT NOT NULL,
-                sql TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            )
-            """
-        )
-        connection.execute(
-            """
-            INSERT INTO dataframe_queries (conversation_id, sql, created_at)
-            VALUES ('old-conversation', 'SELECT 1', '2026-01-01')
-            """
-        )
-
-    ChatRepository(db_path).initialize()
-
-    with sqlite3.connect(db_path) as connection:
-        legacy_table = connection.execute(
-            """
-            SELECT 1
-            FROM sqlite_master
-            WHERE type = 'table' AND name = 'dataframe_queries'
-            """
-        ).fetchone()
-        schema_version = connection.execute("PRAGMA user_version").fetchone()[0]
-
-    assert legacy_table is None
-    assert schema_version == 4
