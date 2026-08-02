@@ -73,6 +73,12 @@ header {
 [data-testid="stMainBlockContainer"] {
     padding-top: 0 !important;
 }
+[data-testid="stMainBlockContainer"]:has([data-testid="stChatMessage"]) {
+    padding-top: clamp(4rem, 12dvh, 8rem) !important;
+}
+[data-testid="stChatMessage"] {
+    scroll-margin-top: clamp(4rem, 12dvh, 8rem);
+}
 [data-testid^="stChatMessageAvatar"] {
     display: none;
 }
@@ -177,6 +183,13 @@ div[class*="st-key-delete-conversation-"] button {
     min-height: 1.9rem;
     padding: 0;
     width: 1.9rem;
+}
+div[class*="st-key-conversation-row-"]:has(
+        div[class*="st-key-conversation-"] button[kind="primary"]
+    )
+    div[class*="st-key-delete-conversation-"]
+    button {
+    color: white !important;
 }
 div[class*="st-key-delete-conversation-"] button p {
     display: none;
