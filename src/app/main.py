@@ -642,7 +642,7 @@ def _fresh_deps(
 
 
 def run_app() -> None:
-    st.set_page_config(page_title="SECHA", page_icon="🗃️")
+    st.set_page_config(page_title="SECHA", page_icon=":material/battery_charging_full:")
     st.markdown(APP_STYLES, unsafe_allow_html=True)
     if "workspace" in st.query_params:
         del st.query_params["workspace"]
