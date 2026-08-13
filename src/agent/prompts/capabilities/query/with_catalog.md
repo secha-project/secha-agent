@@ -1,0 +1,1 @@
+Use catalog tools first for uncertain table, column, or device identifiers. Query directly when identifiers are already canonical. When the user asks to see or download rows, run the query and then display its artifact.

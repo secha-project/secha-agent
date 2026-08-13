@@ -4,6 +4,9 @@ agent:
     model_name: gpt-5.4-mini
   temperature: 0
   request_limit: 50
+  enabled_capabilities:
+    - catalog
+    - query
 
 dataset: power-quality-monitoring
 repetitions: 1

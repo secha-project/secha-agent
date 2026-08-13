@@ -35,8 +35,8 @@ def test_agent_task_uses_a_fresh_artifact_context_for_each_run(
         )
         return SimpleNamespace(output="answer")
 
-    monkeypatch.setattr(runner_module.agent, "run_sync", run_sync)
     task = AgentTask(
+        agent=cast(Any, SimpleNamespace(run_sync=run_sync)),
         deps=deps,
         model=cast(Any, object()),
         model_settings=cast(Any, object()),
@@ -72,13 +72,13 @@ def test_agent_task_writes_only_the_artifacts_from_that_run(
         asyncio.run(context.publish(artifact.ref))
         return SimpleNamespace(output="answer")
 
-    monkeypatch.setattr(runner_module.agent, "run_sync", run_sync)
     monkeypatch.setattr(
         runner_module,
         "write_evaluation_artifacts",
         lambda artifacts: written.append(artifacts),
     )
     task = AgentTask(
+        agent=cast(Any, SimpleNamespace(run_sync=run_sync)),
         deps=deps,
         model=cast(Any, object()),
         model_settings=cast(Any, object()),

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from pydantic_ai import ModelSettings, UsageLimits
 
-from .agent import agent
+from .agent import create_agent
 from .artifacts.base import Artifact, ArtifactContext
 from .catalog import UnityCatalogClient
 from .config import AgentConfig
@@ -35,6 +35,7 @@ def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
         table_column_page_size=config.table_column_page_size,
         artifact_context=artifact_context,
     )
+    agent = create_agent(config.enabled_capabilities)
     result = agent.run_sync(
         prompt,
         deps=deps,

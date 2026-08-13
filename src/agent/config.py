@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .profiles import DEFAULT_CAPABILITIES, CapabilityName
+
 
 @dataclass(frozen=True)
 class TuniInferenceConfig:
@@ -33,6 +35,7 @@ class AgentConfig(BaseSettings):
     openai: OpenAIConfig | None = None
     temperature: float = 0.0
     request_limit: int = 50
+    enabled_capabilities: tuple[CapabilityName, ...] = DEFAULT_CAPABILITIES
     otel_exporter_otlp_endpoint: str
     logfire_service_name: str = "secha-agent"
 
@@ -66,6 +69,7 @@ class AgentConfig(BaseSettings):
             "provider_settings": provider_settings,
             "temperature": self.temperature,
             "request_limit": self.request_limit,
+            "enabled_capabilities": list(self.enabled_capabilities),
             "catalog_name": self.catalog_name,
             "schema_name": self.schema_name,
             "table_column_page_size": self.table_column_page_size,

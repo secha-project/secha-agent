@@ -4,13 +4,13 @@ from datetime import datetime
 from pathlib import Path
 
 import logfire
-from pydantic_ai import ModelSettings, UsageLimits
+from pydantic_ai import Agent, ModelSettings, UsageLimits
 from pydantic_ai.exceptions import ModelAPIError
 from pydantic_ai.models import Model
 from pydantic_ai.retries import RetryConfig
 from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 
-from src.agent.agent import agent
+from src.agent.agent import create_agent
 from src.agent.artifacts.base import ArtifactContext, ArtifactPolicy
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
@@ -44,6 +44,7 @@ CUSTOM_EVALUATOR_TYPES = (
 
 @dataclass(frozen=True)
 class AgentTask:
+    agent: Agent[Deps, str]
     deps: Deps
     model: Model
     model_settings: ModelSettings
@@ -57,7 +58,7 @@ class AgentTask:
             self.deps,
             artifact_context=artifact_context,
         )
-        result = agent.run_sync(
+        result = self.agent.run_sync(
             prompt,
             deps=run_deps,
             model=self.model,
@@ -168,6 +169,7 @@ def run_benchmark(run_name: str, run_config: BenchmarkRunConfig) -> Path:
     configure_observability(run_config.agent)
 
     task = AgentTask(
+        agent=create_agent(run_config.agent.enabled_capabilities),
         deps=create_dependencies(run_config.agent),
         model=create_model(run_config.agent),
         model_settings=ModelSettings(temperature=run_config.agent.temperature),

@@ -14,7 +14,14 @@ The agent, built with Pydantic AI, can answer data analytics questions by intera
 - `display_query_result`
 
 Configure the catalog, Spark Connect, model provider, and OpenTelemetry values
-in `.env`, then run a one-off prompt with:
+in `.env`. Capabilities default to both catalog discovery and querying; select a
+different profile with a JSON array:
+
+```dotenv
+ENABLED_CAPABILITIES='["catalog", "query"]'
+```
+
+Then run a one-off prompt with:
 
 ```bash
 uv run python -m src.agent.main "What units does the active energy column use?"
@@ -22,7 +29,14 @@ uv run python -m src.agent.main "What units does the active energy column use?"
 
 ## Validation
 
-The validation suite, built with Pydantic Evals, aims to validate the quality of the agent's answers accross different themes and knowledge domains. A run is configured with a yaml file such as `src/validation/run_configs/openai-mini.yaml`, that points to a dataset file (containing question-answer pairs). That example config file evaluates the agent in the small dataset in `src/validation/benchmark/power-quality-monitoring/dataset.yaml`, you can run it with:
+The validation suite, built with Pydantic Evals, aims to validate the quality of the agent's answers accross different themes and knowledge domains. A run is configured with a yaml file such as `src/validation/run_configs/openai-mini.yaml`, that points to a dataset file (containing question-answer pairs). Select the agent profile under its `agent` mapping:
+
+```yaml
+agent:
+  enabled_capabilities: [catalog, query]
+```
+
+That example config file evaluates the agent in the small dataset in `src/validation/benchmark/power-quality-monitoring/dataset.yaml`, you can run it with:
 
 ```bash
 uv run python -m src.validation.run_benchmark --config openai-mini

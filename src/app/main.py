@@ -7,10 +7,10 @@ from dataclasses import dataclass
 
 import logfire
 import streamlit as st
-from pydantic_ai import ModelSettings, UsageLimits
+from pydantic_ai import Agent, ModelSettings, UsageLimits
 from pyspark.sql import SparkSession
 
-from src.agent.agent import agent
+from src.agent.agent import create_agent
 from src.agent.artifacts.base import (
     DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
     ArtifactContext,
@@ -206,6 +206,7 @@ div[class*="st-key-delete-conversation-"] button p {
 @dataclass(frozen=True)
 class AppResources:
     config: AgentConfig
+    agent: Agent[Deps, str]
     spark: SparkSession
     catalog: UnityCatalogClient
     repository: ChatRepository
@@ -231,6 +232,7 @@ def load_resources() -> AppResources:
 
     return AppResources(
         config=config,
+        agent=create_agent(config.enabled_capabilities),
         spark=get_spark_session(config),
         catalog=UnityCatalogClient(
             config.catalog_url,
@@ -734,7 +736,7 @@ def run_app() -> None:
                 prompt=prompt,
                 message_history=st.session_state.model_messages,
                 deps=deps,
-                agent_instance=agent,
+                agent_instance=resources.agent,
                 model=create_model(resources.config),
                 model_settings=ModelSettings(temperature=resources.config.temperature),
                 usage_limits=UsageLimits(request_limit=resources.config.request_limit),

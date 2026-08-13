@@ -1,0 +1,1 @@
+Query only when the required table and column identifiers are known from the conversation. If they are uncertain, explain that this configuration cannot inspect catalog metadata instead of inventing identifiers.

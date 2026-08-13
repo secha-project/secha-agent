@@ -74,6 +74,7 @@ def test_run_uses_a_run_scoped_artifact_context(
             table_column_page_size=20,
             temperature=0.0,
             request_limit=3,
+            enabled_capabilities=("catalog", "query"),
         ),
     )
     spark = object()
@@ -87,7 +88,11 @@ def test_run_uses_a_run_scoped_artifact_context(
         captured.update(kwargs)
         return SimpleNamespace(output="answer")
 
-    monkeypatch.setattr(main_module.agent, "run_sync", run_sync)
+    monkeypatch.setattr(
+        main_module,
+        "create_agent",
+        lambda capabilities: SimpleNamespace(run_sync=run_sync),
+    )
 
     outcome = main_module.run("question", config)
 
@@ -126,6 +131,7 @@ def test_run_returns_artifacts_published_during_the_one_off_run(
             table_column_page_size=20,
             temperature=0.0,
             request_limit=3,
+            enabled_capabilities=("query",),
         ),
     )
     monkeypatch.setattr(main_module, "get_spark_session", lambda _config: object())
@@ -138,7 +144,11 @@ def test_run_returns_artifacts_published_during_the_one_off_run(
         asyncio.run(context.publish(artifact.ref))
         return SimpleNamespace(output="answer")
 
-    monkeypatch.setattr(main_module.agent, "run_sync", run_sync)
+    monkeypatch.setattr(
+        main_module,
+        "create_agent",
+        lambda capabilities: SimpleNamespace(run_sync=run_sync),
+    )
 
     outcome = main_module.run("question", config)
 
