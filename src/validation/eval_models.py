@@ -15,7 +15,7 @@ class TextOutput(BaseModel):
 
 class NumberOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    value: float
+    value: Annotated[list[float], Field(min_length=1)]
 
 
 class TableOutput(BaseModel):

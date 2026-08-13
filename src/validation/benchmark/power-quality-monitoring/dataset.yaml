@@ -18,7 +18,8 @@ cases:
     query_code: ''
     category: data discovery
   expected_output:
-  - value: 60.0
+  - value:
+    - 60.0
   evaluators: []
 - name: task_3
   inputs: 'What date range does the data in power_quality_measurements_procem cover?

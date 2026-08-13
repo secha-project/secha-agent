@@ -59,9 +59,11 @@ class ValidateNumberOutput(Evaluator[str, BenchmarkOutput, CaseMetadata]):
             return {}
 
         actual_values = extract_numbers(cast(str, ctx.output))
-        for number_output in number_outputs:
+        for expected_value in (
+            value for number_output in number_outputs for value in number_output.value
+        ):
             for actual_value in actual_values:
-                if abs(actual_value - number_output.value) <= self.tolerance:
+                if abs(actual_value - expected_value) <= self.tolerance:
                     break
             else:
                 return False
