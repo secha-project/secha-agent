@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import logfire
@@ -32,6 +32,7 @@ from src.validation.evaluators import (
     ValidateTableValues,
     ValidateTextOutput,
     ValidateVisualizationIncluded,
+    ValidateVisualizationQuality,
 )
 from src.validation.lifecycle import LifecycleFactory, write_evaluation_artifacts
 from src.validation.reporting import BenchmarkReport, save_report
@@ -42,6 +43,7 @@ CUSTOM_EVALUATOR_TYPES = (
     ValidateTableIncluded,
     ValidateTableValues,
     ValidateVisualizationIncluded,
+    ValidateVisualizationQuality,
 )
 
 
@@ -130,13 +132,18 @@ def attach_case_evaluators(dataset: BenchmarkDataset, artifact_base_path: Path) 
             )
 
         if any(isinstance(item, VisualizationOutput) for item in expected_output):
-            case.evaluators.append(ValidateVisualizationIncluded())
+            case.evaluators.extend(
+                [
+                    ValidateVisualizationIncluded(),
+                    ValidateVisualizationQuality(artifact_base_path=artifact_base_path),
+                ]
+            )
 
 
 def create_run_directory(run_name: str, dataset_name: str) -> Path:
     dataset_directory = RESULTS_DIR / dataset_name
     dataset_directory.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    timestamp = datetime.now(UTC).astimezone().strftime("%Y-%m-%d_%H-%M")
     run_directory = dataset_directory / f"{run_name}_{timestamp}"
     run_directory.mkdir()
     (run_directory / "artifacts").mkdir()

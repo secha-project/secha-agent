@@ -51,6 +51,7 @@ def _conversation_button_label(title: str) -> str:
         return title
     return title[: CONVERSATION_BUTTON_LABEL_MAX_LENGTH - 1] + "…"
 
+
 APP_MODEL_PROVIDER = "openai"
 AUTHENTICATED_USER_KEY = "authenticated_user_id"
 AUTH_SESSION_KEYS = (
@@ -539,9 +540,7 @@ def _ensure_active_conversation(
                 and isinstance(st.session_state.get("model_messages"), list)
                 and isinstance(artifact_registry, ArtifactRegistry)
             )
-            if state_is_loaded or activate_conversation(
-                resources, user_id, current_id
-            ):
+            if state_is_loaded or activate_conversation(resources, user_id, current_id):
                 return current_id
 
     conversations = resources.repository.list_conversations(user_id)
@@ -743,7 +742,7 @@ def run_app() -> None:
                 container=container,
             )
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - UI boundary must report all failures.
         # The user message remains saved, but partial assistant output and model
         # history deliberately do not become conversation state.
         container.error(f"Unable to complete the request. Retry when ready: {exc}")

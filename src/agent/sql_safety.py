@@ -117,10 +117,12 @@ def _mask_literals_comments_and_identifiers(sql: str) -> str:
                 following = sql[index + 1] if index + 1 < length else ""
                 masked.append("\n" if char == "\n" else " ")
                 index += 1
-                if char == "\\" and index < length:
-                    masked.append(" ")
-                    index += 1
-                elif char == quote and following == quote:
+                if (
+                    char == "\\"
+                    and index < length
+                    or char == quote
+                    and following == quote
+                ):
                     masked.append(" ")
                     index += 1
                 elif char == quote:

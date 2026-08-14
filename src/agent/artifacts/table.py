@@ -32,8 +32,7 @@ class TablePreview:
         sections = []
         for row_number, row in enumerate(self.rows, start=self.start_row):
             fields = "\n".join(
-                f"{column}: {value}"
-                for column, value in zip(self.columns, row)
+                f"{column}: {value}" for column, value in zip(self.columns, row)
             )
             sections.append(f"## Row {row_number}\n\n{fields}")
         rendered_rows = "\n\n".join(sections)
@@ -47,9 +46,7 @@ class TablePreview:
                 f"out of the {self.total_rows} available"
             )
         if len(self.columns) < self.total_columns:
-            column_selection = (
-                "requested" if self.columns_were_requested else "default"
-            )
+            column_selection = "requested" if self.columns_were_requested else "default"
             column_label = "column" if len(self.columns) == 1 else "columns"
             overflow_messages.append(
                 f"showing only the {column_selection} {len(self.columns)} "
@@ -84,9 +81,7 @@ class _TablePreviewSelection:
         resolved_end_row = end_row or start_row + 9
         selected_columns = column_names or available_columns[:10]
         unknown_columns = [
-            column
-            for column in selected_columns
-            if column not in available_columns
+            column for column in selected_columns if column not in available_columns
         ]
         if unknown_columns:
             raise ValueError(
@@ -209,9 +204,7 @@ class SparkTableSource:
             )
             rows = tuple(
                 tuple(row)
-                for row in collected[
-                    selection.start_row - 1 : selection.end_row
-                ]
+                for row in collected[selection.start_row - 1 : selection.end_row]
             )
             return selection.build(
                 rows,

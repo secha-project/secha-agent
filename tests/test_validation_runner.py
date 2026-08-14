@@ -30,9 +30,7 @@ def test_agent_task_uses_a_fresh_artifact_context_for_each_run(
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         context = kwargs["deps"].artifact_context
         contexts.append(context)
-        references.append(
-            context.create(cast(Any, SimpleNamespace(kind="table")))
-        )
+        references.append(context.create(cast(Any, SimpleNamespace(kind="table"))))
         return SimpleNamespace(output="answer")
 
     task = AgentTask(

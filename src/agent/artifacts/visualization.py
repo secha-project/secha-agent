@@ -21,5 +21,5 @@ class VisualizationContent:
     def to_spec(self) -> dict[str, Any]:
         value = json.loads(self.spec_json)
         if not isinstance(value, dict):
-            raise ValueError("Saved Vega-Lite content must be a JSON object.")
+            raise TypeError("Saved Vega-Lite content must be a JSON object.")
         return value

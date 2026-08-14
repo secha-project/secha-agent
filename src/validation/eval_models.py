@@ -36,11 +36,7 @@ class VisualizationOutput(BaseModel):
 
 
 ExpectedItem = (
-    TextOutput
-    | NumberOutput
-    | TableOutput
-    | ExplanationOutput
-    | VisualizationOutput
+    TextOutput | NumberOutput | TableOutput | ExplanationOutput | VisualizationOutput
 )
 ExpectedOutput = Annotated[list[ExpectedItem], Field(min_length=1)]
 BenchmarkOutput = str | ExpectedOutput

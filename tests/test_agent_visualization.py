@@ -111,9 +111,7 @@ def test_visualization_publishes_registered_spec() -> None:
 def test_visualization_reports_row_truncation() -> None:
     ctx, _, ref = _context(rows=MAX_VISUALIZATION_ROWS + 1)
 
-    result = asyncio.run(
-        visualize_query_result(ctx, ref, GGSQL_QUERY, "Limited chart")
-    )
+    result = asyncio.run(visualize_query_result(ctx, ref, GGSQL_QUERY, "Limited chart"))
 
     assert "first 1,000 rows" in result.return_value
 
@@ -132,8 +130,10 @@ def test_visualization_reports_row_truncation() -> None:
             "at least one DRAW",
         ),
         (
-            "VISUALISE category AS x, value AS y DRAW bar "
-            "MAPPING category AS fill FROM other",
+            (
+                "VISUALISE category AS x, value AS y DRAW bar "
+                "MAPPING category AS fill FROM other"
+            ),
             "visualization-level FROM sources",
         ),
     ],

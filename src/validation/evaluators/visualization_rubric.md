@@ -20,6 +20,6 @@ Score according to the following criteria.
   - 0 if the generated plot's style has no resemblance to the ground_truth.
 - **is_blank:**
  - 1 if the generated plot is blank, empty, or shows no data except the axes
- - otherwise
+ - 0 otherwise
 
-Provide a short and concise"rationale" for the scoring.
+Provide a short and concise "rationale" for the scoring.

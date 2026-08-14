@@ -12,9 +12,9 @@ from src.agent.artifacts.base import (
     ArtifactRegistry,
     UnknownArtifactError,
 )
+from src.agent.artifacts.table import TableContent
 from src.agent.config import AgentConfig
 from src.agent.main import AgentOutcome
-from src.agent.artifacts.table import TableContent
 
 
 def test_artifact_registry_keeps_logical_artifacts_addressable() -> None:
@@ -32,9 +32,7 @@ def test_artifact_registry_keeps_logical_artifacts_addressable() -> None:
     assert registry.resolve(second_ref).source is second
 
     with pytest.raises(UnknownArtifactError):
-        registry.resolve(
-            ArtifactRef(artifact_id="stale", artifact_kind="table")
-        )
+        registry.resolve(ArtifactRef(artifact_id="stale", artifact_kind="table"))
 
 
 def test_artifact_source_can_materialize_from_an_artifact_reference(
@@ -53,9 +51,7 @@ def test_artifact_source_can_materialize_from_an_artifact_reference(
         async def materialize(self, artifact_context: ArtifactContext) -> TableContent:
             return await artifact_context.materialize(self.input_ref)
 
-    output_ref = context.create(
-        cast(Any, ReferencedTableSource(input_artifact.ref))
-    )
+    output_ref = context.create(cast(Any, ReferencedTableSource(input_artifact.ref)))
 
     assert asyncio.run(context.materialize(output_ref)) is input_artifact.content
     assert context.registry.resolve(output_ref).ref == output_ref

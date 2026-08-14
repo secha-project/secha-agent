@@ -23,6 +23,7 @@ dependencies = [
     "starlette>=0.40.0,<2",
     "streamlit>=1.60.0",
     "vl-convert-python>=1.9.0",
+    "ruff>=0.16.3",
 ]
 
 [dependency-groups]

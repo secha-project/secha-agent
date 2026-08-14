@@ -208,7 +208,7 @@ validated = ggsql.validate(ggsql_text)
 The resulting `Validated` object separates the input into:
 
 ```python
-validated.sql()     # source-engine SQL
+validated.sql()  # source-engine SQL
 validated.visual()  # VISUALISE/DRAW/SCALE/etc.
 ```
 
@@ -355,9 +355,7 @@ def render_ggsql(engine: QueryEngine, query: str):
     if not validated.has_visual():
         raise ValueError("Query must include a VISUALISE clause")
     if not validated.valid():
-        raise ValueError(
-            "\n".join(error["message"] for error in validated.errors())
-        )
+        raise ValueError("\n".join(error["message"] for error in validated.errors()))
 
     # `to_polars` is an application adapter for pandas, Polars, Arrow, Ibis,
     # or another frame returned by the selected engine.
@@ -453,9 +451,7 @@ validated = ggsql.validate(ggsql_text)
 if not validated.has_visual():
     raise ValueError("ggsql must include a VISUALISE clause")
 if not validated.valid():
-    raise ValueError(
-        "\n".join(error["message"] for error in validated.errors())
-    )
+    raise ValueError("\n".join(error["message"] for error in validated.errors()))
 
 visual = validated.visual()
 if not re.search(r"\bDRAW\b", visual, re.IGNORECASE):
@@ -614,9 +610,9 @@ standalone_spec = chart.to_dict()
 if standalone_spec.get("height") == "container":
     standalone_spec["height"] = 420
 
-spec_json = (
-    json.dumps(standalone_spec, indent=2, ensure_ascii=False) + "\n"
-).encode("utf-8")
+spec_json = (json.dumps(standalone_spec, indent=2, ensure_ascii=False) + "\n").encode(
+    "utf-8"
+)
 ```
 
 Because `chart.to_dict()` contains both the top-level named-data reference and
@@ -672,9 +668,9 @@ def render_materialized_ggsql(
     standalone = chart.to_dict()
     if standalone.get("height") == "container":
         standalone["height"] = 420
-    spec_json = (
-        json.dumps(standalone, indent=2, ensure_ascii=False) + "\n"
-    ).encode("utf-8")
+    spec_json = (json.dumps(standalone, indent=2, ensure_ascii=False) + "\n").encode(
+        "utf-8"
+    )
 
     streamlit_spec = chart.to_dict()
     data_reference = streamlit_spec.pop("data")

@@ -8,12 +8,16 @@ from .report import (
 )
 from .table import ValidateTableIncluded, ValidateTableValues
 from .text import ValidateTextOutput
-from .visualization import ValidateVisualizationIncluded
+from .visualization import (
+    ValidateVisualizationIncluded,
+    ValidateVisualizationQuality,
+    VisualizationEvaluation,
+)
 
 __all__ = [
+    "DEFAULT_REPORT_EVALUATORS",
     "AverageAccuracyEvaluator",
     "AveragePassAtKEvaluator",
-    "DEFAULT_REPORT_EVALUATORS",
     "PerTaskAccuracyEvaluator",
     "PerTaskPassAtKEvaluator",
     "ValidateNumberOutput",
@@ -21,4 +25,6 @@ __all__ = [
     "ValidateTableValues",
     "ValidateTextOutput",
     "ValidateVisualizationIncluded",
+    "ValidateVisualizationQuality",
+    "VisualizationEvaluation",
 ]

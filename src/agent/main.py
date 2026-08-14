@@ -57,11 +57,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="Question for the agent. Reads stdin when omitted.",
     )
     args = parser.parse_args(argv)
-    prompt = (
-        sys.stdin.read().strip()
-        if args.prompt is None
-        else args.prompt.strip()
-    )
+    prompt = sys.stdin.read().strip() if args.prompt is None else args.prompt.strip()
     if not prompt:
         parser.error("provide a prompt argument or pipe a prompt on stdin")
 

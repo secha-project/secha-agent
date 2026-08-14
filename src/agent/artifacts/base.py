@@ -105,9 +105,7 @@ class ArtifactSourceUnavailableError(LookupError):
 class ArtifactContentUnavailableError(LookupError):
     def __init__(self, ref: ArtifactRef) -> None:
         self.ref = ref
-        super().__init__(
-            f"Artifact {ref.artifact_id!r} has not been materialized."
-        )
+        super().__init__(f"Artifact {ref.artifact_id!r} has not been materialized.")
 
 
 class UnexpectedArtifactSourceTypeError(TypeError):
@@ -257,6 +255,4 @@ class ArtifactContext:
 
     @property
     def published_artifacts(self) -> tuple[Artifact, ...]:
-        return tuple(
-            self.registry.resolve(ref) for ref in self._published.values()
-        )
+        return tuple(self.registry.resolve(ref) for ref in self._published.values())

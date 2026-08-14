@@ -46,7 +46,7 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
 
     try:
         result = deps.spark.sql(sql)
-        result.schema
+        _ = result.schema
     except Exception as exc:
         raise ModelRetry(
             f"SQL validation failed ({spark_error_type(exc)}): "
@@ -65,9 +65,7 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
             f"({spark_error_type(exc)}): {concise_spark_error(exc)}. "
         ) from exc
 
-    ref = deps.artifact_context.create(
-        source
-    )
+    ref = deps.artifact_context.create(source)
     return QueryDataResult(
         artifact_ref=ref,
         preview_markdown=preview.to_markdown(),
@@ -141,9 +139,7 @@ async def display_query_result(
     """
     deps = ctx.deps
     if ref.artifact_kind != "table":
-        raise ModelRetry(
-            f"Artifact {ref.artifact_id!r} is not a table artifact."
-        )
+        raise ModelRetry(f"Artifact {ref.artifact_id!r} is not a table artifact.")
     try:
         artifact_ref = await deps.artifact_context.publish(ref)
     except (UnknownArtifactError, ArtifactSourceUnavailableError) as exc:

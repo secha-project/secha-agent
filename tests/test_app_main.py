@@ -59,9 +59,7 @@ def test_current_user_is_restored_from_auth_cookie(
     fake_streamlit = SimpleNamespace(
         session_state=state,
         query_params={},
-        context=SimpleNamespace(
-            cookies={app_module.AUTH_COOKIE_NAME: "session-token"}
-        ),
+        context=SimpleNamespace(cookies={app_module.AUTH_COOKIE_NAME: "session-token"}),
     )
     repository = SimpleNamespace(
         get_user_by_auth_session=lambda token: (
@@ -90,10 +88,13 @@ def test_active_conversation_reuses_its_artifact_registry_across_turns(
     registry = state.artifact_registry
     ref = registry.create(cast(Any, SimpleNamespace(kind="table")))
 
-    assert app_module._ensure_active_conversation(
-        cast(Any, resources),
-        "user-1",
-    ) == "conversation-1"
+    assert (
+        app_module._ensure_active_conversation(
+            cast(Any, resources),
+            "user-1",
+        )
+        == "conversation-1"
+    )
     first_turn = app_module._fresh_deps(cast(Any, resources), registry)
     second_turn = app_module._fresh_deps(cast(Any, resources), registry)
 

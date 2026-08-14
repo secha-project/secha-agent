@@ -74,11 +74,7 @@ def test_csv_and_tool_metadata_are_json_safe(make_table_artifact) -> None:
         max_rows=1,
     )
     rows = list(
-        csv.DictReader(
-            io.StringIO(
-                artifact.require_content().to_csv().decode("utf-8")
-            )
-        )
+        csv.DictReader(io.StringIO(artifact.require_content().to_csv().decode("utf-8")))
     )
     assert rows == [{"id": "1", "value": "a,b"}]
 

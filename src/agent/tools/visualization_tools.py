@@ -87,9 +87,7 @@ def _validate_ggsql(ggsql_text: str) -> str:
             f"{_concise_visualization_error(_ggsql_errors(validated))}"
         )
     if not validated.has_visual():
-        raise ModelRetry(
-            "Visualization validation failed: include a VISUALISE clause."
-        )
+        raise ModelRetry("Visualization validation failed: include a VISUALISE clause.")
 
     visual = validated.visual().strip()
     if not _DRAW_PATTERN.search(visual):
@@ -151,9 +149,7 @@ async def visualize_query_result(
         if isinstance(artifact.source, SparkTableSource):
             pandas_frame = await run_spark_with_timeout(
                 artifact.source.spark,
-                artifact.source.dataframe.limit(
-                    MAX_VISUALIZATION_ROWS + 1
-                ).toPandas,
+                artifact.source.dataframe.limit(MAX_VISUALIZATION_ROWS + 1).toPandas,
             )
             truncated = len(pandas_frame.index) > MAX_VISUALIZATION_ROWS
         elif isinstance(artifact.content, TableContent):

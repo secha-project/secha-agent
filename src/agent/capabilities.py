@@ -3,7 +3,7 @@ from collections.abc import Callable
 from pydantic_ai.capabilities import AbstractCapability, Capability
 
 from .deps import Deps
-from .profiles import DEFAULT_CAPABILITIES, CapabilityName
+from .profiles import CapabilityName
 from .prompt_loader import compose_prompts, load_prompt
 from .tools.catalog_tools import catalog_toolset
 from .tools.query_tools import query_toolset
@@ -43,9 +43,7 @@ def build_query(selected: SelectedCapabilities) -> Capability[Deps]:
 def build_visualization(_selected: SelectedCapabilities) -> Capability[Deps]:
     return Capability(
         id="visualization",
-        instructions=load_prompt(
-            "capabilities/visualization/instructions.md"
-        ),
+        instructions=load_prompt("capabilities/visualization/instructions.md"),
         toolsets=[visualization_toolset],
     )
 

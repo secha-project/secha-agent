@@ -55,9 +55,7 @@ class ArtifactRenderer:
         if isinstance(content, VisualizationContent):
             self._render_visualization(container, content)
             return
-        raise TypeError(
-            f"No renderer is registered for {artifact.kind!r} artifacts."
-        )
+        raise TypeError(f"No renderer is registered for {artifact.kind!r} artifacts.")
 
     def _render_table(
         self,

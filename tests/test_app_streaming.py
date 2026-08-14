@@ -1,8 +1,9 @@
 import asyncio
 import json
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
-from typing import Any, AsyncIterator, cast
+from typing import Any, cast
 
 from pydantic_ai import (
     AgentRunResult,

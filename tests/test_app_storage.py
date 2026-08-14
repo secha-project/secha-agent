@@ -10,7 +10,6 @@ from pydantic_ai import ModelRequest, UserPromptPart
 
 from src.agent.artifacts.base import Artifact, ArtifactRef
 from src.agent.artifacts.visualization import VisualizationContent
-
 from src.app.models import AssistantDisplayMessage, TextDisplayPart, User
 from src.app.storage import (
     ArtifactNotFoundError,
@@ -139,9 +138,7 @@ def test_user_and_completed_assistant_are_saved_in_two_steps(
     assert [message.role for message in after_user.display_messages] == ["user"]
     assert after_user.model_messages == []
 
-    model_history = [
-        ModelRequest(parts=[UserPromptPart(content="Show measurements")])
-    ]
+    model_history = [ModelRequest(parts=[UserPromptPart(content="Show measurements")])]
     artifact = make_table_artifact([{"measurement": 1}])
     completed = repository.commit_assistant(
         alice.id,
@@ -158,10 +155,7 @@ def test_user_and_completed_assistant_are_saved_in_two_steps(
         "assistant",
     ]
     assert len(completed.model_messages) == 1
-    assert (
-        repository.load_artifact(alice.id, conversation.id, artifact.id)
-        == artifact
-    )
+    assert repository.load_artifact(alice.id, conversation.id, artifact.id) == artifact
 
 
 def test_conversation_appears_in_history_only_after_first_user_message(
@@ -227,11 +221,14 @@ def test_persisting_the_same_logical_artifact_again_is_idempotent(
 
     repository.save_artifact(alice.id, conversation.id, artifact)
 
-    assert repository.load_artifact(
-        alice.id,
-        conversation.id,
-        artifact.id,
-    ) == artifact
+    assert (
+        repository.load_artifact(
+            alice.id,
+            conversation.id,
+            artifact.id,
+        )
+        == artifact
+    )
 
 
 def test_delete_conversation_is_user_scoped_and_cascades(
@@ -269,9 +266,7 @@ def test_visualization_round_trip_persists_only_vega_lite_spec(
 ) -> None:
     alice, _ = users
     conversation = repository.create_conversation(alice.id)
-    spec_json = json.dumps(
-        {"data": {"values": [{"x": 1}]}, "mark": "point"}
-    ).encode()
+    spec_json = json.dumps({"data": {"values": [{"x": 1}]}, "mark": "point"}).encode()
     artifact = Artifact(
         ref=ArtifactRef(
             artifact_id="visualization-1",

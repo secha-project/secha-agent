@@ -2,12 +2,9 @@ from collections.abc import Iterable
 
 from pydantic_ai import Agent
 
-from .capabilities import (
-    CAPABILITY_BUILDERS,
-    DEFAULT_CAPABILITIES,
-    CapabilityName,
-)
+from .capabilities import CAPABILITY_BUILDERS
 from .deps import Deps
+from .profiles import DEFAULT_CAPABILITIES, CapabilityName
 from .prompt_loader import load_prompt
 
 
@@ -21,9 +18,7 @@ def create_agent(
 
     selected = frozenset(names)
     if "visualization" in selected and not {"catalog", "query"} <= selected:
-        raise ValueError(
-            "The visualization capability requires catalog and query."
-        )
+        raise ValueError("The visualization capability requires catalog and query.")
     capabilities = [CAPABILITY_BUILDERS[name](selected) for name in names]
 
     return Agent(

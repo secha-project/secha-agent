@@ -655,10 +655,7 @@ class ChatRepository:
                     truncated=bool(metadata["truncated"]),
                 ),
             )
-        if (
-            row["kind"] == "visualization"
-            and row["media_type"] == VEGA_LITE_MEDIA_TYPE
-        ):
+        if row["kind"] == "visualization" and row["media_type"] == VEGA_LITE_MEDIA_TYPE:
             ref = ArtifactRef(
                 artifact_id=row["id"],
                 artifact_kind="visualization",

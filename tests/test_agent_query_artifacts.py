@@ -11,8 +11,8 @@ from src.agent.artifacts.base import (
     ArtifactPolicy,
     ArtifactRef,
 )
-from src.agent.models import InspectQueryResult
 from src.agent.artifacts.table import SparkTableSource, TableContent
+from src.agent.models import InspectQueryResult
 from src.agent.tools.query_tools import (
     display_query_result,
     inspect_query_result,
@@ -61,9 +61,7 @@ def test_result_preview_uses_framework_agnostic_validation_error() -> None:
         StubResult(),  # type: ignore[arg-type]
     )
     with pytest.raises(ValueError, match="Unknown result columns: missing_column"):
-        asyncio.run(
-            source.preview(column_names=["missing_column"])
-        )
+        asyncio.run(source.preview(column_names=["missing_column"]))
 
 
 def test_inspect_query_result_exposes_unknown_columns_as_model_retry() -> None:

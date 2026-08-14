@@ -11,14 +11,11 @@ from src.agent.capabilities import build_catalog, build_query, build_visualizati
 from src.agent.deps import Deps
 from src.agent.prompt_loader import compose_prompts, load_prompt
 
-
 CATALOG_INSTRUCTIONS = load_prompt("capabilities/catalog/instructions.md")
 QUERY_CORE = load_prompt("capabilities/query/core.md")
 QUERY_STANDALONE = load_prompt("capabilities/query/standalone.md")
 QUERY_WITH_CATALOG = load_prompt("capabilities/query/with_catalog.md")
-VISUALIZATION_INSTRUCTIONS = load_prompt(
-    "capabilities/visualization/instructions.md"
-)
+VISUALIZATION_INSTRUCTIONS = load_prompt("capabilities/visualization/instructions.md")
 
 
 def _static_instructions(capability: Capability[Deps]) -> list[str]:
@@ -76,7 +73,9 @@ def test_create_agent_deduplicates_capabilities() -> None:
     assert request.instructions is not None
     assert request.instructions.count(CATALOG_INSTRUCTIONS) == 1
     assert request.instructions.count(QUERY_CORE) == 1
-    assert [tool.name for tool in model.last_model_request_parameters.function_tools] == [
+    assert [
+        tool.name for tool in model.last_model_request_parameters.function_tools
+    ] == [
         "browse_tables",
         "find_columns",
         "describe_table",
@@ -92,9 +91,7 @@ def test_create_agent_rejects_unknown_capabilities() -> None:
 
 
 def test_visualization_uses_one_instruction_prompt_and_exposes_one_tool() -> None:
-    capability = build_visualization(
-        frozenset({"catalog", "query", "visualization"})
-    )
+    capability = build_visualization(frozenset({"catalog", "query", "visualization"}))
     assert _static_instructions(capability) == [VISUALIZATION_INSTRUCTIONS]
 
     model = TestModel(call_tools=[], custom_output_text="done")
