@@ -8,6 +8,7 @@ from .report import (
 )
 from .table import ValidateTableIncluded, ValidateTableValues
 from .text import ValidateTextOutput
+from .visualization import ValidateVisualizationIncluded
 
 __all__ = [
     "AverageAccuracyEvaluator",
@@ -19,4 +20,5 @@ __all__ = [
     "ValidateTableIncluded",
     "ValidateTableValues",
     "ValidateTextOutput",
+    "ValidateVisualizationIncluded",
 ]

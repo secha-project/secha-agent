@@ -23,6 +23,7 @@ from src.validation.eval_models import (
     NumberOutput,
     TableOutput,
     TextOutput,
+    VisualizationOutput,
 )
 from src.validation.evaluators import (
     DEFAULT_REPORT_EVALUATORS,
@@ -30,6 +31,7 @@ from src.validation.evaluators import (
     ValidateTableIncluded,
     ValidateTableValues,
     ValidateTextOutput,
+    ValidateVisualizationIncluded,
 )
 from src.validation.lifecycle import LifecycleFactory, write_evaluation_artifacts
 from src.validation.reporting import BenchmarkReport, save_report
@@ -39,6 +41,7 @@ CUSTOM_EVALUATOR_TYPES = (
     ValidateNumberOutput,
     ValidateTableIncluded,
     ValidateTableValues,
+    ValidateVisualizationIncluded,
 )
 
 
@@ -125,6 +128,9 @@ def attach_case_evaluators(dataset: BenchmarkDataset, artifact_base_path: Path) 
                     ValidateTableValues(artifact_base_path=artifact_base_path),
                 ]
             )
+
+        if any(isinstance(item, VisualizationOutput) for item in expected_output):
+            case.evaluators.append(ValidateVisualizationIncluded())
 
 
 def create_run_directory(run_name: str, dataset_name: str) -> Path:

@@ -1224,6 +1224,24 @@ wheels = [
 ]
 
 [[package]]
+name = "ggsql"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "altair" },
+    { name = "narwhals" },
+    { name = "pyarrow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1c/bf/ca4ed50bd6ddb0237bb640ed1c11d9bd19626576fb9b5a54b17fd00dff58/ggsql-0.3.3.tar.gz", hash = "sha256:c068e1ff8160f0eda4ce7ada05ba552968fd7a7981dd803539e2fcad66f7bf3e", size = 196788, upload-time = "2026-05-27T15:27:30.974Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b3/0c/2cc2b2a3605470c7699c091cd03a272d80ff0f98dd0a387d06aa4a4944b9/ggsql-0.3.3-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:69a5eaa225267bb15c1795a9596bf05660650c06e6b71cf3ee55fa9bbf8c63cf", size = 16283161, upload-time = "2026-05-27T15:27:16.8Z" },
+    { url = "https://files.pythonhosted.org/packages/55/40/17d57c1fc667702536f8534dcf9b08377927d60c3fcba52feeb9c22f5399/ggsql-0.3.3-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:cbc08478b02ffb3ba6631c5a1a3f63b221dd967b754c720a25927603bbfd44d5", size = 14839052, upload-time = "2026-05-27T15:27:19.275Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/5b/9e345b2a347ddfad126095137bdb89903f8606aa4315aede38b46659a5ed/ggsql-0.3.3-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:aec72ab8b992a2eee59a32e4bc755617791fe7a4496641cc1d0d00c17e8cefc5", size = 17171049, upload-time = "2026-05-27T15:27:23.893Z" },
+    { url = "https://files.pythonhosted.org/packages/11/bc/073186c2d0acbf2475d1542cd1af083223cb99031a079055abb4df9bf299/ggsql-0.3.3-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:12b886d0eb41c261ccf8be75f29276b853fa0bf6e3385eeb6072bcc92f3fe264", size = 18858988, upload-time = "2026-05-27T15:27:26.426Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/9a/57145054fc302ed419324596f13515ec0a784dac6739efc11058bbe462c9/ggsql-0.3.3-cp310-abi3-win_amd64.whl", hash = "sha256:466b372df871e8e48a411306b2dc0b7828ebf86317ae76991a63816f80d4c52f", size = 13217314, upload-time = "2026-05-27T15:27:28.841Z" },
+]
+
+[[package]]
 name = "gitdb"
 version = "4.0.12"
 source = { registry = "https://pypi.org/simple" }
@@ -4240,9 +4258,12 @@ name = "secha-agent"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "altair" },
     { name = "argon2-cffi" },
+    { name = "ggsql" },
     { name = "langfuse" },
     { name = "logfire" },
+    { name = "pandas" },
     { name = "pyarrow" },
     { name = "pydantic" },
     { name = "pydantic-ai", extra = ["examples"] },
@@ -4254,6 +4275,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "starlette" },
     { name = "streamlit" },
+    { name = "vl-convert-python" },
 ]
 
 [package.dev-dependencies]
@@ -4264,9 +4286,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "altair", specifier = ">=6.0" },
     { name = "argon2-cffi", specifier = ">=25.1.0" },
+    { name = "ggsql", specifier = ">=0.3.2" },
     { name = "langfuse", specifier = ">=4.14.0" },
     { name = "logfire", specifier = ">=4.37.0" },
+    { name = "pandas", specifier = ">=2.2.0" },
     { name = "pyarrow", specifier = ">=24.0.0" },
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "pydantic-ai", extras = ["examples"], specifier = ">=2.12.0" },
@@ -4278,6 +4303,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "starlette", specifier = ">=0.40.0,<2" },
     { name = "streamlit", specifier = ">=1.60.0" },
+    { name = "vl-convert-python", specifier = ">=1.9.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -4702,6 +4728,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a2/65/b7c6c443ccc58678c91e1e973bbe2a878591538655d6e1d47f24ba1c51f3/uvicorn-0.51.0.tar.gz", hash = "sha256:f6f4b69b657c312f516dd2d268ab9ae6f254b11e4bac504f37b2ab58b24dd0b0", size = 94412, upload-time = "2026-07-08T10:59:05.962Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/45/ec/dbb7e5a6b91f86bfb9eb7d2988a2730907b6a729875b949c7f022e8b88fa/uvicorn-0.51.0-py3-none-any.whl", hash = "sha256:5d38af6cd620f2ae3849fb44fd4879e0890aa1febe8d47eb355fb45d93fe6a5b", size = 73219, upload-time = "2026-07-08T10:59:04.44Z" },
+]
+
+[[package]]
+name = "vl-convert-python"
+version = "1.9.0.post1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/89/36722344d1758ec2106f4e8eca980f173cfe8f8d0358c1b77cc5d2e035a4/vl_convert_python-1.9.0.post1.tar.gz", hash = "sha256:a5b06b3128037519001166f5341ec7831e19fbd7f3a5f78f73d557ac2d5859ef", size = 4663469, upload-time = "2026-01-21T00:09:55.61Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9f/59/e5862245972ff467d38b0eb5ad28154685e23ecabb47e14f2b6962da7b56/vl_convert_python-1.9.0.post1-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:43e9515f65bbcd317d1ef328787fd7bf0344c2fde9292eb7a0e64d5d3d29fccb", size = 30512930, upload-time = "2026-01-21T00:09:43.198Z" },
+    { url = "https://files.pythonhosted.org/packages/62/e6/e7d0b538c2f0daaf120901dc113bd5d5d1fa51a9532fa5ffd90234e8c69e/vl_convert_python-1.9.0.post1-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:b0e7a3245f32addec7e7abeb1badf72b1513ed71ba1dba7aca853901217b3f4e", size = 29738742, upload-time = "2026-01-21T00:09:46.016Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/e2/5645a1bc174c53ff8cd305ed76a4a76ba36e155302db20b42b7e78daeef8/vl_convert_python-1.9.0.post1-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e6ecfe4b7e2ea9e8c30fd6d6eaea3ef85475be1ad249407d9796dce4ecdb5b32", size = 33366278, upload-time = "2026-01-21T00:09:48.42Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/18/88e02899b72fa8273ffb32bde12b0e5776ee0fd9fb29559a49c48ec4c5fa/vl_convert_python-1.9.0.post1-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3c1558fa0055e88c465bd3d71760cde9fa2c94a95f776a0ef9178252fd820b1f", size = 33520215, upload-time = "2026-01-21T00:09:50.992Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/db/6e8616587035bf0745d0f10b1791c7e945180ac5d6b28677d2f2b3ca693c/vl_convert_python-1.9.0.post1-cp37-abi3-win_amd64.whl", hash = "sha256:7e263269ac0d304640ca842b44dfe430ed863accd9edecff42e279bfc48ce940", size = 32051516, upload-time = "2026-01-21T00:09:53.47Z" },
 ]
 
 [[package]]

@@ -20,8 +20,8 @@ from pydantic_ai import (
     UsageLimits,
 )
 
-from src.agent.deps import Deps
 from src.agent.artifacts.base import Artifact
+from src.agent.deps import Deps
 
 from .artifact_renderer import ArtifactRenderer
 from .models import (
@@ -32,11 +32,12 @@ from .models import (
 
 TOOL_TO_DISPLAY_NAME = {
     "browse_tables": "browse tables",
-    "search_columns": "search columns",
+    "find_columns": "find columns",
     "describe_table": "describe table",
     "query_data": "run query",
     "inspect_query_result": "inspect query result",
     "display_query_result": "display query result",
+    "visualize_query_result": "visualize query result",
 }
 
 

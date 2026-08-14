@@ -2,11 +2,13 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from pathlib import Path
 
+import vl_convert as vlc
 from pydantic_evals import set_eval_attribute
 from pydantic_evals.lifecycle import CaseLifecycle
 
 from src.agent.artifacts.base import Artifact
 from src.agent.artifacts.table import TableContent
+from src.agent.artifacts.visualization import VisualizationContent
 from src.validation.eval_models import BenchmarkCase, BenchmarkOutput, CaseMetadata
 
 
@@ -35,18 +37,32 @@ def write_evaluation_artifacts(
 
     paths: list[Path] = []
     table_paths: list[Path] = []
-    for index, artifact in enumerate(artifacts, start=1):
-        suffix = "" if index == 1 else f"_{index}"
+    visualization: VisualizationContent | None = None
+    for artifact in artifacts:
         content = artifact.require_content()
         if isinstance(content, TableContent):
+            suffix = "" if not table_paths else f"_{len(table_paths) + 1}"
             path = scope.directory / f"{scope.basename}{suffix}.csv"
             path.write_bytes(content.to_csv())
             table_paths.append(path)
+            paths.append(path)
+        elif isinstance(content, VisualizationContent):
+            visualization = content
         else:
             raise TypeError(
                 f"Evaluation output does not support {artifact.kind!r} artifacts yet."
             )
-        paths.append(path)
+
+    if visualization is not None:
+        spec_path = scope.directory / f"{scope.basename}.json"
+        image_path = scope.directory / f"{scope.basename}.png"
+        spec_path.write_bytes(visualization.spec_json)
+        spec = visualization.to_spec()
+        spec.update(width=1_200, height=700)
+        image_path.write_bytes(vlc.vegalite_to_png(spec, scale=2))
+        paths.extend((spec_path, image_path))
+        set_eval_attribute("visualization_spec_path", str(spec_path))
+        set_eval_attribute("visualization_image_path", str(image_path))
 
     set_eval_attribute("artifact_paths", [str(path) for path in paths])
     if table_paths:

@@ -20,6 +20,10 @@ from src.agent.artifacts.base import (
     ArtifactRef,
 )
 from src.agent.artifacts.table import ARROW_STREAM_MEDIA_TYPE, TableContent
+from src.agent.artifacts.visualization import (
+    VEGA_LITE_MEDIA_TYPE,
+    VisualizationContent,
+)
 
 from .models import (
     DISPLAY_MESSAGES_ADAPTER,
@@ -568,6 +572,9 @@ class ChatRepository:
                 "row_count": content.row_count,
                 "truncated": content.truncated,
             }
+        elif isinstance(content, VisualizationContent):
+            payload = content.spec_json
+            metadata = {}
         else:
             raise TypeError(
                 f"SQLite storage does not support {artifact.kind!r} artifacts yet."
@@ -646,6 +653,20 @@ class ChatRepository:
                     arrow_bytes=bytes(row["payload"]),
                     row_count=int(metadata["row_count"]),
                     truncated=bool(metadata["truncated"]),
+                ),
+            )
+        if (
+            row["kind"] == "visualization"
+            and row["media_type"] == VEGA_LITE_MEDIA_TYPE
+        ):
+            ref = ArtifactRef(
+                artifact_id=row["id"],
+                artifact_kind="visualization",
+            )
+            return Artifact(
+                ref=ref,
+                content=VisualizationContent(
+                    spec_json=bytes(row["payload"]),
                 ),
             )
         raise TypeError(

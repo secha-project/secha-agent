@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from typing import Any
 
+import pandas as pd
+
 from src.agent.artifacts.base import (
     Artifact,
     ArtifactRef,
     ArtifactRegistry,
 )
 from src.agent.artifacts.table import TableContent
+from src.agent.artifacts.visualization import VisualizationContent
 
 from .models import ArtifactDisplayPart
 
@@ -25,7 +28,6 @@ class ArtifactRenderer:
     ) -> ArtifactDisplayPart | None:
         if not isinstance(metadata, ArtifactRef):
             return None
-
         artifact = self.registry.resolve(metadata)
         self.render(
             container,
@@ -49,6 +51,9 @@ class ArtifactRenderer:
                 content,
                 key=key,
             )
+            return
+        if isinstance(content, VisualizationContent):
+            self._render_visualization(container, content)
             return
         raise TypeError(
             f"No renderer is registered for {artifact.kind!r} artifacts."
@@ -80,3 +85,38 @@ class ArtifactRenderer:
                 mime="text/csv",
                 key=key,
             )
+
+    @staticmethod
+    def _render_visualization(
+        container: Any,
+        content: VisualizationContent,
+    ) -> None:
+        """Render the exact self-contained Vega-Lite artifact."""
+        spec = content.to_spec()
+        data_reference = spec.pop("data", None)
+        datasets = spec.pop("datasets", None)
+        if (
+            isinstance(data_reference, dict)
+            and isinstance(data_reference.get("name"), str)
+            and isinstance(datasets, dict)
+            and data_reference["name"] in datasets
+        ):
+            container.vega_lite_chart(
+                pd.DataFrame(datasets[data_reference["name"]]),
+                spec,
+                width="stretch",
+                height=500,
+                theme=None,
+            )
+            return
+
+        if data_reference is not None:
+            spec["data"] = data_reference
+        if datasets is not None:
+            spec["datasets"] = datasets
+        container.vega_lite_chart(
+            spec,
+            width="stretch",
+            height=500,
+            theme=None,
+        )

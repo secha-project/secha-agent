@@ -7,7 +7,7 @@ SECHA-agent is an AI data assistant for SECHA's data platform. It consists of th
 The agent, built with Pydantic AI, can answer data analytics questions by interacting with the Unity Catalog through the REST API and SparkSQL using the following tools:
 
 - `browse_tables`
-- `search_columns`
+- `find_columns`
 - `describe_table`
 - `query_data`
 - `inspect_query_result`
@@ -33,7 +33,7 @@ The validation suite, built with Pydantic Evals, aims to validate the quality of
 
 ```yaml
 agent:
-  enabled_capabilities: [catalog, query]
+  enabled_capabilities: [catalog, query, visualization]
 ```
 
 That example config file evaluates the agent in the small dataset in `src/validation/benchmark/power-quality-monitoring/dataset.yaml`, you can run it with:

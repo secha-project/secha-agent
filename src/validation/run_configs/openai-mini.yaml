@@ -7,6 +7,7 @@ agent:
   enabled_capabilities:
     - catalog
     - query
+    - visualization
 
 dataset: power-quality-monitoring
 repetitions: 1

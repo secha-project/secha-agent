@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 
 DEFAULT_TABLE_ARTIFACT_MAX_ROWS = 10_000
 
-type ArtifactKind = Literal["table", "image"]
+type ArtifactKind = Literal["table", "image", "visualization"]
 
 
 class ArtifactRef(BaseModel):
@@ -150,6 +150,13 @@ class ArtifactRegistry:
         self.add(Artifact(ref=ref, source=source))
         return ref
 
+    def create_content(self, content: ArtifactContent) -> ArtifactRef:
+        ref = ArtifactRef(
+            artifact_id=uuid4().hex,
+            artifact_kind=content.kind,
+        )
+        return self.add(Artifact(ref=ref, content=content))
+
     def add(self, artifact: Artifact) -> ArtifactRef:
         if artifact.id in self._artifacts:
             raise ValueError(f"Artifact {artifact.id!r} is already registered.")
@@ -214,6 +221,9 @@ class ArtifactContext:
 
     def create(self, source: ArtifactSource) -> ArtifactRef:
         return self.registry.create(source)
+
+    def create_content(self, content: ArtifactContent) -> ArtifactRef:
+        return self.registry.create_content(content)
 
     def resolve_source(
         self,

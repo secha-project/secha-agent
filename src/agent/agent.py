@@ -20,6 +20,10 @@ def create_agent(
         raise ValueError(f"Unknown capabilities: {sorted(unknown)}")
 
     selected = frozenset(names)
+    if "visualization" in selected and not {"catalog", "query"} <= selected:
+        raise ValueError(
+            "The visualization capability requires catalog and query."
+        )
     capabilities = [CAPABILITY_BUILDERS[name](selected) for name in names]
 
     return Agent(

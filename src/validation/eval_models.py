@@ -29,7 +29,19 @@ class ExplanationOutput(BaseModel):
     explanation: str
 
 
-ExpectedItem = TextOutput | NumberOutput | TableOutput | ExplanationOutput
+class VisualizationOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    spec_path: str
+    image_path: str
+
+
+ExpectedItem = (
+    TextOutput
+    | NumberOutput
+    | TableOutput
+    | ExplanationOutput
+    | VisualizationOutput
+)
 ExpectedOutput = Annotated[list[ExpectedItem], Field(min_length=1)]
 BenchmarkOutput = str | ExpectedOutput
 

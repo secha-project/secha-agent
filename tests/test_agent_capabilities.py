@@ -7,7 +7,7 @@ from pydantic_ai.messages import ModelRequest
 from pydantic_ai.models.test import TestModel
 
 from src.agent.agent import create_agent
-from src.agent.capabilities import build_catalog, build_query
+from src.agent.capabilities import build_catalog, build_query, build_visualization
 from src.agent.deps import Deps
 from src.agent.prompt_loader import compose_prompts, load_prompt
 
@@ -16,6 +16,9 @@ CATALOG_INSTRUCTIONS = load_prompt("capabilities/catalog/instructions.md")
 QUERY_CORE = load_prompt("capabilities/query/core.md")
 QUERY_STANDALONE = load_prompt("capabilities/query/standalone.md")
 QUERY_WITH_CATALOG = load_prompt("capabilities/query/with_catalog.md")
+VISUALIZATION_INSTRUCTIONS = load_prompt(
+    "capabilities/visualization/instructions.md"
+)
 
 
 def _static_instructions(capability: Capability[Deps]) -> list[str]:
@@ -75,7 +78,7 @@ def test_create_agent_deduplicates_capabilities() -> None:
     assert request.instructions.count(QUERY_CORE) == 1
     assert [tool.name for tool in model.last_model_request_parameters.function_tools] == [
         "browse_tables",
-        "search_columns",
+        "find_columns",
         "describe_table",
         "query_data",
         "inspect_query_result",
@@ -86,6 +89,55 @@ def test_create_agent_deduplicates_capabilities() -> None:
 def test_create_agent_rejects_unknown_capabilities() -> None:
     with pytest.raises(ValueError, match=r"Unknown capabilities: \['unknown'\]"):
         create_agent(cast(Any, ("catalog", "unknown")))
+
+
+def test_visualization_uses_one_instruction_prompt_and_exposes_one_tool() -> None:
+    capability = build_visualization(
+        frozenset({"catalog", "query", "visualization"})
+    )
+    assert _static_instructions(capability) == [VISUALIZATION_INSTRUCTIONS]
+
+    model = TestModel(call_tools=[], custom_output_text="done")
+    create_agent(("catalog", "query", "visualization")).run_sync(
+        "question",
+        deps=cast(Deps, cast(Any, object())),
+        model=model,
+    )
+    assert model.last_model_request_parameters.function_tools[-1].name == (
+        "visualize_query_result"
+    )
+
+
+@pytest.mark.parametrize(
+    "capabilities",
+    [
+        ("visualization",),
+        ("catalog", "visualization"),
+        ("query", "visualization"),
+    ],
+)
+def test_visualization_requires_catalog_and_query(
+    capabilities: tuple[str, ...],
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="visualization capability requires catalog and query",
+    ):
+        create_agent(cast(Any, capabilities))
+
+
+def test_default_agent_includes_visualization() -> None:
+    model = TestModel(call_tools=[], custom_output_text="done")
+
+    create_agent().run_sync(
+        "question",
+        deps=cast(Deps, cast(Any, object())),
+        model=model,
+    )
+
+    assert model.last_model_request_parameters.function_tools[-1].name == (
+        "visualize_query_result"
+    )
 
 
 def test_differently_configured_agents_do_not_contaminate_each_other() -> None:

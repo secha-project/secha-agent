@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import stat
 from datetime import UTC, datetime, timedelta
@@ -6,6 +7,9 @@ from pathlib import Path
 
 import pytest
 from pydantic_ai import ModelRequest, UserPromptPart
+
+from src.agent.artifacts.base import Artifact, ArtifactRef
+from src.agent.artifacts.visualization import VisualizationContent
 
 from src.app.models import AssistantDisplayMessage, TextDisplayPart, User
 from src.app.storage import (
@@ -257,3 +261,38 @@ def test_delete_conversation_is_user_scoped_and_cascades(
             conversation.id,
             artifact.id,
         )
+
+
+def test_visualization_round_trip_persists_only_vega_lite_spec(
+    repository: ChatRepository,
+    users: tuple[User, User],
+) -> None:
+    alice, _ = users
+    conversation = repository.create_conversation(alice.id)
+    spec_json = json.dumps(
+        {"data": {"values": [{"x": 1}]}, "mark": "point"}
+    ).encode()
+    artifact = Artifact(
+        ref=ArtifactRef(
+            artifact_id="visualization-1",
+            artifact_kind="visualization",
+        ),
+        content=VisualizationContent(spec_json=spec_json),
+    )
+
+    repository.save_artifact(alice.id, conversation.id, artifact)
+    restored = repository.load_artifact(
+        alice.id,
+        conversation.id,
+        artifact.id,
+    )
+
+    restored_content = restored.require_content()
+    assert isinstance(restored_content, VisualizationContent)
+    assert restored_content.spec_json == spec_json
+    with sqlite3.connect(repository.db_path) as connection:
+        payload = connection.execute(
+            "SELECT payload FROM artifacts WHERE id = ?",
+            (artifact.id,),
+        ).fetchone()[0]
+    assert bytes(payload) == spec_json

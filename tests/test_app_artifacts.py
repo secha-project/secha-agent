@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import Any
 
 import pandas as pd
@@ -7,12 +8,14 @@ import pytest
 
 from src.agent.artifacts.base import (
     DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
+    Artifact,
     ArtifactContext,
     ArtifactPolicy,
     ArtifactRef,
     ArtifactRegistry,
 )
 from src.agent.artifacts.table import SparkTableSource
+from src.agent.artifacts.visualization import VisualizationContent
 from src.app.artifact_renderer import ArtifactRenderer
 
 
@@ -152,3 +155,38 @@ def test_truncated_table_adds_csv_download(make_table_artifact: Any) -> None:
         "mime": "text/csv",
         "key": "download-truncated",
     }
+
+
+class VisualizationContainer:
+    def __init__(self) -> None:
+        self.chart_calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
+    def vega_lite_chart(self, *args: Any, **kwargs: Any) -> None:
+        self.chart_calls.append((args, kwargs))
+
+
+def test_visualization_renderer_binds_named_data() -> None:
+    spec = {
+        "data": {"name": "source"},
+        "datasets": {"source": [{"x": "A", "y": 1}]},
+        "mark": "bar",
+        "encoding": {
+            "x": {"field": "x", "type": "nominal"},
+            "y": {"field": "y", "type": "quantitative"},
+        },
+    }
+    content = VisualizationContent(spec_json=json.dumps(spec).encode())
+    ref = ArtifactRef(artifact_id="viz-1", artifact_kind="visualization")
+    artifact = Artifact(ref=ref, content=content)
+    container = VisualizationContainer()
+
+    ArtifactRenderer(ArtifactRegistry()).render(
+        container,
+        artifact,
+    )
+
+    args, kwargs = container.chart_calls[0]
+    assert args[0].to_dict(orient="records") == [{"x": "A", "y": 1}]
+    assert "data" not in args[1]
+    assert "datasets" not in args[1]
+    assert kwargs == {"width": "stretch", "height": 500, "theme": None}

@@ -7,6 +7,7 @@ from .profiles import DEFAULT_CAPABILITIES, CapabilityName
 from .prompt_loader import compose_prompts, load_prompt
 from .tools.catalog_tools import catalog_toolset
 from .tools.query_tools import query_toolset
+from .tools.visualization_tools import visualization_toolset
 
 type SelectedCapabilities = frozenset[CapabilityName]
 type CapabilityBuilder = Callable[
@@ -39,7 +40,18 @@ def build_query(selected: SelectedCapabilities) -> Capability[Deps]:
     )
 
 
+def build_visualization(_selected: SelectedCapabilities) -> Capability[Deps]:
+    return Capability(
+        id="visualization",
+        instructions=load_prompt(
+            "capabilities/visualization/instructions.md"
+        ),
+        toolsets=[visualization_toolset],
+    )
+
+
 CAPABILITY_BUILDERS: dict[CapabilityName, CapabilityBuilder] = {
     "catalog": build_catalog,
     "query": build_query,
+    "visualization": build_visualization,
 }

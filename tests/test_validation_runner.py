@@ -48,6 +48,7 @@ def test_agent_task_uses_a_fresh_artifact_context_for_each_run(
 
     assert contexts[0] is not contexts[1]
     assert template_context not in contexts
+    assert contexts[0].policy.table_max_rows is None
     assert references[0] != references[1]
     with pytest.raises(UnknownArtifactError):
         contexts[0].registry.resolve(references[1])

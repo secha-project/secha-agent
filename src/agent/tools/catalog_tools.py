@@ -72,26 +72,28 @@ def browse_tables(ctx: RunContext[Deps]) -> BrowseTablesResult:
 
 
 @catalog_toolset.tool
-def search_columns(
+def find_columns(
     ctx: RunContext[Deps],
     table_name: str,
-    query: str,
+    keywords: str,
 ) -> SearchColumnsResult:
-    """Search every column name and comment in one known table for text.
+    """Search for keywords in column names and metadata from a specific table.
 
-    Use this when the user describes a column in human language or its exact
-    identifier is unknown. The table name must be exact; use ``browse_tables``
-    when it is uncertain. This searches metadata, not row values.
+    This searches schema metadata only. It does not search table data or row
+    values; use ``query_data`` to filter or search data.
 
     Args:
         table_name: A bare, schema-qualified, or fully qualified table name.
             Bare names use the configured schema.
-        query: Text to find in column names or comments.
+        keywords: One or more column-name or metadata keywords. Columns matching
+            any keyword in their name or comment are returned, with more keyword
+            matches first. Do not provide table data values.
     """
     deps = ctx.deps
-    normalized_query = _normalize_search_text(query)
-    if not normalized_query:
-        raise ModelRetry("Column search query cannot be empty.")
+    normalized_keywords = _normalize_search_text(keywords)
+    if not normalized_keywords:
+        raise ModelRetry("Column search keywords cannot be empty.")
+    keyword_terms = tuple(dict.fromkeys(normalized_keywords.split()))
 
     resolved_table_name = _full_table_name(
         table_name,
@@ -113,30 +115,37 @@ def search_columns(
     for column in columns:
         normalized_name = _normalize_search_text(column.name)
         normalized_comment = _normalize_search_text(column.comment or "")
+        name_matches = {
+            keyword for keyword in keyword_terms if keyword in normalized_name
+        }
+        comment_matches = {
+            keyword for keyword in keyword_terms if keyword in normalized_comment
+        }
+        matched_keywords = name_matches | comment_matches
         matched_in = []
-        if normalized_query in normalized_name:
+        if name_matches:
             matched_in.append("name")
-        if normalized_query in normalized_comment:
+        if comment_matches:
             matched_in.append("comment")
         if matched_in:
-            if normalized_query == normalized_name:
-                rank = 0
-            elif "name" in matched_in:
-                rank = 1
-            else:
-                rank = 2
             ranked_matches.append(
                 (
-                    rank,
+                    (
+                        -len(matched_keywords),
+                        0 if normalized_keywords == normalized_name else 1,
+                        0 if normalized_name in keyword_terms else 1,
+                        0 if name_matches else 1,
+                        column.position,
+                    ),
                     ColumnMatch(**column.model_dump(), matched_in=matched_in),
                 )
             )
 
-    ranked_matches.sort(key=lambda match: (match[0], match[1].position))
+    ranked_matches.sort(key=lambda match: match[0])
     matches = [match for _, match in ranked_matches]
     return SearchColumnsResult(
         table_name=resolved_table_name,
-        query=query,
+        query=keywords,
         searched_columns=len(columns),
         total_matches=len(matches),
         matches=matches[: deps.table_column_page_size],
@@ -156,7 +165,7 @@ def describe_table(
     By default this returns the configured first page of columns. Use
     ``start_column`` and ``end_column`` for a 1-based inclusive range, or
     ``column_names`` for exact identifiers. ``column_names`` takes precedence
-    over the range. Use ``search_columns`` for human-language wording.
+    over the range. Use ``find_columns`` for human-language wording.
 
     Args:
         table_name: A bare, schema-qualified, or fully qualified table name.

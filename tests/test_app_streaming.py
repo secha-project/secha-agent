@@ -1,4 +1,5 @@
 import asyncio
+import json
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, cast
@@ -14,7 +15,12 @@ from pydantic_ai import (
     UsageLimits,
 )
 
-from src.agent.artifacts.base import ArtifactContext, ArtifactRef
+from src.agent.artifacts.base import (
+    Artifact,
+    ArtifactContext,
+    ArtifactRef,
+)
+from src.agent.artifacts.visualization import VisualizationContent
 from src.agent.deps import Deps
 from src.app.models import ArtifactDisplayPart, ToolDisplayPart
 from src.app.streaming import stream_agent_response
@@ -54,6 +60,7 @@ class StreamingContainer:
         self.status_args: tuple[Any, ...] = ()
         self.status_kwargs: dict[str, Any] = {}
         self.status_container = StatusContainer()
+        self.chart_count = 0
 
     def status(self, *args: Any, **kwargs: Any) -> StatusContainer:
         self.status_args = args
@@ -68,6 +75,9 @@ class StreamingContainer:
 
     def download_button(self, *_args: Any, **_kwargs: Any) -> None:
         pass
+
+    def vega_lite_chart(self, *_args: Any, **_kwargs: Any) -> None:
+        self.chart_count += 1
 
 
 class AgentStub:
@@ -139,3 +149,94 @@ def test_stream_returns_owned_assistant_and_pending_artifacts(
     artifact_part = result.assistant_message.parts[1]
     assert isinstance(artifact_part, ArtifactDisplayPart)
     assert artifact_part.artifact_id == result.artifacts[0].id
+
+
+class VisualizationAgentStub:
+    def __init__(self, references: list[ArtifactRef]) -> None:
+        self.references = references
+
+    @asynccontextmanager
+    async def run_stream_events(
+        self,
+        *_args: Any,
+        **_kwargs: Any,
+    ) -> AsyncIterator[AsyncIterator[Any]]:
+        async def events() -> AsyncIterator[Any]:
+            for index, reference in enumerate(self.references, start=1):
+                tool_id = f"viz-{index}"
+                yield FunctionToolCallEvent(
+                    ToolCallPart(
+                        tool_name="visualize_query_result",
+                        args={"ggsql": "SELECT ...", "title": f"Attempt {index}"},
+                        tool_call_id=tool_id,
+                    )
+                )
+                yield FunctionToolResultEvent(
+                    ToolReturnPart(
+                        tool_name="visualize_query_result",
+                        content="rendered",
+                        tool_call_id=tool_id,
+                        metadata=reference,
+                    )
+                )
+            yield AgentRunResultEvent(AgentRunResult(output="done"))
+
+        yield events()
+
+
+def _make_visualization_artifact(artifact_id: str) -> Artifact:
+    spec = {
+        "data": {"name": "source"},
+        "datasets": {"source": [{"x": 1, "y": 2}]},
+        "mark": "point",
+    }
+    return Artifact(
+        ref=ArtifactRef(
+            artifact_id=artifact_id,
+            artifact_kind="visualization",
+        ),
+        content=VisualizationContent(spec_json=json.dumps(spec).encode()),
+    )
+
+
+def test_stream_renders_each_published_visualization() -> None:
+    artifact_context = ArtifactContext()
+    artifacts = [
+        _make_visualization_artifact("viz-first"),
+        _make_visualization_artifact("viz-last"),
+    ]
+    for artifact in artifacts:
+        artifact_context.registry.add(artifact)
+        asyncio.run(artifact_context.publish(artifact.ref))
+    deps = cast(
+        Deps,
+        SimpleNamespace(
+            spark=TaggedSpark(),
+            artifact_context=artifact_context,
+        ),
+    )
+    container = StreamingContainer()
+
+    result = asyncio.run(
+        stream_agent_response(
+            prompt="make a chart",
+            message_history=[],
+            deps=deps,
+            agent_instance=VisualizationAgentStub(
+                [artifact.ref for artifact in artifacts]
+            ),
+            model=object(),
+            model_settings=ModelSettings(),
+            usage_limits=UsageLimits(),
+            container=container,
+        )
+    )
+
+    assert result is not None
+    parts = [
+        part
+        for part in result.assistant_message.parts
+        if isinstance(part, ArtifactDisplayPart)
+    ]
+    assert len(parts) == 2
+    assert container.chart_count == 2
