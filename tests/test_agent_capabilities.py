@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any, cast
 
 import pytest
@@ -21,6 +22,10 @@ VISUALIZATION_INSTRUCTIONS = load_prompt("capabilities/visualization/instruction
 def _static_instructions(capability: Capability[Deps]) -> list[str]:
     instructions = capability.get_instructions()
     assert instructions is not None
+    if isinstance(instructions, str):
+        return [instructions]
+    if not isinstance(instructions, Sequence):
+        return []
     return [instruction for instruction in instructions if isinstance(instruction, str)]
 
 
@@ -73,9 +78,9 @@ def test_create_agent_deduplicates_capabilities() -> None:
     assert request.instructions is not None
     assert request.instructions.count(CATALOG_INSTRUCTIONS) == 1
     assert request.instructions.count(QUERY_CORE) == 1
-    assert [
-        tool.name for tool in model.last_model_request_parameters.function_tools
-    ] == [
+    request_parameters = model.last_model_request_parameters
+    assert request_parameters is not None
+    assert [tool.name for tool in request_parameters.function_tools] == [
         "browse_tables",
         "find_columns",
         "describe_table",
@@ -100,9 +105,9 @@ def test_visualization_uses_one_instruction_prompt_and_exposes_one_tool() -> Non
         deps=cast(Deps, cast(Any, object())),
         model=model,
     )
-    assert model.last_model_request_parameters.function_tools[-1].name == (
-        "visualize_query_result"
-    )
+    request_parameters = model.last_model_request_parameters
+    assert request_parameters is not None
+    assert request_parameters.function_tools[-1].name == "visualize_query_result"
 
 
 @pytest.mark.parametrize(
@@ -132,9 +137,9 @@ def test_default_agent_includes_visualization() -> None:
         model=model,
     )
 
-    assert model.last_model_request_parameters.function_tools[-1].name == (
-        "visualize_query_result"
-    )
+    request_parameters = model.last_model_request_parameters
+    assert request_parameters is not None
+    assert request_parameters.function_tools[-1].name == "visualize_query_result"
 
 
 def test_differently_configured_agents_do_not_contaminate_each_other() -> None:

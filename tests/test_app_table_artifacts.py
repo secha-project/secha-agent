@@ -1,16 +1,22 @@
 import asyncio
 import csv
 import io
+from typing import Any, cast
 
 import pyarrow as pa
-from pydantic_ai import ModelMessagesTypeAdapter, ModelRequest, ToolReturnPart
+from pydantic_ai import (
+    ModelMessage,
+    ModelMessagesTypeAdapter,
+    ModelRequest,
+    ToolReturnPart,
+)
 
 from src.agent.artifacts.base import (
     ArtifactContext,
     ArtifactPolicy,
     ArtifactRef,
 )
-from src.agent.artifacts.table import SparkTableSource
+from src.agent.artifacts.table import SparkTableSource, TableContent
 
 
 class MaterializedResult:
@@ -53,11 +59,12 @@ def test_table_artifact_caps_and_round_trips_exact_arrow_values() -> None:
     )
     ref = context.create(
         SparkTableSource(
-            spark=TaggedSpark(),  # type: ignore[arg-type]
-            dataframe=MaterializedResult(source),  # type: ignore[arg-type]
+            spark=cast(Any, TaggedSpark()),
+            dataframe=cast(Any, MaterializedResult(source)),
         )
     )
     content = asyncio.run(context.materialize(ref))
+    assert isinstance(content, TableContent)
     restored = content.to_arrow_table()
 
     assert content.row_count == 10_000
@@ -78,7 +85,7 @@ def test_csv_and_tool_metadata_are_json_safe(make_table_artifact) -> None:
     )
     assert rows == [{"id": "1", "value": "a,b"}]
 
-    history = [
+    history: list[ModelMessage] = [
         ModelRequest(
             parts=[
                 ToolReturnPart(

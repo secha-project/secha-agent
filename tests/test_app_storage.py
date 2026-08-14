@@ -6,7 +6,7 @@ from hashlib import sha256
 from pathlib import Path
 
 import pytest
-from pydantic_ai import ModelRequest, UserPromptPart
+from pydantic_ai import ModelMessage, ModelRequest, UserPromptPart
 
 from src.agent.artifacts.base import Artifact, ArtifactRef
 from src.agent.artifacts.visualization import VisualizationContent
@@ -138,7 +138,9 @@ def test_user_and_completed_assistant_are_saved_in_two_steps(
     assert [message.role for message in after_user.display_messages] == ["user"]
     assert after_user.model_messages == []
 
-    model_history = [ModelRequest(parts=[UserPromptPart(content="Show measurements")])]
+    model_history: list[ModelMessage] = [
+        ModelRequest(parts=[UserPromptPart(content="Show measurements")])
+    ]
     artifact = make_table_artifact([{"measurement": 1}])
     completed = repository.commit_assistant(
         alice.id,

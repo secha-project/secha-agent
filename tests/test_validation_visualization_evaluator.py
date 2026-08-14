@@ -1,8 +1,10 @@
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
 from pydantic_ai.models.test import TestModel
+from pydantic_evals.evaluators import EvaluationReason
 
 from src.validation.eval_models import VisualizationOutput
 from src.validation.evaluators.visualization import (
@@ -52,7 +54,10 @@ def test_visualization_quality_uses_structured_multimodal_judgment(tmp_path) -> 
         attributes={"visualization_image_path": str(generated_path)},
     )
 
-    output = evaluator.evaluate_sync(ctx)
+    output = cast(
+        dict[str, EvaluationReason],
+        evaluator.evaluate_sync(cast(Any, ctx)),
+    )
 
     assert output["visualization_type"].value == 1.0
     assert output["data_encoding"].value == 0.5
@@ -81,4 +86,4 @@ def test_visualization_quality_skips_judge_when_generated_image_is_missing(
         attributes={},
     )
 
-    assert evaluator.evaluate_sync(ctx) == {}
+    assert evaluator.evaluate_sync(cast(Any, ctx)) == {}

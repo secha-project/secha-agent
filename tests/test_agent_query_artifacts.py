@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import Callable
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pandas as pd
 import pytest
@@ -57,8 +58,8 @@ class StubSpark:
 
 def test_result_preview_uses_framework_agnostic_validation_error() -> None:
     source = SparkTableSource(
-        StubSpark(),  # type: ignore[arg-type]
-        StubResult(),  # type: ignore[arg-type]
+        cast(Any, StubSpark()),
+        cast(Any, StubResult()),
     )
     with pytest.raises(ValueError, match="Unknown result columns: missing_column"):
         asyncio.run(source.preview(column_names=["missing_column"]))
@@ -67,7 +68,7 @@ def test_result_preview_uses_framework_agnostic_validation_error() -> None:
 def test_inspect_query_result_exposes_unknown_columns_as_model_retry() -> None:
     artifact_context = ArtifactContext()
     ref = artifact_context.create(
-        SparkTableSource(StubSpark(), StubResult())  # type: ignore[arg-type]
+        SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
@@ -79,7 +80,7 @@ def test_inspect_query_result_exposes_unknown_columns_as_model_retry() -> None:
     with pytest.raises(ModelRetry, match="Unknown result columns: missing_column"):
         asyncio.run(
             inspect_query_result(
-                ctx,  # type: ignore[arg-type]
+                cast(Any, ctx),
                 ref,
                 column_names=["missing_column"],
             )
@@ -91,7 +92,7 @@ def test_inspect_query_result_exposes_unknown_columns_as_model_retry() -> None:
     [inspect_query_result, display_query_result],
 )
 def test_query_result_tools_expose_stale_references_as_model_retry(
-    tool: Callable[..., object],
+    tool: Callable[..., Any],
 ) -> None:
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
@@ -106,7 +107,7 @@ def test_query_result_tools_expose_stale_references_as_model_retry(
     ):
         asyncio.run(
             tool(
-                ctx,  # type: ignore[arg-type]
+                cast(Any, ctx),
                 ArtifactRef(artifact_id="stale", artifact_kind="table"),
             )
         )
@@ -125,7 +126,7 @@ def test_query_data_returns_structured_result_preview() -> None:
 
     result = asyncio.run(
         query_data(
-            ctx,  # type: ignore[arg-type]
+            cast(Any, ctx),
             "SELECT 1 AS value",
         )
     )
@@ -143,7 +144,7 @@ def test_display_query_result_publishes_the_same_logical_artifact() -> None:
         policy=ArtifactPolicy(table_max_rows=10),
     )
     ref = artifact_context.create(
-        SparkTableSource(StubSpark(), StubResult())  # type: ignore[arg-type]
+        SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
@@ -154,7 +155,7 @@ def test_display_query_result_publishes_the_same_logical_artifact() -> None:
 
     result = asyncio.run(
         display_query_result(
-            ctx,  # type: ignore[arg-type]
+            cast(Any, ctx),
             ref,
         )
     )
@@ -181,7 +182,7 @@ def test_display_query_result_can_publish_materialized_content_without_a_source(
 
     result = asyncio.run(
         display_query_result(
-            ctx,  # type: ignore[arg-type]
+            cast(Any, ctx),
             artifact.ref,
         )
     )
@@ -207,7 +208,7 @@ def test_query_data_rejects_mutating_sql_before_calling_spark() -> None:
     with pytest.raises(ModelRetry, match="ReadOnlyQueryRequired"):
         asyncio.run(
             query_data(
-                ctx,  # type: ignore[arg-type]
+                cast(Any, ctx),
                 "DELETE FROM measurements",
             )
         )
@@ -216,7 +217,7 @@ def test_query_data_rejects_mutating_sql_before_calling_spark() -> None:
 def test_inspect_query_result_returns_structured_result_preview() -> None:
     artifact_context = ArtifactContext()
     ref = artifact_context.create(
-        SparkTableSource(StubSpark(), StubResult())  # type: ignore[arg-type]
+        SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
@@ -227,7 +228,7 @@ def test_inspect_query_result_returns_structured_result_preview() -> None:
 
     result = asyncio.run(
         inspect_query_result(
-            ctx,  # type: ignore[arg-type]
+            cast(Any, ctx),
             ref,
         )
     )

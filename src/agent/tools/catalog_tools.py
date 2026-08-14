@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 from urllib.error import HTTPError
 
 from pydantic_ai import ModelRetry, RunContext
@@ -122,7 +123,7 @@ def find_columns(
             keyword for keyword in keyword_terms if keyword in normalized_comment
         }
         matched_keywords = name_matches | comment_matches
-        matched_in = []
+        matched_in: list[Literal["name", "comment"]] = []
         if name_matches:
             matched_in.append("name")
         if comment_matches:

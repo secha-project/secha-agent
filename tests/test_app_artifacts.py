@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -14,7 +14,7 @@ from src.agent.artifacts.base import (
     ArtifactRef,
     ArtifactRegistry,
 )
-from src.agent.artifacts.table import SparkTableSource
+from src.agent.artifacts.table import SparkTableSource, TableContent
 from src.agent.artifacts.visualization import VisualizationContent
 from src.app.artifact_renderer import ArtifactRenderer
 
@@ -65,11 +65,12 @@ def test_spark_table_source_uses_the_configured_limit() -> None:
     )
     ref = context.create(
         SparkTableSource(
-            spark=TaggedSpark(),  # type: ignore[arg-type]
-            dataframe=result,  # type: ignore[arg-type]
+            spark=cast(Any, TaggedSpark()),
+            dataframe=cast(Any, result),
         )
     )
     content = asyncio.run(context.materialize(ref))
+    assert isinstance(content, TableContent)
 
     assert result.limit_value == DEFAULT_TABLE_ARTIFACT_MAX_ROWS + 1
     assert content.row_count == 1

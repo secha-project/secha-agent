@@ -49,7 +49,9 @@ def test_artifact_source_can_materialize_from_an_artifact_reference(
             self.input_ref = input_ref
 
         async def materialize(self, artifact_context: ArtifactContext) -> TableContent:
-            return await artifact_context.materialize(self.input_ref)
+            content = await artifact_context.materialize(self.input_ref)
+            assert isinstance(content, TableContent)
+            return content
 
     output_ref = context.create(cast(Any, ReferencedTableSource(input_artifact.ref)))
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal, Protocol, TypeVar, cast
+from typing import Literal, Protocol, TypeVar
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict
@@ -183,7 +183,7 @@ class ArtifactRegistry:
             raise ArtifactSourceUnavailableError(ref)
         if not isinstance(source, expected_type):
             raise UnexpectedArtifactSourceTypeError(ref, expected_type, source)
-        return cast(ArtifactSourceT, source)
+        return source
 
     def set_content(
         self,

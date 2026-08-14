@@ -463,6 +463,15 @@ def activate_conversation(
     return True
 
 
+def activate_conversation_callback(
+    resources: AppResources,
+    user_id: str,
+    conversation_id: str,
+) -> None:
+    """Activate a conversation from a Streamlit widget callback."""
+    activate_conversation(resources, user_id, conversation_id)
+
+
 def start_new_conversation() -> None:
     """Reset the UI to an unsaved draft conversation."""
     st.session_state.current_conversation_id = None
@@ -586,7 +595,7 @@ def _render_sidebar(
                             == st.session_state.current_conversation_id
                             else "secondary"
                         ),
-                        on_click=activate_conversation,
+                        on_click=activate_conversation_callback,
                         args=(resources, user.id, conversation.id),
                         width="stretch",
                     )

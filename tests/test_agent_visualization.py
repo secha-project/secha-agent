@@ -1,6 +1,6 @@
 import asyncio
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import pytest
@@ -71,7 +71,7 @@ def _context(
     )
     context = ArtifactContext()
     ref = context.create(
-        SparkTableSource(spark=spark, dataframe=spark.result)  # type: ignore[arg-type]
+        SparkTableSource(spark=cast(Any, spark), dataframe=cast(Any, spark.result))
     )
     return (
         SimpleNamespace(
@@ -87,7 +87,7 @@ def test_visualization_tool_exposes_retry_contract_in_definition() -> None:
 
     assert tool.max_retries == 3
     assert tool.sequential is True
-    assert "ModelRetry" in tool.description
+    assert "ModelRetry" in (tool.description or "")
     assert tool.function_schema.json_schema["required"] == ["ref", "ggsql", "title"]
 
 
@@ -188,7 +188,7 @@ def test_visualization_exposes_spark_failure_as_model_retry() -> None:
     spark.result = BrokenResult(pd.DataFrame())
     artifact_context = ArtifactContext()
     ref = artifact_context.create(
-        SparkTableSource(spark=spark, dataframe=spark.result)  # type: ignore[arg-type]
+        SparkTableSource(spark=cast(Any, spark), dataframe=cast(Any, spark.result))
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
@@ -201,4 +201,6 @@ def test_visualization_exposes_spark_failure_as_model_retry() -> None:
         ModelRetry,
         match="Visualization data loading failed.*backend unavailable",
     ):
-        asyncio.run(visualize_query_result(ctx, ref, GGSQL_QUERY, "Broken"))
+        asyncio.run(
+            visualize_query_result(cast(Any, ctx), ref, GGSQL_QUERY, "Broken")
+        )

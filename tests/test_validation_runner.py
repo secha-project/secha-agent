@@ -6,6 +6,7 @@ import pytest
 
 import src.validation.runner as runner_module
 from src.agent.artifacts.base import (
+    Artifact,
     ArtifactContext,
     UnknownArtifactError,
 )
@@ -62,7 +63,7 @@ def test_agent_task_writes_only_the_artifacts_from_that_run(
         schema_name="bronze",
         table_column_page_size=20,
     )
-    written: list[tuple[object, ...]] = []
+    written: list[tuple[Artifact, ...]] = []
 
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         artifact = make_table_artifact([{"value": 1}])
