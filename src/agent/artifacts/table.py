@@ -9,7 +9,7 @@ import pyarrow as pa
 from pyarrow import ipc
 from pyspark.sql import DataFrame, SparkSession
 
-from ..runtime import run_spark_with_timeout
+from ..spark import run_spark_with_timeout
 from .base import ArtifactContext
 
 ARROW_STREAM_MEDIA_TYPE = "application/vnd.apache.arrow.stream"

@@ -18,9 +18,8 @@ from src.agent.artifacts.base import (
     ArtifactRegistry,
 )
 from src.agent.catalog import UnityCatalogClient
-from src.agent.config import AgentConfig
+from src.agent.config import AgentConfig, create_model
 from src.agent.deps import Deps
-from src.agent.providers import create_model
 from src.agent.spark import get_spark_session
 from src.app.artifact_renderer import ArtifactRenderer
 from src.app.auth import (

@@ -13,9 +13,8 @@ from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponenti
 from src.agent.agent import create_agent
 from src.agent.artifacts.base import ArtifactContext, ArtifactPolicy
 from src.agent.catalog import UnityCatalogClient
-from src.agent.config import AgentConfig
+from src.agent.config import AgentConfig, create_model
 from src.agent.deps import Deps
-from src.agent.providers import create_model
 from src.agent.spark import get_spark_session
 from src.validation.config import BENCHMARKS_DIR, RESULTS_DIR, BenchmarkRunConfig
 from src.validation.eval_models import (

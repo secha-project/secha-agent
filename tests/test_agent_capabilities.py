@@ -7,10 +7,15 @@ from pydantic_ai.capabilities import Capability
 from pydantic_ai.messages import ModelRequest
 from pydantic_ai.models.test import TestModel
 
-from src.agent.agent import create_agent
-from src.agent.capabilities import build_catalog, build_query, build_visualization
+from src.agent.agent import (
+    build_catalog,
+    build_query,
+    build_visualization,
+    compose_prompts,
+    create_agent,
+    load_prompt,
+)
 from src.agent.deps import Deps
-from src.agent.prompt_loader import compose_prompts, load_prompt
 
 CATALOG_INSTRUCTIONS = load_prompt("capabilities/catalog/instructions.md")
 QUERY_CORE = load_prompt("capabilities/query/core.md")

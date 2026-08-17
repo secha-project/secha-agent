@@ -8,9 +8,8 @@ from pydantic_ai import ModelSettings, UsageLimits
 from .agent import create_agent
 from .artifacts.base import Artifact, ArtifactContext
 from .catalog import UnityCatalogClient
-from .config import AgentConfig
+from .config import AgentConfig, create_model
 from .deps import Deps
-from .providers import create_model
 from .spark import get_spark_session
 
 

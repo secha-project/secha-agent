@@ -13,8 +13,8 @@ from src.agent.artifacts.base import (
     ArtifactRef,
 )
 from src.agent.artifacts.table import SparkTableSource, TableContent
-from src.agent.models import InspectQueryResult
 from src.agent.tools.query_tools import (
+    InspectQueryResult,
     display_query_result,
     inspect_query_result,
     query_data,

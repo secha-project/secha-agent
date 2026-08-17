@@ -2,7 +2,14 @@ import json
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
-from .models import ColumnMetadata
+from pydantic import BaseModel
+
+
+class ColumnMetadata(BaseModel):
+    position: int
+    name: str
+    data_type: str
+    comment: str | None
 
 
 class UnityCatalogClient:

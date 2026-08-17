@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pydantic import BaseModel
 from pydantic_ai import ModelRetry, RunContext, ToolReturn
 from pydantic_ai.toolsets import FunctionToolset
 
@@ -11,11 +12,20 @@ from ..artifacts.base import (
 )
 from ..artifacts.table import SparkTableSource
 from ..deps import Deps
-from ..models import InspectQueryResult, QueryDataResult
 from ..spark import concise_spark_error, spark_error_type
 from ..sql_safety import ReadOnlySqlError, require_read_only_sql
 
 query_toolset = FunctionToolset[Deps]()
+
+
+class QueryDataResult(BaseModel):
+    artifact_ref: ArtifactRef
+    preview_markdown: str
+
+
+class InspectQueryResult(BaseModel):
+    artifact_ref: ArtifactRef
+    preview_markdown: str
 
 
 @query_toolset.tool(retries=3, sequential=True)

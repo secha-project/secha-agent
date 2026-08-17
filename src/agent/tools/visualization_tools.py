@@ -12,8 +12,7 @@ from ..artifacts.base import ArtifactRef, UnknownArtifactError
 from ..artifacts.table import SparkTableSource, TableContent
 from ..artifacts.visualization import VisualizationContent
 from ..deps import Deps
-from ..runtime import run_spark_with_timeout
-from ..spark import concise_spark_error, spark_error_type
+from ..spark import concise_spark_error, run_spark_with_timeout, spark_error_type
 
 MAX_VISUALIZATION_ROWS = 1_000
 MAX_VISUALIZATION_ERROR_LENGTH = 1_500

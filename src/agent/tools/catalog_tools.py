@@ -4,18 +4,42 @@ import re
 from typing import Literal
 from urllib.error import HTTPError
 
+from pydantic import BaseModel
 from pydantic_ai import ModelRetry, RunContext
 from pydantic_ai.toolsets import FunctionToolset
 
-from ..catalog import parse_columns
+from ..catalog import ColumnMetadata, parse_columns
 from ..deps import Deps
-from ..models import (
-    BrowseTablesResult,
-    ColumnMatch,
-    DescribeTableResult,
-    SearchColumnsResult,
-    TableSummary,
-)
+
+
+class TableSummary(BaseModel):
+    name: str
+    description: str | None
+
+
+class BrowseTablesResult(BaseModel):
+    schema_name: str
+    tables: list[TableSummary]
+
+
+class ColumnMatch(ColumnMetadata):
+    matched_in: list[Literal["name", "comment"]]
+
+
+class SearchColumnsResult(BaseModel):
+    table_name: str
+    query: str
+    searched_columns: int
+    total_matches: int
+    matches: list[ColumnMatch]
+
+
+class DescribeTableResult(BaseModel):
+    table_name: str
+    description: str | None
+    total_columns: int
+    columns: list[ColumnMetadata]
+    missing_columns: list[str]
 
 catalog_toolset = FunctionToolset[Deps]()
 

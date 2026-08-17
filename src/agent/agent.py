@@ -1,11 +1,80 @@
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
+from functools import cache
+from pathlib import Path
+from typing import Literal
 
 from pydantic_ai import Agent
+from pydantic_ai.capabilities import AbstractCapability, Capability
 
-from .capabilities import CAPABILITY_BUILDERS
 from .deps import Deps
-from .profiles import DEFAULT_CAPABILITIES, CapabilityName
-from .prompt_loader import load_prompt
+from .tools.catalog_tools import catalog_toolset
+from .tools.query_tools import query_toolset
+from .tools.visualization_tools import visualization_toolset
+
+type CapabilityName = Literal["catalog", "query", "visualization"]
+type SelectedCapabilities = frozenset[CapabilityName]
+type CapabilityBuilder = Callable[
+    [SelectedCapabilities],
+    AbstractCapability[Deps],
+]
+
+DEFAULT_CAPABILITIES: tuple[CapabilityName, ...] = (
+    "catalog",
+    "query",
+    "visualization",
+)
+PROMPT_ROOT = Path(__file__).with_name("prompts")
+
+
+@cache
+def load_prompt(relative_path: str) -> str:
+    prompt = (PROMPT_ROOT / relative_path).read_text(encoding="utf-8").strip()
+    if not prompt:
+        raise ValueError(f"Prompt is empty: {relative_path}")
+    return prompt
+
+
+def compose_prompts(*relative_paths: str) -> str:
+    return "\n\n".join(load_prompt(path) for path in relative_paths)
+
+
+def build_catalog(_selected: SelectedCapabilities) -> Capability[Deps]:
+    return Capability(
+        id="catalog",
+        instructions=load_prompt("capabilities/catalog/instructions.md"),
+        toolsets=[catalog_toolset],
+    )
+
+
+def build_query(selected: SelectedCapabilities) -> Capability[Deps]:
+    contextual_prompt = (
+        "capabilities/query/with_catalog.md"
+        if "catalog" in selected
+        else "capabilities/query/standalone.md"
+    )
+    return Capability(
+        id="query",
+        instructions=compose_prompts(
+            "capabilities/query/core.md",
+            contextual_prompt,
+        ),
+        toolsets=[query_toolset],
+    )
+
+
+def build_visualization(_selected: SelectedCapabilities) -> Capability[Deps]:
+    return Capability(
+        id="visualization",
+        instructions=load_prompt("capabilities/visualization/instructions.md"),
+        toolsets=[visualization_toolset],
+    )
+
+
+CAPABILITY_BUILDERS: dict[CapabilityName, CapabilityBuilder] = {
+    "catalog": build_catalog,
+    "query": build_query,
+    "visualization": build_visualization,
+}
 
 
 def create_agent(
