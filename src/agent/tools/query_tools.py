@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 from pydantic_ai import ModelRetry, RunContext, ToolReturn
 from pydantic_ai.toolsets import FunctionToolset
+from pyspark.sql import DataFrame
 
 from ..artifacts.base import (
     ArtifactRef,
@@ -26,6 +27,31 @@ class QueryDataResult(BaseModel):
 class InspectQueryResult(BaseModel):
     artifact_ref: ArtifactRef
     preview_markdown: str
+
+
+async def create_query_result(
+    deps: Deps,
+    dataframe: DataFrame,
+    *,
+    error_prefix: str = "SQL execution failed while reading the preview",
+) -> QueryDataResult:
+    """Register and preview a Spark DataFrame using the shared artifact path."""
+    source = SparkTableSource(
+        spark=deps.spark,
+        dataframe=dataframe,
+    )
+    try:
+        preview = await source.preview()
+    except Exception as exc:
+        raise ModelRetry(
+            f"{error_prefix} ({spark_error_type(exc)}): {concise_spark_error(exc)}."
+        ) from exc
+
+    ref = deps.artifact_context.create(source)
+    return QueryDataResult(
+        artifact_ref=ref,
+        preview_markdown=preview.to_markdown(),
+    )
 
 
 @query_toolset.tool(retries=3, sequential=True)
@@ -63,23 +89,7 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
             f"{concise_spark_error(exc)}. "
         ) from exc
 
-    source = SparkTableSource(
-        spark=deps.spark,
-        dataframe=result,
-    )
-    try:
-        preview = await source.preview()
-    except Exception as exc:
-        raise ModelRetry(
-            "SQL execution failed while reading the preview "
-            f"({spark_error_type(exc)}): {concise_spark_error(exc)}. "
-        ) from exc
-
-    ref = deps.artifact_context.create(source)
-    return QueryDataResult(
-        artifact_ref=ref,
-        preview_markdown=preview.to_markdown(),
-    )
+    return await create_query_result(deps, result)
 
 
 @query_toolset.tool(sequential=True)

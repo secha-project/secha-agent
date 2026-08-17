@@ -60,6 +60,7 @@ def get_spark_session(config: AgentConfig) -> SparkSession:
             config.catalog_token,
         )
         .config("spark.sql.defaultCatalog", config.catalog_name)
+        .config("spark.sql.session.timeZone", "UTC")
         .remote(config.spark_url)
         .getOrCreate()
     )

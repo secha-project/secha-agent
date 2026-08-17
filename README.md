@@ -13,9 +13,22 @@ The agent, built with Pydantic AI, can answer data analytics questions by intera
 - `inspect_query_result`
 - `display_query_result`
 
-Configure the catalog, Spark Connect, model provider, and OpenTelemetry values
-in `.env`. Capabilities default to both catalog discovery and querying; select a
-different profile with a JSON array:
+An optional Boring Semantic Layer capability adds governed semantic-model
+discovery, metric queries, and period comparisons. It uses an Ibis PySpark
+backend bound to the same authenticated Spark Connect session, and its results
+enter the same table artifact pipeline as raw Spark SQL. Enable it with:
+
+```dotenv
+ENABLED_CAPABILITIES='["catalog", "query", "semantic", "visualization"]'
+```
+
+Define models in `src/agent/semantic_models`. Its model factory receives the
+Ibis backend bound to the application Spark session, which remains the sole
+execution and authorization boundary. Resolve physical tables through that
+backend and return base or composed BSL models from the factory.
+
+Configure the catalog, Spark Connect, model provider, enabled capabilities, and
+OpenTelemetry values in `.env`. Select the capability profile with a JSON array:
 
 ```dotenv
 ENABLED_CAPABILITIES='["catalog", "query"]'

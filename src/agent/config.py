@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -6,7 +8,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from .agent import DEFAULT_CAPABILITIES, CapabilityName
+from .agent import CapabilityName
 
 
 @dataclass(frozen=True)
@@ -37,7 +39,7 @@ class AgentConfig(BaseSettings):
     openai: OpenAIConfig | None = None
     temperature: float = 0.0
     request_limit: int = 50
-    enabled_capabilities: tuple[CapabilityName, ...] = DEFAULT_CAPABILITIES
+    enabled_capabilities: tuple[CapabilityName, ...]
     otel_exporter_otlp_endpoint: str
     logfire_service_name: str = "secha-agent"
 

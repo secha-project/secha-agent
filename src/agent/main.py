@@ -10,6 +10,7 @@ from .artifacts.base import Artifact, ArtifactContext
 from .catalog import UnityCatalogClient
 from .config import AgentConfig, create_model
 from .deps import Deps
+from .semantic import load_semantic_runtime
 from .spark import get_spark_session
 
 
@@ -22,6 +23,11 @@ class AgentOutcome:
 def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
     config = config or AgentConfig()  # type: ignore[call-arg]
     spark = get_spark_session(config)
+    semantic = (
+        load_semantic_runtime(spark)
+        if "semantic" in config.enabled_capabilities
+        else None
+    )
     artifact_context = ArtifactContext()
     deps = Deps(
         spark=spark,
@@ -32,6 +38,7 @@ def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
+        semantic=semantic,
         artifact_context=artifact_context,
     )
     agent = create_agent(config.enabled_capabilities)

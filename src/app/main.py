@@ -20,6 +20,7 @@ from src.agent.artifacts.base import (
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig, create_model
 from src.agent.deps import Deps
+from src.agent.semantic import SemanticRuntime, load_semantic_runtime
 from src.agent.spark import get_spark_session
 from src.app.artifact_renderer import ArtifactRenderer
 from src.app.auth import (
@@ -209,6 +210,7 @@ class AppResources:
     agent: Agent[Deps, str]
     spark: SparkSession
     catalog: UnityCatalogClient
+    semantic: SemanticRuntime | None
     repository: ChatRepository
 
 
@@ -229,15 +231,21 @@ def load_resources() -> AppResources:
         metrics=False,
     )
     logfire.instrument_pydantic_ai()
+    spark = get_spark_session(config)
 
     return AppResources(
         config=config,
         agent=create_agent(config.enabled_capabilities),
-        spark=get_spark_session(config),
+        spark=spark,
         catalog=UnityCatalogClient(
             config.catalog_url,
             config.catalog_token,
             config.catalog_name,
+        ),
+        semantic=(
+            load_semantic_runtime(spark)
+            if "semantic" in config.enabled_capabilities
+            else None
         ),
         repository=load_repository(),
     )
@@ -641,6 +649,7 @@ def _fresh_deps(
         catalog=resources.catalog,
         schema_name=resources.config.schema_name,
         table_column_page_size=resources.config.table_column_page_size,
+        semantic=getattr(resources, "semantic", None),
         artifact_context=ArtifactContext(
             registry=artifact_registry,
             policy=ArtifactPolicy(

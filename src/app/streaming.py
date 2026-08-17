@@ -30,17 +30,6 @@ from .models import (
     ToolDisplayPart,
 )
 
-TOOL_TO_DISPLAY_NAME = {
-    "browse_tables": "browse tables",
-    "find_columns": "find columns",
-    "describe_table": "describe table",
-    "query_data": "run query",
-    "inspect_query_result": "inspect query result",
-    "display_query_result": "display query result",
-    "visualize_query_result": "visualize query result",
-}
-
-
 @dataclass(frozen=True)
 class StreamResult:
     assistant_message: AssistantDisplayMessage
@@ -172,13 +161,9 @@ async def stream_agent_response(
             elif isinstance(event, FunctionToolCallEvent):
                 call = event.part
                 tool_id = call.tool_call_id
-                display_name = TOOL_TO_DISPLAY_NAME.get(
-                    call.tool_name,
-                    call.tool_name.replace("_", " ").title(),
-                )
                 part = ToolDisplayPart(
                     tool_id=tool_id,
-                    title=display_name,
+                    title=call.tool_name.replace("_", " "),
                     args=format_json_string(call.args_as_json_str()),
                 )
                 assistant_message.parts.append(part)

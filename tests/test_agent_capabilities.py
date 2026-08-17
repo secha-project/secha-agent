@@ -133,20 +133,6 @@ def test_visualization_requires_catalog_and_query(
         create_agent(cast(Any, capabilities))
 
 
-def test_default_agent_includes_visualization() -> None:
-    model = TestModel(call_tools=[], custom_output_text="done")
-
-    create_agent().run_sync(
-        "question",
-        deps=cast(Deps, cast(Any, object())),
-        model=model,
-    )
-
-    request_parameters = model.last_model_request_parameters
-    assert request_parameters is not None
-    assert request_parameters.function_tools[-1].name == "visualize_query_result"
-
-
 def test_differently_configured_agents_do_not_contaminate_each_other() -> None:
     standalone_model = TestModel(call_tools=[], custom_output_text="standalone")
     combined_model = TestModel(call_tools=[], custom_output_text="combined")

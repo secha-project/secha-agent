@@ -9,20 +9,16 @@ from pydantic_ai.capabilities import AbstractCapability, Capability
 from .deps import Deps
 from .tools.catalog_tools import catalog_toolset
 from .tools.query_tools import query_toolset
+from .tools.semantic_tools import semantic_toolset
 from .tools.visualization_tools import visualization_toolset
 
-type CapabilityName = Literal["catalog", "query", "visualization"]
+type CapabilityName = Literal["catalog", "query", "semantic", "visualization"]
 type SelectedCapabilities = frozenset[CapabilityName]
 type CapabilityBuilder = Callable[
     [SelectedCapabilities],
     AbstractCapability[Deps],
 ]
 
-DEFAULT_CAPABILITIES: tuple[CapabilityName, ...] = (
-    "catalog",
-    "query",
-    "visualization",
-)
 PROMPT_ROOT = Path(__file__).with_name("prompts")
 
 
@@ -62,6 +58,14 @@ def build_query(selected: SelectedCapabilities) -> Capability[Deps]:
     )
 
 
+def build_semantic(_selected: SelectedCapabilities) -> Capability[Deps]:
+    return Capability(
+        id="semantic",
+        instructions=load_prompt("capabilities/semantic/instructions.md"),
+        toolsets=[semantic_toolset],
+    )
+
+
 def build_visualization(_selected: SelectedCapabilities) -> Capability[Deps]:
     return Capability(
         id="visualization",
@@ -73,12 +77,13 @@ def build_visualization(_selected: SelectedCapabilities) -> Capability[Deps]:
 CAPABILITY_BUILDERS: dict[CapabilityName, CapabilityBuilder] = {
     "catalog": build_catalog,
     "query": build_query,
+    "semantic": build_semantic,
     "visualization": build_visualization,
 }
 
 
 def create_agent(
-    enabled_capabilities: Iterable[CapabilityName] = DEFAULT_CAPABILITIES,
+    enabled_capabilities: Iterable[CapabilityName],
 ) -> Agent[Deps, str]:
     names = tuple(dict.fromkeys(enabled_capabilities))
     unknown = set(names) - CAPABILITY_BUILDERS.keys()
@@ -86,6 +91,8 @@ def create_agent(
         raise ValueError(f"Unknown capabilities: {sorted(unknown)}")
 
     selected = frozenset(names)
+    if "semantic" in selected and "query" not in selected:
+        raise ValueError("The semantic capability requires query.")
     if "visualization" in selected and not {"catalog", "query"} <= selected:
         raise ValueError("The visualization capability requires catalog and query.")
     capabilities = [CAPABILITY_BUILDERS[name](selected) for name in names]
@@ -96,7 +103,3 @@ def create_agent(
         instructions=load_prompt("base.md"),
         capabilities=capabilities,
     )
-
-
-# Default application profile, built once when this module is imported.
-agent = create_agent()
