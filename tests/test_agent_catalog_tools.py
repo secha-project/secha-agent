@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from typing import Any
 
-from src.agent.tools.catalog_tools import catalog_toolset, find_columns
+from src.agent.capabilities.catalog import catalog_toolset, find_columns
 
 
 class Catalog:

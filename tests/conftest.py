@@ -37,7 +37,6 @@ def make_table_artifact() -> Callable[..., Artifact]:
             ),
             content=TableContent(
                 arrow_bytes=sink.getvalue().to_pybytes(),
-                row_count=visible.num_rows,
                 truncated=truncated,
             ),
         )

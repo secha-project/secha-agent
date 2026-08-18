@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 from pyspark.sql import SparkSession
 
-from .artifacts.base import ArtifactContext
+from .artifacts.base import RunArtifacts
 from .catalog import UnityCatalogClient
 from .semantic import SemanticRuntime
 
@@ -14,4 +14,4 @@ class Deps:
     schema_name: str
     table_column_page_size: int
     semantic: SemanticRuntime | None = None
-    artifact_context: ArtifactContext = field(default_factory=ArtifactContext)
+    artifacts: RunArtifacts = field(default_factory=RunArtifacts)

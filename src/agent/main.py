@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from pydantic_ai import ModelSettings, UsageLimits
 
 from .agent import create_agent
-from .artifacts.base import Artifact, ArtifactContext
+from .artifacts.base import Artifact
 from .catalog import UnityCatalogClient
-from .config import AgentConfig, create_model
+from .config import AgentConfig
 from .deps import Deps
 from .semantic import load_semantic_runtime
 from .spark import get_spark_session
@@ -21,14 +21,14 @@ class AgentOutcome:
 
 
 def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
-    config = config or AgentConfig()  # type: ignore[call-arg]
+    if config is None:
+        config = AgentConfig()  # type: ignore[call-arg]
     spark = get_spark_session(config)
     semantic = (
         load_semantic_runtime(spark)
         if "semantic" in config.enabled_capabilities
         else None
     )
-    artifact_context = ArtifactContext()
     deps = Deps(
         spark=spark,
         catalog=UnityCatalogClient(
@@ -39,19 +39,18 @@ def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
         semantic=semantic,
-        artifact_context=artifact_context,
     )
     agent = create_agent(config.enabled_capabilities)
     result = agent.run_sync(
         prompt,
         deps=deps,
-        model=create_model(config),
+        model=config.create_model(),
         model_settings=ModelSettings(temperature=config.temperature),
         usage_limits=UsageLimits(request_limit=config.request_limit),
     )
     return AgentOutcome(
         output=result.output,
-        artifacts=artifact_context.published_artifacts,
+        artifacts=deps.artifacts.published,
     )
 
 

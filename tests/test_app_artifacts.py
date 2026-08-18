@@ -1,5 +1,4 @@
 import asyncio
-import json
 from typing import Any, cast
 
 import pandas as pd
@@ -9,10 +8,10 @@ import pytest
 from src.agent.artifacts.base import (
     DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
     Artifact,
-    ArtifactContext,
     ArtifactPolicy,
     ArtifactRef,
     ArtifactRegistry,
+    RunArtifacts,
 )
 from src.agent.artifacts.table import SparkTableSource, TableContent
 from src.agent.artifacts.visualization import VisualizationContent
@@ -58,18 +57,18 @@ class TaggedSpark:
 
 def test_spark_table_source_uses_the_configured_limit() -> None:
     result = MaterializedResult()
-    context = ArtifactContext(
+    artifacts = RunArtifacts(
         policy=ArtifactPolicy(
             table_max_rows=DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
         ),
     )
-    ref = context.create(
+    ref = artifacts.create(
         SparkTableSource(
             spark=cast(Any, TaggedSpark()),
             dataframe=cast(Any, result),
         )
     )
-    content = asyncio.run(context.materialize(ref))
+    content = asyncio.run(artifacts.materialize(ref))
     assert isinstance(content, TableContent)
 
     assert result.limit_value == DEFAULT_TABLE_ARTIFACT_MAX_ROWS + 1
@@ -79,12 +78,12 @@ def test_spark_table_source_uses_the_configured_limit() -> None:
 def test_artifact_renderer_renders_a_published_artifact(
     make_table_artifact: Any,
 ) -> None:
-    artifact_context = ArtifactContext()
+    artifacts = RunArtifacts()
     artifact = make_table_artifact([{"id": 1}])
-    artifact_context.registry.add(artifact)
-    reference = asyncio.run(artifact_context.publish(artifact.ref))
+    artifacts.registry.add(artifact)
+    reference = asyncio.run(artifacts.publish(artifact.ref))
     container = TableContainer()
-    renderer = ArtifactRenderer(artifact_context.registry)
+    renderer = ArtifactRenderer(artifacts.registry)
 
     part = renderer.render_tool_result(reference, container)
 
@@ -97,10 +96,10 @@ def test_artifact_renderer_renders_a_published_artifact(
 def test_artifact_renderer_rejects_mismatched_metadata(
     make_table_artifact: Any,
 ) -> None:
-    artifact_context = ArtifactContext()
+    artifacts = RunArtifacts()
     artifact = make_table_artifact([{"id": 1}])
-    artifact_context.registry.add(artifact)
-    renderer = ArtifactRenderer(artifact_context.registry)
+    artifacts.registry.add(artifact)
+    renderer = ArtifactRenderer(artifacts.registry)
 
     with pytest.raises(TypeError, match="has kind 'table', not 'image'"):
         renderer.render_tool_result(
@@ -176,7 +175,7 @@ def test_visualization_renderer_binds_named_data() -> None:
             "y": {"field": "y", "type": "quantitative"},
         },
     }
-    content = VisualizationContent(spec_json=json.dumps(spec).encode())
+    content = VisualizationContent(spec=spec)
     ref = ArtifactRef(artifact_id="viz-1", artifact_kind="visualization")
     artifact = Artifact(ref=ref, content=content)
     container = VisualizationContainer()

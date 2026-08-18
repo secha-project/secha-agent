@@ -28,7 +28,20 @@ execution and authorization boundary. Resolve physical tables through that
 backend and return base or composed BSL models from the factory.
 
 Configure the catalog, Spark Connect, model provider, enabled capabilities, and
-OpenTelemetry values in `.env`. Select the capability profile with a JSON array:
+OpenTelemetry values in `.env`. Keep credentials for every provider in this
+file; provider selection belongs to the app or benchmark configuration:
+
+```dotenv
+OPENAI_API_KEY=...
+TUNI_INFERENCE_URL=...
+TUNI_INFERENCE_API_KEY=...
+```
+
+Optional model defaults use `OPENAI_MODEL_NAME` and
+`TUNI_INFERENCE_MODEL_NAME`. Select a provider per benchmark with
+`agent.model_provider`; changing benchmark providers never requires editing
+`.env`.
+Select the capability profile with a JSON array:
 
 ```dotenv
 ENABLED_CAPABILITIES='["catalog", "query"]'
@@ -46,6 +59,8 @@ The validation suite, built with Pydantic Evals, aims to validate the quality of
 
 ```yaml
 agent:
+  model_provider: openai
+  model_name: gpt-5.4-mini
   enabled_capabilities: [catalog, query, visualization]
 ```
 
@@ -57,8 +72,8 @@ uv run python -m src.validation.run_benchmark --config openai-mini
 
 ## Run the app
 
-Configure the required catalog, Spark Connect, OpenAI, and OpenTelemetry values
-in `.env`, then start the Streamlit app:
+Configure the required catalog, Spark Connect, selected model provider, and
+OpenTelemetry values in `.env`, then start the Streamlit app:
 
 ```bash
 uv run python -m streamlit run src/app/server.py

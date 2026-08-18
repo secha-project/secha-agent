@@ -10,16 +10,17 @@ from pydantic_ai.models.test import TestModel
 
 import src.agent.semantic as semantic_module
 from src.agent.agent import create_agent
-from src.agent.artifacts.base import ArtifactContext
+from src.agent.artifacts.base import RunArtifacts
 from src.agent.artifacts.table import SparkTableSource
-from src.agent.semantic import SemanticRuntime, load_semantic_runtime
-from src.agent.tools.semantic_tools import (
-    SemanticFilter,
+from src.agent.capabilities.semantic import (
     SemanticOrder,
     SemanticTimeRange,
+    SetSemanticFilter,
+    ValueSemanticFilter,
     query_semantic_model,
     semantic_toolset,
 )
+from src.agent.semantic import SemanticRuntime, load_semantic_runtime
 
 
 class StubSchema:
@@ -118,7 +119,7 @@ def test_semantic_capability_requires_query_capability() -> None:
 
 
 def test_semantic_filter_validates_operator_specific_shape() -> None:
-    assert SemanticFilter(
+    assert SetSemanticFilter(
         field="status",
         operator="in",
         values=["active", "pending"],
@@ -128,20 +129,31 @@ def test_semantic_filter_validates_operator_specific_shape() -> None:
         "values": ["active", "pending"],
     }
 
-    with pytest.raises(ValidationError, match="require values"):
-        SemanticFilter(field="status", operator="in")
+    with pytest.raises(ValidationError, match="Field required"):
+        SetSemanticFilter.model_validate({"field": "status", "operator": "in"})
+
+    with pytest.raises(ValidationError, match="at least 1 item"):
+        SetSemanticFilter(field="status", operator="in", values=[])
+
+
+def test_semantic_time_range_requires_ordered_iso_bounds() -> None:
+    with pytest.raises(ValidationError, match="start must be before end"):
+        SemanticTimeRange(start="2026-02-01", end="2026-01-01")
+
+    with pytest.raises(ValidationError, match="ISO 8601"):
+        SemanticTimeRange(start="later", end="earlier")
 
 
 def test_semantic_query_uses_the_standard_spark_table_artifact_path() -> None:
     spark = StubSpark()
     model = StubSemanticModel()
     runtime = StubSemanticRuntime(model)
-    artifact_context = ArtifactContext()
+    artifacts = RunArtifacts()
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=spark,
             semantic=runtime,
-            artifact_context=artifact_context,
+            artifacts=artifacts,
         )
     )
 
@@ -151,7 +163,7 @@ def test_semantic_query_uses_the_standard_spark_table_artifact_path() -> None:
             model_name="energy",
             dimensions=["site"],
             measures=["total_energy"],
-            filters=[SemanticFilter(field="site", operator="=", value="A")],
+            filters=[ValueSemanticFilter(field="site", operator="=", value="A")],
             order_by=[SemanticOrder(field="total_energy", direction="desc")],
             time_range=SemanticTimeRange(
                 start="2026-01-01",
@@ -172,7 +184,7 @@ def test_semantic_query_uses_the_standard_spark_table_artifact_path() -> None:
         "time_grains": None,
         "time_range": {"start": "2026-01-01", "end": "2026-02-01"},
     }
-    source = artifact_context.resolve_source(
+    source = artifacts.resolve_source(
         result.artifact_ref,
         SparkTableSource,
     )
@@ -184,7 +196,7 @@ def test_semantic_query_reports_unknown_models_as_retry() -> None:
         deps=SimpleNamespace(
             spark=StubSpark(),
             semantic=StubSemanticRuntime(StubSemanticModel()),
-            artifact_context=ArtifactContext(),
+            artifacts=RunArtifacts(),
         )
     )
 

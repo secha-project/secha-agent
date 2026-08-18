@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 from pydantic_ai import ModelRetry, RunContext, ToolReturn
+from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
 from pyspark.sql import DataFrame
 
@@ -13,10 +14,20 @@ from ..artifacts.base import (
 )
 from ..artifacts.table import SparkTableSource
 from ..deps import Deps
+from ..prompt import render_prompt
 from ..spark import concise_spark_error, spark_error_type
 from ..sql_safety import ReadOnlySqlError, require_read_only_sql
 
+NAME = "query"
 query_toolset = FunctionToolset[Deps]()
+
+
+def build(selected: frozenset[str]) -> Capability[Deps]:
+    return Capability(
+        id=NAME,
+        instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
+        toolsets=[query_toolset],
+    )
 
 
 class QueryDataResult(BaseModel):
@@ -47,7 +58,7 @@ async def create_query_result(
             f"{error_prefix} ({spark_error_type(exc)}): {concise_spark_error(exc)}."
         ) from exc
 
-    ref = deps.artifact_context.create(source)
+    ref = deps.artifacts.create(source)
     return QueryDataResult(
         artifact_ref=ref,
         preview_markdown=preview.to_markdown(),
@@ -114,7 +125,7 @@ async def inspect_query_result(
     """
     deps = ctx.deps
     try:
-        source = deps.artifact_context.resolve_source(ref, SparkTableSource)
+        source = deps.artifacts.resolve_source(ref, SparkTableSource)
     except (UnknownArtifactError, ArtifactSourceUnavailableError) as exc:
         raise ModelRetry(
             f"The live source for table artifact {ref.artifact_id!r} is no "
@@ -161,7 +172,7 @@ async def display_query_result(
     if ref.artifact_kind != "table":
         raise ModelRetry(f"Artifact {ref.artifact_id!r} is not a table artifact.")
     try:
-        artifact_ref = await deps.artifact_context.publish(ref)
+        artifact_ref = await deps.artifacts.publish(ref)
     except (UnknownArtifactError, ArtifactSourceUnavailableError) as exc:
         raise ModelRetry(
             f"Table artifact {ref.artifact_id!r} is no longer available in "

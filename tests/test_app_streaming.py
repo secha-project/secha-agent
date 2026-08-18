@@ -1,5 +1,4 @@
 import asyncio
-import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
@@ -18,8 +17,8 @@ from pydantic_ai import (
 
 from src.agent.artifacts.base import (
     Artifact,
-    ArtifactContext,
     ArtifactRef,
+    RunArtifacts,
 )
 from src.agent.artifacts.visualization import VisualizationContent
 from src.agent.deps import Deps
@@ -115,15 +114,15 @@ class AgentStub:
 def test_stream_returns_owned_assistant_and_pending_artifacts(
     make_table_artifact: Any,
 ) -> None:
-    artifact_context = ArtifactContext()
+    artifacts = RunArtifacts()
     artifact = make_table_artifact([{"id": 1}])
-    artifact_context.registry.add(artifact)
-    artifact_ref = asyncio.run(artifact_context.publish(artifact.ref))
+    artifacts.registry.add(artifact)
+    artifact_ref = asyncio.run(artifacts.publish(artifact.ref))
     deps = cast(
         Deps,
         SimpleNamespace(
             spark=TaggedSpark(),
-            artifact_context=artifact_context,
+            artifacts=artifacts,
         ),
     )
     container = StreamingContainer()
@@ -196,24 +195,24 @@ def _make_visualization_artifact(artifact_id: str) -> Artifact:
             artifact_id=artifact_id,
             artifact_kind="visualization",
         ),
-        content=VisualizationContent(spec_json=json.dumps(spec).encode()),
+        content=VisualizationContent(spec=spec),
     )
 
 
 def test_stream_renders_each_published_visualization() -> None:
-    artifact_context = ArtifactContext()
-    artifacts = [
+    run_artifacts = RunArtifacts()
+    published = [
         _make_visualization_artifact("viz-first"),
         _make_visualization_artifact("viz-last"),
     ]
-    for artifact in artifacts:
-        artifact_context.registry.add(artifact)
-        asyncio.run(artifact_context.publish(artifact.ref))
+    for artifact in published:
+        run_artifacts.registry.add(artifact)
+        asyncio.run(run_artifacts.publish(artifact.ref))
     deps = cast(
         Deps,
         SimpleNamespace(
             spark=TaggedSpark(),
-            artifact_context=artifact_context,
+            artifacts=run_artifacts,
         ),
     )
     container = StreamingContainer()
@@ -224,7 +223,7 @@ def test_stream_renders_each_published_visualization() -> None:
             message_history=[],
             deps=deps,
             agent_instance=VisualizationAgentStub(
-                [artifact.ref for artifact in artifacts]
+                [artifact.ref for artifact in published]
             ),
             model=object(),
             model_settings=ModelSettings(),

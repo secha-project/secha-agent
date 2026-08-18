@@ -268,13 +268,13 @@ def test_visualization_round_trip_persists_only_vega_lite_spec(
 ) -> None:
     alice, _ = users
     conversation = repository.create_conversation(alice.id)
-    spec_json = json.dumps({"data": {"values": [{"x": 1}]}, "mark": "point"}).encode()
+    spec = {"data": {"values": [{"x": 1}]}, "mark": "point"}
     artifact = Artifact(
         ref=ArtifactRef(
             artifact_id="visualization-1",
             artifact_kind="visualization",
         ),
-        content=VisualizationContent(spec_json=spec_json),
+        content=VisualizationContent(spec=spec),
     )
 
     repository.save_artifact(alice.id, conversation.id, artifact)
@@ -286,10 +286,10 @@ def test_visualization_round_trip_persists_only_vega_lite_spec(
 
     restored_content = restored.require_content()
     assert isinstance(restored_content, VisualizationContent)
-    assert restored_content.spec_json == spec_json
+    assert restored_content.to_spec() == spec
     with sqlite3.connect(repository.db_path) as connection:
         payload = connection.execute(
             "SELECT payload FROM artifacts WHERE id = ?",
             (artifact.id,),
         ).fetchone()[0]
-    assert bytes(payload) == spec_json
+    assert json.loads(payload) == spec

@@ -1,16 +1,37 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 from pydantic_ai import ModelRetry, RunContext
+from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
 
 from ..deps import Deps
+from ..prompt import render_prompt
 from ..spark import concise_spark_error, spark_error_type
-from .query_tools import QueryDataResult, create_query_result
+from .query import QueryDataResult, create_query_result
 
+NAME = "semantic"
 semantic_toolset = FunctionToolset[Deps]()
+
+
+def build(selected: frozenset[str]) -> Capability[Deps]:
+    return Capability(
+        id=NAME,
+        instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
+        toolsets=[semantic_toolset],
+    )
+
+SemanticName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+SemanticNames = Annotated[list[SemanticName], Field(min_length=1)]
 
 
 class SemanticModelSummary(BaseModel):
@@ -42,7 +63,7 @@ class DescribeSemanticModelResult(BaseModel):
     measures: list[SemanticMeasure]
 
 
-FilterOperator = Literal[
+ValueFilterOperator = Literal[
     "=",
     "eq",
     "equals",
@@ -51,75 +72,82 @@ FilterOperator = Literal[
     ">=",
     "<",
     "<=",
-    "in",
-    "not in",
     "like",
     "not like",
     "ilike",
     "not ilike",
-    "is null",
-    "is not null",
-    "AND",
-    "OR",
 ]
+SetFilterOperator = Literal["in", "not in"]
+NullFilterOperator = Literal["is null", "is not null"]
+LogicalFilterOperator = Literal["AND", "OR"]
 
 
-class SemanticFilter(BaseModel):
-    field: str | None = None
-    operator: FilterOperator
-    value: Any | None = None
-    values: list[Any] | None = None
-    conditions: list[SemanticFilter] | None = None
-
-    @model_validator(mode="after")
-    def validate_shape(self) -> SemanticFilter:
-        if self.operator in {"AND", "OR"}:
-            if not self.conditions:
-                raise ValueError(
-                    f"{self.operator} filters require non-empty conditions."
-                )
-            if (
-                self.field is not None
-                or self.value is not None
-                or self.values is not None
-            ):
-                raise ValueError(
-                    f"{self.operator} filters only accept the conditions field."
-                )
-            return self
-
-        if not self.field:
-            raise ValueError(f"{self.operator} filters require a field.")
-        if self.conditions is not None:
-            raise ValueError(
-                f"{self.operator} filters do not accept nested conditions."
-            )
-        if self.operator in {"in", "not in"}:
-            if self.values is None:
-                raise ValueError(f"{self.operator} filters require values.")
-            if self.value is not None:
-                raise ValueError(f"{self.operator} filters do not accept value.")
-        elif self.operator in {"is null", "is not null"}:
-            if self.value is not None or self.values is not None:
-                raise ValueError(f"{self.operator} filters do not accept values.")
-        elif self.value is None:
-            raise ValueError(f"{self.operator} filters require value.")
-        elif self.values is not None:
-            raise ValueError(f"{self.operator} filters do not accept values.")
-        return self
+class _SemanticFilter(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     def as_bsl_filter(self) -> dict[str, Any]:
-        return self.model_dump(exclude_none=True)
+        return self.model_dump(mode="json")
+
+
+class ValueSemanticFilter(_SemanticFilter):
+    field: SemanticName
+    operator: ValueFilterOperator
+    value: Any
+
+
+class SetSemanticFilter(_SemanticFilter):
+    field: SemanticName
+    operator: SetFilterOperator
+    values: tuple[Any, ...] = Field(min_length=1)
+
+
+class NullSemanticFilter(_SemanticFilter):
+    field: SemanticName
+    operator: NullFilterOperator
+
+
+class LogicalSemanticFilter(_SemanticFilter):
+    operator: LogicalFilterOperator
+    conditions: tuple[
+        ValueSemanticFilter
+        | SetSemanticFilter
+        | NullSemanticFilter
+        | LogicalSemanticFilter,
+        ...,
+    ] = Field(min_length=1)
+
+
+type SemanticFilter = (
+    ValueSemanticFilter
+    | SetSemanticFilter
+    | NullSemanticFilter
+    | LogicalSemanticFilter
+)
 
 
 class SemanticOrder(BaseModel):
-    field: str
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    field: SemanticName
     direction: Literal["asc", "desc"] = "asc"
 
 
 class SemanticTimeRange(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     start: str
     end: str
+
+    @model_validator(mode="after")
+    def validate_order(self) -> SemanticTimeRange:
+        try:
+            start = datetime.fromisoformat(self.start)
+            end = datetime.fromisoformat(self.end)
+        except ValueError as exc:
+            raise ValueError("Time range bounds must be ISO 8601 timestamps.") from exc
+        if start >= end:
+            raise ValueError("Time range start must be before end.")
+        return self
 
 
 def _runtime(ctx: RunContext[Deps]):
@@ -221,13 +249,13 @@ def describe_semantic_model(
 async def query_semantic_model(
     ctx: RunContext[Deps],
     model_name: str,
-    dimensions: list[str] | None = None,
-    measures: list[str] | None = None,
+    dimensions: SemanticNames | None = None,
+    measures: SemanticNames | None = None,
     filters: list[SemanticFilter] | None = None,
     order_by: list[SemanticOrder] | None = None,
     limit: Annotated[int | None, Field(ge=1, le=100_000)] = None,
-    time_grain: str | None = None,
-    time_grains: dict[str, str] | None = None,
+    time_grain: SemanticName | None = None,
+    time_grains: dict[SemanticName, SemanticName] | None = None,
     time_range: SemanticTimeRange | None = None,
 ) -> QueryDataResult:
     """Query governed dimensions and measures from one semantic model.
@@ -246,6 +274,8 @@ async def query_semantic_model(
         time_grains: Per-dimension grains; cannot be combined with time_grain.
         time_range: Inclusive start and exclusive end time range.
     """
+    if not dimensions and not measures:
+        raise ModelRetry("Select at least one dimension or measure.")
     if time_grain is not None and time_grains is not None:
         raise ModelRetry("Use either time_grain or time_grains, not both.")
     model = _model(ctx, model_name)
@@ -258,7 +288,7 @@ async def query_semantic_model(
             limit=limit,
             time_grain=time_grain,
             time_grains=time_grains,
-            time_range=time_range.model_dump() if time_range else None,
+            time_range=time_range.model_dump(mode="json") if time_range else None,
         )
     except Exception as exc:
         raise ModelRetry(f"Semantic query is invalid: {exc}") from exc
@@ -269,14 +299,14 @@ async def query_semantic_model(
 async def compare_semantic_periods(
     ctx: RunContext[Deps],
     model_name: str,
-    measures: list[str],
+    measures: SemanticNames,
     current_time_range: SemanticTimeRange,
     previous_time_range: SemanticTimeRange,
-    dimensions: list[str] | None = None,
+    dimensions: SemanticNames | None = None,
     filters: list[SemanticFilter] | None = None,
-    time_dimension: str | None = None,
-    time_grain: str | None = None,
-    time_grains: dict[str, str] | None = None,
+    time_dimension: SemanticName | None = None,
+    time_grain: SemanticName | None = None,
+    time_grains: dict[SemanticName, SemanticName] | None = None,
     order_by: list[SemanticOrder] | None = None,
     limit: Annotated[int | None, Field(ge=1, le=100_000)] = None,
 ) -> QueryDataResult:
@@ -285,6 +315,8 @@ async def compare_semantic_periods(
     The result includes current, previous, delta, and percentage-change columns
     and is saved as the same live table artifact used by ``query_data``.
     """
+    if not measures:
+        raise ModelRetry("Select at least one measure to compare.")
     if time_grain is not None and time_grains is not None:
         raise ModelRetry("Use either time_grain or time_grains, not both.")
     model = _model(ctx, model_name)
@@ -292,8 +324,8 @@ async def compare_semantic_periods(
         expression = model.compare_periods(
             dimensions=dimensions,
             measures=measures,
-            current_time_range=current_time_range.model_dump(),
-            previous_time_range=previous_time_range.model_dump(),
+            current_time_range=current_time_range.model_dump(mode="json"),
+            previous_time_range=previous_time_range.model_dump(mode="json"),
             filters=[item.as_bsl_filter() for item in filters or []],
             time_dimension=time_dimension,
             time_grain=time_grain,

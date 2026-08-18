@@ -6,10 +6,12 @@ from urllib.error import HTTPError
 
 from pydantic import BaseModel
 from pydantic_ai import ModelRetry, RunContext
+from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
 
 from ..catalog import ColumnMetadata, parse_columns
 from ..deps import Deps
+from ..prompt import render_prompt
 
 
 class TableSummary(BaseModel):
@@ -41,7 +43,16 @@ class DescribeTableResult(BaseModel):
     columns: list[ColumnMetadata]
     missing_columns: list[str]
 
+NAME = "catalog"
 catalog_toolset = FunctionToolset[Deps]()
+
+
+def build(selected: frozenset[str]) -> Capability[Deps]:
+    return Capability(
+        id=NAME,
+        instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
+        toolsets=[catalog_toolset],
+    )
 
 
 def _truncate_description(
@@ -216,6 +227,10 @@ def describe_table(
         ) from exc
 
     columns = parse_columns(table)
+    if start_column < 1:
+        raise ModelRetry("start_column must be at least 1.")
+    if end_column is not None and end_column < start_column:
+        raise ModelRetry("end_column must be greater than or equal to start_column.")
     if column_names:
         columns_by_name = {column.name: column for column in columns}
         selected = [
@@ -223,7 +238,11 @@ def describe_table(
         ]
         missing_columns = [name for name in column_names if name not in columns_by_name]
     else:
-        last_column = end_column or start_column + deps.table_column_page_size - 1
+        last_column = (
+            end_column
+            if end_column is not None
+            else start_column + deps.table_column_page_size - 1
+        )
         selected = columns[start_column - 1 : last_column]
         missing_columns = []
 

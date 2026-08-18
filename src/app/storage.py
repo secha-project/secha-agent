@@ -651,7 +651,6 @@ class ChatRepository:
                 ref=ref,
                 content=TableContent(
                     arrow_bytes=bytes(row["payload"]),
-                    row_count=int(metadata["row_count"]),
                     truncated=bool(metadata["truncated"]),
                 ),
             )
@@ -660,10 +659,13 @@ class ChatRepository:
                 artifact_id=row["id"],
                 artifact_kind="visualization",
             )
+            spec = json.loads(row["payload"])
+            if not isinstance(spec, dict):
+                raise TypeError("Saved Vega-Lite content must be a JSON object.")
             return Artifact(
                 ref=ref,
                 content=VisualizationContent(
-                    spec_json=bytes(row["payload"]),
+                    spec=spec,
                 ),
             )
         raise TypeError(

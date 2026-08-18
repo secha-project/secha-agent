@@ -7,29 +7,29 @@ import pytest
 import src.validation.runner as runner_module
 from src.agent.artifacts.base import (
     Artifact,
-    ArtifactContext,
+    RunArtifacts,
     UnknownArtifactError,
 )
 from src.agent.deps import Deps
 from src.validation.runner import AgentTask
 
 
-def test_agent_task_uses_a_fresh_artifact_context_for_each_run(
+def test_agent_task_uses_fresh_artifacts_for_each_run(
     monkeypatch: Any,
 ) -> None:
-    template_context = ArtifactContext()
+    template_artifacts = RunArtifacts()
     deps = Deps(
         spark=cast(Any, object()),
         catalog=cast(Any, object()),
         schema_name="bronze",
         table_column_page_size=20,
-        artifact_context=template_context,
+        artifacts=template_artifacts,
     )
-    contexts: list[ArtifactContext] = []
+    contexts: list[RunArtifacts] = []
     references = []
 
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
-        context = kwargs["deps"].artifact_context
+        context = kwargs["deps"].artifacts
         contexts.append(context)
         references.append(context.create(cast(Any, SimpleNamespace(kind="table"))))
         return SimpleNamespace(output="answer")
@@ -46,7 +46,7 @@ def test_agent_task_uses_a_fresh_artifact_context_for_each_run(
     assert task("second") == "answer"
 
     assert contexts[0] is not contexts[1]
-    assert template_context not in contexts
+    assert template_artifacts not in contexts
     assert contexts[0].policy.table_max_rows is None
     assert references[0] != references[1]
     with pytest.raises(UnknownArtifactError):
@@ -67,7 +67,7 @@ def test_agent_task_writes_only_the_artifacts_from_that_run(
 
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         artifact = make_table_artifact([{"value": 1}])
-        context = kwargs["deps"].artifact_context
+        context = kwargs["deps"].artifacts
         context.registry.add(artifact)
         asyncio.run(context.publish(artifact.ref))
         return SimpleNamespace(output="answer")

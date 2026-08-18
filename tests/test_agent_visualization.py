@@ -7,12 +7,12 @@ import pytest
 from pydantic_ai import ModelRetry
 
 from src.agent.artifacts.base import (
-    ArtifactContext,
     ArtifactRef,
+    RunArtifacts,
 )
 from src.agent.artifacts.table import SparkTableSource
 from src.agent.artifacts.visualization import VisualizationContent
-from src.agent.tools.visualization_tools import (
+from src.agent.capabilities.visualization import (
     MAX_VISUALIZATION_ROWS,
     normalize_datetime_precision,
     visualization_toolset,
@@ -69,13 +69,13 @@ def _context(
             }
         )
     )
-    context = ArtifactContext()
-    ref = context.create(
+    artifacts = RunArtifacts()
+    ref = artifacts.create(
         SparkTableSource(spark=cast(Any, spark), dataframe=cast(Any, spark.result))
     )
     return (
         SimpleNamespace(
-            deps=SimpleNamespace(spark=spark, artifact_context=context),
+            deps=SimpleNamespace(spark=spark, artifacts=artifacts),
         ),
         spark,
         ref,
@@ -100,8 +100,8 @@ def test_visualization_publishes_registered_spec() -> None:
 
     assert isinstance(result.metadata, ArtifactRef)
     assert result.content is None
-    artifact = ctx.deps.artifact_context.published_artifacts[0]
-    assert ctx.deps.artifact_context.registry.resolve(result.metadata) is artifact
+    artifact = ctx.deps.artifacts.published[0]
+    assert ctx.deps.artifacts.registry.resolve(result.metadata) is artifact
     content = artifact.require_content()
     assert isinstance(content, VisualizationContent)
     assert spark.result.limit_value == MAX_VISUALIZATION_ROWS + 1
@@ -186,14 +186,14 @@ def test_visualization_exposes_spark_failure_as_model_retry() -> None:
 
     spark = VisualizationSpark(pd.DataFrame())
     spark.result = BrokenResult(pd.DataFrame())
-    artifact_context = ArtifactContext()
-    ref = artifact_context.create(
+    artifacts = RunArtifacts()
+    ref = artifacts.create(
         SparkTableSource(spark=cast(Any, spark), dataframe=cast(Any, spark.result))
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=spark,
-            artifact_context=artifact_context,
+            artifacts=artifacts,
         )
     )
 

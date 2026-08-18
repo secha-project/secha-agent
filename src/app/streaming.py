@@ -123,7 +123,7 @@ async def stream_agent_response(
 ) -> StreamResult | None:
     """Render ordered run events and return output only after terminal success."""
     assistant_message = AssistantDisplayMessage()
-    artifact_renderer = ArtifactRenderer(deps.artifact_context.registry)
+    artifact_renderer = ArtifactRenderer(deps.artifacts.registry)
     text_parts: dict[int, tuple[TextDisplayPart, Any]] = {}
     tool_parts: dict[str, tuple[ToolDisplayPart, ToolStatusView]] = {}
 
@@ -213,7 +213,7 @@ async def stream_agent_response(
                 return StreamResult(
                     assistant_message=assistant_message,
                     model_messages=event.result.all_messages(),
-                    artifacts=deps.artifact_context.published_artifacts,
+                    artifacts=deps.artifacts.published,
                 )
 
     return None

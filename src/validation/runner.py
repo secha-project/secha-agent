@@ -11,9 +11,9 @@ from pydantic_ai.retries import RetryConfig
 from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from src.agent.agent import create_agent
-from src.agent.artifacts.base import ArtifactContext, ArtifactPolicy
+from src.agent.artifacts.base import ArtifactPolicy, RunArtifacts
 from src.agent.catalog import UnityCatalogClient
-from src.agent.config import AgentConfig, create_model
+from src.agent.config import AgentConfig
 from src.agent.deps import Deps
 from src.agent.semantic import load_semantic_runtime
 from src.agent.spark import get_spark_session
@@ -56,12 +56,12 @@ class AgentTask:
     usage_limits: UsageLimits
 
     def __call__(self, prompt: str) -> str:
-        artifact_context = ArtifactContext(
+        artifacts = RunArtifacts(
             policy=ArtifactPolicy(table_max_rows=None),
         )
         run_deps = replace(
             self.deps,
-            artifact_context=artifact_context,
+            artifacts=artifacts,
         )
         result = self.agent.run_sync(
             prompt,
@@ -70,7 +70,7 @@ class AgentTask:
             model_settings=self.model_settings,
             usage_limits=self.usage_limits,
         )
-        write_evaluation_artifacts(artifact_context.published_artifacts)
+        write_evaluation_artifacts(artifacts.published)
         return result.output
 
 
@@ -190,7 +190,7 @@ def run_benchmark(run_name: str, run_config: BenchmarkRunConfig) -> Path:
     task = AgentTask(
         agent=create_agent(run_config.agent.enabled_capabilities),
         deps=create_dependencies(run_config.agent),
-        model=create_model(run_config.agent),
+        model=run_config.agent.create_model(),
         model_settings=ModelSettings(temperature=run_config.agent.temperature),
         usage_limits=UsageLimits(request_limit=run_config.agent.request_limit),
     )

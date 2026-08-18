@@ -12,9 +12,9 @@ from pydantic_ai import (
 )
 
 from src.agent.artifacts.base import (
-    ArtifactContext,
     ArtifactPolicy,
     ArtifactRef,
+    RunArtifacts,
 )
 from src.agent.artifacts.table import SparkTableSource, TableContent
 
@@ -54,7 +54,7 @@ def test_table_artifact_caps_and_round_trips_exact_arrow_values() -> None:
         }
     )
 
-    context = ArtifactContext(
+    context = RunArtifacts(
         policy=ArtifactPolicy(table_max_rows=10_000),
     )
     ref = context.create(

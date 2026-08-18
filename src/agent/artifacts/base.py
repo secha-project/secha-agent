@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal, Protocol, TypeVar
 from uuid import uuid4
 
@@ -46,11 +46,11 @@ class ArtifactSource(Protocol):
 
     async def materialize(
         self,
-        context: ArtifactContext,
+        artifacts: RunArtifacts,
     ) -> ArtifactContent: ...
 
 
-@dataclass
+@dataclass(frozen=True)
 class Artifact:
     """One logical artifact with optional live and materialized representations."""
 
@@ -200,11 +200,12 @@ class ArtifactRegistry:
             raise ValueError(
                 f"Artifact {artifact.id!r} already has different materialized content."
             )
-        artifact.content = content
-        return artifact
+        updated = replace(artifact, content=content)
+        self._artifacts[artifact.id] = updated
+        return updated
 
 
-class ArtifactContext:
+class RunArtifacts:
     """Resolve and publish artifacts during one agent execution."""
 
     def __init__(
@@ -254,5 +255,5 @@ class ArtifactContext:
         return ref
 
     @property
-    def published_artifacts(self) -> tuple[Artifact, ...]:
+    def published(self) -> tuple[Artifact, ...]:
         return tuple(self.registry.resolve(ref) for ref in self._published.values())

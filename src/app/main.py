@@ -13,12 +13,12 @@ from pyspark.sql import SparkSession
 from src.agent.agent import create_agent
 from src.agent.artifacts.base import (
     DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
-    ArtifactContext,
     ArtifactPolicy,
     ArtifactRegistry,
+    RunArtifacts,
 )
 from src.agent.catalog import UnityCatalogClient
-from src.agent.config import AgentConfig, create_model
+from src.agent.config import AgentConfig
 from src.agent.deps import Deps
 from src.agent.semantic import SemanticRuntime, load_semantic_runtime
 from src.agent.spark import get_spark_session
@@ -44,6 +44,7 @@ from src.app.storage import (
 from src.app.streaming import render_tool, stream_agent_response
 
 CONVERSATION_BUTTON_LABEL_MAX_LENGTH = 26
+SIDEBAR_HISTORY_REVISION_KEY = "sidebar_history_revision"
 
 
 def _conversation_button_label(title: str) -> str:
@@ -52,7 +53,6 @@ def _conversation_button_label(title: str) -> str:
     return title[: CONVERSATION_BUTTON_LABEL_MAX_LENGTH - 1] + "…"
 
 
-APP_MODEL_PROVIDER = "openai"
 AUTHENTICATED_USER_KEY = "authenticated_user_id"
 AUTH_SESSION_KEYS = (
     AUTHENTICATED_USER_KEY,
@@ -60,6 +60,7 @@ AUTH_SESSION_KEYS = (
     "display_messages",
     "model_messages",
     "artifact_registry",
+    SIDEBAR_HISTORY_REVISION_KEY,
 )
 
 APP_STYLES = """
@@ -223,7 +224,7 @@ def load_repository() -> ChatRepository:
 
 @st.cache_resource
 def load_resources() -> AppResources:
-    config = AgentConfig(model_provider=APP_MODEL_PROVIDER)  # type: ignore[call-arg]
+    config = AgentConfig()  # type: ignore[call-arg]
     os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = config.otel_exporter_otlp_endpoint
     logfire.configure(
         send_to_logfire=False,
@@ -511,6 +512,12 @@ def delete_conversation(
     except ConversationNotFoundError:
         return
 
+    # Give the dynamic history subtree a fresh frontend identity. This prevents
+    # Streamlit from retaining a deleted keyed row while reconciling the rerun.
+    st.session_state[SIDEBAR_HISTORY_REVISION_KEY] = (
+        st.session_state.get(SIDEBAR_HISTORY_REVISION_KEY, 0) + 1
+    )
+
     if conversation_id != st.session_state.get("current_conversation_id"):
         return
 
@@ -582,7 +589,11 @@ def _render_sidebar(
                 on_click=start_new_conversation,
                 width="stretch",
             )
-        with st.container(key="sidebar-history", gap="xsmall"):
+        history_revision = st.session_state.get(SIDEBAR_HISTORY_REVISION_KEY, 0)
+        with st.container(
+            key=f"sidebar-history-{history_revision}",
+            gap="xsmall",
+        ):
             st.subheader("Chat history")
             conversations = resources.repository.list_conversations(user.id)
             if not conversations:
@@ -595,7 +606,6 @@ def _render_sidebar(
                     st.button(
                         _conversation_button_label(conversation.title),
                         key=f"conversation-{conversation.id}",
-                        help=conversation.title,
                         type=(
                             "primary"
                             if conversation.id
@@ -609,7 +619,6 @@ def _render_sidebar(
                     st.button(
                         "Delete conversation",
                         key=f"delete-conversation-{conversation.id}",
-                        help=f'Delete "{conversation.title}"',
                         icon=":material/delete:",
                         type="tertiary",
                         on_click=delete_conversation,
@@ -650,7 +659,7 @@ def _fresh_deps(
         schema_name=resources.config.schema_name,
         table_column_page_size=resources.config.table_column_page_size,
         semantic=getattr(resources, "semantic", None),
-        artifact_context=ArtifactContext(
+        artifacts=RunArtifacts(
             registry=artifact_registry,
             policy=ArtifactPolicy(
                 table_max_rows=DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
@@ -753,7 +762,7 @@ def run_app() -> None:
                 message_history=st.session_state.model_messages,
                 deps=deps,
                 agent_instance=resources.agent,
-                model=create_model(resources.config),
+                model=resources.config.create_model(),
                 model_settings=ModelSettings(temperature=resources.config.temperature),
                 usage_limits=UsageLimits(request_limit=resources.config.request_limit),
                 container=container,

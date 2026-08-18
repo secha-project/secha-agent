@@ -8,12 +8,12 @@ import pytest
 from pydantic_ai import ModelRetry
 
 from src.agent.artifacts.base import (
-    ArtifactContext,
     ArtifactPolicy,
     ArtifactRef,
+    RunArtifacts,
 )
 from src.agent.artifacts.table import SparkTableSource, TableContent
-from src.agent.tools.query_tools import (
+from src.agent.capabilities.query import (
     InspectQueryResult,
     display_query_result,
     inspect_query_result,
@@ -65,15 +65,29 @@ def test_result_preview_uses_framework_agnostic_validation_error() -> None:
         asyncio.run(source.preview(column_names=["missing_column"]))
 
 
+@pytest.mark.parametrize(
+    ("start_row", "end_row"),
+    [(0, None), (3, 2)],
+)
+def test_result_preview_rejects_invalid_row_ranges(
+    start_row: int,
+    end_row: int | None,
+) -> None:
+    source = SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
+
+    with pytest.raises(ValueError):
+        asyncio.run(source.preview(start_row=start_row, end_row=end_row))
+
+
 def test_inspect_query_result_exposes_unknown_columns_as_model_retry() -> None:
-    artifact_context = ArtifactContext()
-    ref = artifact_context.create(
+    artifacts = RunArtifacts()
+    ref = artifacts.create(
         SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=StubSpark(),
-            artifact_context=artifact_context,
+            artifacts=artifacts,
         )
     )
 
@@ -97,7 +111,7 @@ def test_query_result_tools_expose_stale_references_as_model_retry(
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=StubSpark(),
-            artifact_context=ArtifactContext(),
+            artifacts=RunArtifacts(),
         )
     )
 
@@ -114,13 +128,13 @@ def test_query_result_tools_expose_stale_references_as_model_retry(
 
 
 def test_query_data_returns_structured_result_preview() -> None:
-    artifact_context = ArtifactContext(
+    artifacts = RunArtifacts(
         policy=ArtifactPolicy(table_max_rows=10),
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=StubSpark(),
-            artifact_context=artifact_context,
+            artifacts=artifacts,
         )
     )
 
@@ -132,7 +146,7 @@ def test_query_data_returns_structured_result_preview() -> None:
     )
 
     assert result.preview_markdown == "## Row 1\n\nknown_column: 1"
-    source = artifact_context.resolve_source(
+    source = artifacts.resolve_source(
         result.artifact_ref,
         SparkTableSource,
     )
@@ -140,16 +154,16 @@ def test_query_data_returns_structured_result_preview() -> None:
 
 
 def test_display_query_result_publishes_the_same_logical_artifact() -> None:
-    artifact_context = ArtifactContext(
+    artifacts = RunArtifacts(
         policy=ArtifactPolicy(table_max_rows=10),
     )
-    ref = artifact_context.create(
+    ref = artifacts.create(
         SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=StubSpark(),
-            artifact_context=artifact_context,
+            artifacts=artifacts,
         )
     )
 
@@ -162,7 +176,7 @@ def test_display_query_result_publishes_the_same_logical_artifact() -> None:
 
     assert isinstance(result.metadata, ArtifactRef)
     assert result.metadata == ref
-    artifact = artifact_context.registry.resolve(result.metadata)
+    artifact = artifacts.registry.resolve(result.metadata)
     assert isinstance(artifact.content, TableContent)
     assert artifact.content.row_count == 1
 
@@ -170,13 +184,13 @@ def test_display_query_result_publishes_the_same_logical_artifact() -> None:
 def test_display_query_result_can_publish_materialized_content_without_a_source(
     make_table_artifact,
 ) -> None:
-    artifact_context = ArtifactContext()
+    artifacts = RunArtifacts()
     artifact = make_table_artifact([{"known_column": 1}])
-    artifact_context.registry.add(artifact)
+    artifacts.registry.add(artifact)
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=StubSpark(),
-            artifact_context=artifact_context,
+            artifacts=artifacts,
         )
     )
 
@@ -188,7 +202,7 @@ def test_display_query_result_can_publish_materialized_content_without_a_source(
     )
 
     assert result.metadata == artifact.ref
-    assert artifact_context.published_artifacts == (artifact,)
+    assert artifacts.published == (artifact,)
 
 
 def test_query_data_rejects_mutating_sql_before_calling_spark() -> None:
@@ -199,7 +213,7 @@ def test_query_data_rejects_mutating_sql_before_calling_spark() -> None:
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=SparkThatMustNotRun(),
-            artifact_context=ArtifactContext(
+            artifacts=RunArtifacts(
                 policy=ArtifactPolicy(table_max_rows=10),
             ),
         )
@@ -215,14 +229,14 @@ def test_query_data_rejects_mutating_sql_before_calling_spark() -> None:
 
 
 def test_inspect_query_result_returns_structured_result_preview() -> None:
-    artifact_context = ArtifactContext()
-    ref = artifact_context.create(
+    artifacts = RunArtifacts()
+    ref = artifacts.create(
         SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=StubSpark(),
-            artifact_context=artifact_context,
+            artifacts=artifacts,
         )
     )
 

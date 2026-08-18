@@ -98,9 +98,9 @@ def test_active_conversation_reuses_its_artifact_registry_across_turns(
     first_turn = app_module._fresh_deps(cast(Any, resources), registry)
     second_turn = app_module._fresh_deps(cast(Any, resources), registry)
 
-    assert first_turn.artifact_context.registry is registry
-    assert second_turn.artifact_context.registry.resolve(ref) is registry.resolve(ref)
-    assert first_turn.artifact_context is not second_turn.artifact_context
+    assert first_turn.artifacts.registry is registry
+    assert second_turn.artifacts.registry.resolve(ref) is registry.resolve(ref)
+    assert first_turn.artifacts is not second_turn.artifacts
 
 
 def test_reloading_a_conversation_discards_live_references_without_replay(
@@ -129,3 +129,64 @@ def test_reloading_a_conversation_discards_live_references_without_replay(
     assert new_registry is not old_registry
     with pytest.raises(UnknownArtifactError):
         new_registry.resolve(old_ref)
+
+
+def test_deleting_inactive_conversation_refreshes_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deleted: list[tuple[str, str]] = []
+    state = SessionState(
+        current_conversation_id="conversation-1",
+        sidebar_history_revision=2,
+    )
+    fake_streamlit = SimpleNamespace(session_state=state, query_params={})
+    resources = SimpleNamespace(
+        repository=SimpleNamespace(
+            delete_conversation=lambda user_id, conversation_id: deleted.append(
+                (user_id, conversation_id)
+            ),
+        )
+    )
+    monkeypatch.setattr(app_module, "st", fake_streamlit)
+
+    app_module.delete_conversation(
+        cast(Any, resources),
+        "user-1",
+        "conversation-2",
+    )
+
+    assert deleted == [("user-1", "conversation-2")]
+    assert state.sidebar_history_revision == 3
+    assert state.current_conversation_id == "conversation-1"
+
+
+def test_deleting_active_conversation_selects_remaining_conversation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    replacement = SimpleNamespace(
+        id="conversation-2",
+        display_messages=[],
+        model_messages=[],
+    )
+    state = SessionState(current_conversation_id="conversation-1")
+    fake_streamlit = SimpleNamespace(session_state=state, query_params={})
+    resources = SimpleNamespace(
+        repository=SimpleNamespace(
+            delete_conversation=lambda _user_id, _conversation_id: None,
+            list_conversations=lambda _user_id: [
+                SimpleNamespace(id=replacement.id)
+            ],
+            load_conversation=lambda _user_id, _conversation_id: replacement,
+        )
+    )
+    monkeypatch.setattr(app_module, "st", fake_streamlit)
+
+    app_module.delete_conversation(
+        cast(Any, resources),
+        "user-1",
+        "conversation-1",
+    )
+
+    assert state.sidebar_history_revision == 1
+    assert state.current_conversation_id == "conversation-2"
+    assert fake_streamlit.query_params["chat"] == "conversation-2"

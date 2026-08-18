@@ -59,7 +59,7 @@ def _visualization_artifact(
             artifact_kind="visualization",
         ),
         content=VisualizationContent(
-            spec_json=json.dumps({"mark": "point", "value": value}).encode(),
+            spec={"mark": "point", "value": value},
         ),
     )
 

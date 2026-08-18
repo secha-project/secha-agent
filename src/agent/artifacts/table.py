@@ -10,7 +10,7 @@ from pyarrow import ipc
 from pyspark.sql import DataFrame, SparkSession
 
 from ..spark import run_spark_with_timeout
-from .base import ArtifactContext
+from .base import RunArtifacts
 
 ARROW_STREAM_MEDIA_TYPE = "application/vnd.apache.arrow.stream"
 
@@ -78,7 +78,11 @@ class _TablePreviewSelection:
         column_names: list[str] | None,
     ) -> _TablePreviewSelection:
         range_was_requested = end_row is not None
-        resolved_end_row = end_row or start_row + 9
+        if start_row < 1:
+            raise ValueError("start_row must be at least 1.")
+        if end_row is not None and end_row < start_row:
+            raise ValueError("end_row must be greater than or equal to start_row.")
+        resolved_end_row = end_row if end_row is not None else start_row + 9
         selected_columns = column_names or available_columns[:10]
         unknown_columns = [
             column for column in selected_columns if column not in available_columns
@@ -124,13 +128,16 @@ class TableContent:
     """Portable, materialized content of a table artifact."""
 
     arrow_bytes: bytes
-    row_count: int
     truncated: bool
     kind: Literal["table"] = field(default="table", init=False)
     media_type: Literal["application/vnd.apache.arrow.stream"] = field(
         default=ARROW_STREAM_MEDIA_TYPE,
         init=False,
     )
+
+    @property
+    def row_count(self) -> int:
+        return self.to_arrow_table().num_rows
 
     def to_arrow_table(self) -> pa.Table:
         with ipc.open_stream(pa.BufferReader(self.arrow_bytes)) as reader:
@@ -217,8 +224,8 @@ class SparkTableSource:
             collect_preview,
         )
 
-    async def materialize(self, context: ArtifactContext) -> TableContent:
-        max_rows = context.policy.table_max_rows
+    async def materialize(self, artifacts: RunArtifacts) -> TableContent:
+        max_rows = artifacts.policy.table_max_rows
         dataframe = self.dataframe
         if max_rows is not None:
             dataframe = dataframe.limit(max_rows + 1)
@@ -234,6 +241,5 @@ class SparkTableSource:
             writer.write_table(visible)
         return TableContent(
             arrow_bytes=sink.getvalue().to_pybytes(),
-            row_count=visible.num_rows,
             truncated=truncated,
         )

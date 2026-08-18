@@ -7,14 +7,10 @@ from pydantic_ai.capabilities import Capability
 from pydantic_ai.messages import ModelRequest
 from pydantic_ai.models.test import TestModel
 
-from src.agent.agent import (
-    build_catalog,
-    build_query,
-    build_visualization,
-    create_agent,
-    render_prompt,
-)
+from src.agent.agent import create_agent
+from src.agent.capabilities import catalog, query, visualization
 from src.agent.deps import Deps
+from src.agent.prompt import render_prompt
 
 CATALOG_INSTRUCTIONS = render_prompt(
     "capabilities/catalog/instructions.md",
@@ -43,21 +39,21 @@ def _static_instructions(capability: Capability[Deps]) -> list[str]:
 
 
 def test_catalog_instructions_do_not_depend_on_query() -> None:
-    without_query = build_catalog(frozenset({"catalog"}))
-    with_query = build_catalog(frozenset({"catalog", "query"}))
+    without_query = catalog.build(frozenset({"catalog"}))
+    with_query = catalog.build(frozenset({"catalog", "query"}))
 
     assert _static_instructions(without_query) == [CATALOG_INSTRUCTIONS]
     assert _static_instructions(with_query) == [CATALOG_INSTRUCTIONS]
 
 
 def test_query_uses_standalone_instructions_without_catalog() -> None:
-    capability = build_query(frozenset({"query"}))
+    capability = query.build(frozenset({"query"}))
 
     assert _static_instructions(capability) == [QUERY_STANDALONE]
 
 
 def test_query_replaces_standalone_instructions_when_catalog_is_selected() -> None:
-    capability = build_query(frozenset({"catalog", "query"}))
+    capability = query.build(frozenset({"catalog", "query"}))
     instructions = _static_instructions(capability)
 
     assert instructions == [QUERY_WITH_CATALOG]
@@ -98,7 +94,9 @@ def test_create_agent_rejects_unknown_capabilities() -> None:
 
 
 def test_visualization_uses_one_instruction_prompt_and_exposes_one_tool() -> None:
-    capability = build_visualization(frozenset({"catalog", "query", "visualization"}))
+    capability = visualization.build(
+        frozenset({"catalog", "query", "visualization"}),
+    )
     assert _static_instructions(capability) == [VISUALIZATION_INSTRUCTIONS]
 
     model = TestModel(call_tools=[], custom_output_text="done")

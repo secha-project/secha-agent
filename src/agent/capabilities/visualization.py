@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-import json
 import re
 from typing import Any
 
 import pandas as pd
 from pydantic_ai import ModelRetry, RunContext, ToolReturn
+from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
 
 from ..artifacts.base import ArtifactRef, UnknownArtifactError
 from ..artifacts.table import SparkTableSource, TableContent
 from ..artifacts.visualization import VisualizationContent
 from ..deps import Deps
+from ..prompt import render_prompt
 from ..spark import concise_spark_error, run_spark_with_timeout, spark_error_type
 
 MAX_VISUALIZATION_ROWS = 1_000
@@ -26,7 +27,19 @@ _LAYER_SOURCE_PATTERN = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+NAME = "visualization"
 visualization_toolset = FunctionToolset[Deps]()
+
+
+def build(selected: frozenset[str]) -> Capability[Deps]:
+    return Capability(
+        id=NAME,
+        instructions=render_prompt(
+            f"capabilities/{NAME}/instructions.md",
+            selected,
+        ),
+        toolsets=[visualization_toolset],
+    )
 
 
 def _concise_visualization_error(error: object) -> str:
@@ -136,7 +149,7 @@ async def visualize_query_result(
     if ref.artifact_kind != "table":
         raise ModelRetry(f"Artifact {ref.artifact_id!r} is not a table artifact.")
     try:
-        artifact = deps.artifact_context.registry.resolve(ref)
+        artifact = deps.artifacts.registry.resolve(ref)
     except (UnknownArtifactError, TypeError) as exc:
         raise ModelRetry(
             f"Table artifact {ref.artifact_id!r} is no longer available. "
@@ -181,18 +194,16 @@ async def visualize_query_result(
         chart = ggsql_package.render_altair(pandas_frame, visual).properties(
             title=title.strip()
         )
-        spec_json = (
-            json.dumps(_standalone_spec(chart), indent=2, ensure_ascii=False) + "\n"
-        ).encode("utf-8")
+        spec = _standalone_spec(chart)
     except Exception as exc:
         raise ModelRetry(
             f"Visualization rendering failed: {_concise_visualization_error(exc)}"
         ) from exc
 
-    visualization_ref = deps.artifact_context.create_content(
-        VisualizationContent(spec_json=spec_json)
+    visualization_ref = deps.artifacts.create_content(
+        VisualizationContent(spec=spec)
     )
-    await deps.artifact_context.publish(visualization_ref)
+    await deps.artifacts.publish(visualization_ref)
 
     row_note = (
         f" The chart uses the first {MAX_VISUALIZATION_ROWS:,} rows because the "
