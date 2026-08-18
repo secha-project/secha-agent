@@ -1,18 +1,18 @@
-"""Ten-minute voltage THD metrics for PROCEM power-quality data."""
-
 import ibis
 from boring_semantic_layer import Dimension, Measure, SemanticModel, to_semantic_table
 from ibis import BaseBackend
 
 
 def _thd(t, phase: str):
-    harmonic_power = sum((t[f"u{order}{phase}"] ** 2).mean() for order in range(2, 21))
+    harmonic_power = (t[f"u2{phase}"] ** 2).mean()
+    for order in range(3, 21):
+        harmonic_power += (t[f"u{order}{phase}"] ** 2).mean()
     fundamental = (t[f"u1{phase}v"] ** 2).mean().sqrt()
     return 100 * harmonic_power.sqrt() / fundamental
 
 
 def build_thd_metric(backend: BaseBackend) -> SemanticModel:
-    """Build UTC-aligned 10-minute voltage THD₂–₂₀ metrics."""
+    """Build UTC-aligned 10-minute voltage THD metrics."""
     source = backend.table(
         "power_quality_measurements_procem", database=("analytics", "bronze")
     )
@@ -26,7 +26,7 @@ def build_thd_metric(backend: BaseBackend) -> SemanticModel:
             ),
         )
         .with_dimensions(
-            ten_minute_end=Dimension(
+            timestamp=Dimension(
                 expr=lambda t: (
                     t.timestamp.cast("timestamp").truncate("hour")
                     + ibis.interval(minutes=10)
@@ -45,7 +45,7 @@ def build_thd_metric(backend: BaseBackend) -> SemanticModel:
             **{
                 f"thd_2_20_l{phase}_pct": Measure(
                     expr=lambda t, phase=f"l{phase}": _thd(t, phase),
-                    description=f"10-min THD₂–₂₀ (%) for voltage phase L{phase}.",
+                    description=f"10-min THD (%) for voltage phase L{phase}.",
                 )
                 for phase in range(1, 4)
             }
