@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from math import sqrt
 from typing import Any, cast
 
 import ibis
@@ -9,7 +8,7 @@ from boring_semantic_layer import to_untagged
 from src.agent.semantic_models.thd import build_harmonic_distortion_model
 
 
-def test_thd_aggregates_harmonics_before_calculating_ratio() -> None:
+def test_thd_aggregates_harmonic_percentages() -> None:
     data: dict[str, Any] = {
         "timestamp": [
             datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC),
@@ -24,10 +23,10 @@ def test_thd_aggregates_harmonics_before_calculating_ratio() -> None:
         data[f"i1l{phase}a"] = [2.0, 6.0, 100.0, 100.0]
         for order in range(2, 21):
             data[f"u{order}l{phase}"] = (
-                [1.0, 1.0, 100.0, 100.0] if order == 2 else [0.0, 0.0, 0.0, 0.0]
+                [3.0, 4.0, 100.0, 100.0] if order == 2 else [0.0, 0.0, 0.0, 0.0]
             )
             data[f"i{order}l{phase}"] = (
-                [1.0, 1.0, 100.0, 100.0] if order == 2 else [0.0, 0.0, 0.0, 0.0]
+                [6.0, 8.0, 100.0, 100.0] if order == 2 else [0.0, 0.0, 0.0, 0.0]
             )
 
     source = ibis.memtable(data)
@@ -54,8 +53,8 @@ def test_thd_aggregates_harmonics_before_calculating_ratio() -> None:
     assert str(result["ten_minute_end"].iloc[0]) == "2026-01-01 12:10:00"
     assert result["device_name"].tolist() == ["meter-a"]
     assert result["voltage_thd_2_20_l1_pct"].tolist() == pytest.approx(
-        [100 / sqrt(5)]
+        [(3**2 + 4**2) ** 0.5 / 2**0.5]
     )
     assert result["current_thd_2_20_l1_pct"].tolist() == pytest.approx(
-        [50 / sqrt(5)]
+        [(6**2 + 8**2) ** 0.5 / 2**0.5]
     )
