@@ -1,1 +1,0 @@
-Use catalog tools first for uncertain table, column, or device identifiers. `find_columns` searches schema metadata only; never use it to search or filter table data or row values. Use `query_data` for data values. Query directly when identifiers are already canonical. When the user asks to see or download rows, run the query and then display its artifact.
