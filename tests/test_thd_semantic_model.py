@@ -6,7 +6,7 @@ import ibis
 import pytest
 from boring_semantic_layer import to_untagged
 
-from src.agent.semantic_models.thd import build_thd_metric
+from src.agent.semantic_models.thd import build_harmonic_distortion_model
 
 
 def test_thd_aggregates_harmonics_before_calculating_ratio() -> None:
@@ -21,8 +21,12 @@ def test_thd_aggregates_harmonics_before_calculating_ratio() -> None:
     }
     for phase in range(1, 4):
         data[f"u1l{phase}v"] = [1.0, 3.0, 100.0, 100.0]
+        data[f"i1l{phase}a"] = [2.0, 6.0, 100.0, 100.0]
         for order in range(2, 21):
             data[f"u{order}l{phase}"] = (
+                [1.0, 1.0, 100.0, 100.0] if order == 2 else [0.0, 0.0, 0.0, 0.0]
+            )
+            data[f"i{order}l{phase}"] = (
                 [1.0, 1.0, 100.0, 100.0] if order == 2 else [0.0, 0.0, 0.0, 0.0]
             )
 
@@ -34,10 +38,10 @@ def test_thd_aggregates_harmonics_before_calculating_ratio() -> None:
             assert database == ("analytics", "bronze")
             return source
 
-    model = build_thd_metric(cast(Any, Backend()))
+    model = build_harmonic_distortion_model(cast(Any, Backend()))
     expression = model.query(
         dimensions=["ten_minute_end", "device_name"],
-        measures=["thd_2_20_l1_pct"],
+        measures=["voltage_thd_2_20_l1_pct", "current_thd_2_20_l1_pct"],
         filters=[{"field": "device_name", "operator": "=", "value": "meter-a"}],
         time_range={
             "start": "2026-01-01T12:10:00",
@@ -49,4 +53,9 @@ def test_thd_aggregates_harmonics_before_calculating_ratio() -> None:
 
     assert str(result["ten_minute_end"].iloc[0]) == "2026-01-01 12:10:00"
     assert result["device_name"].tolist() == ["meter-a"]
-    assert result["thd_2_20_l1_pct"].tolist() == pytest.approx([100 / sqrt(5)])
+    assert result["voltage_thd_2_20_l1_pct"].tolist() == pytest.approx(
+        [100 / sqrt(5)]
+    )
+    assert result["current_thd_2_20_l1_pct"].tolist() == pytest.approx(
+        [50 / sqrt(5)]
+    )

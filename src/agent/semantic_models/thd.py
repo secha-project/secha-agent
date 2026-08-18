@@ -3,16 +3,28 @@ from boring_semantic_layer import Dimension, Measure, SemanticModel, to_semantic
 from ibis import BaseBackend
 
 
-def _thd(t, phase: str):
-    harmonic_power = (t[f"u2{phase}"] ** 2).mean()
+def _thd(t, quantity: str, phase: str, fundamental_unit: str):
+    harmonic_power = (t[f"{quantity}2{phase}"] ** 2).mean()
     for order in range(3, 21):
-        harmonic_power += (t[f"u{order}{phase}"] ** 2).mean()
-    fundamental = (t[f"u1{phase}v"] ** 2).mean().sqrt()
+        harmonic_power += (t[f"{quantity}{order}{phase}"] ** 2).mean()
+    fundamental = (t[f"{quantity}1{phase}{fundamental_unit}"] ** 2).mean().sqrt()
     return 100 * harmonic_power.sqrt() / fundamental
 
 
-def build_thd_metric(backend: BaseBackend) -> SemanticModel:
-    """Build UTC-aligned 10-minute voltage THD metrics."""
+def _thd_measure(
+    quantity_name: str,
+    column_prefix: str,
+    fundamental_unit: str,
+    phase: str,
+) -> Measure:
+    return Measure(
+        expr=lambda t: _thd(t, column_prefix, phase, fundamental_unit),
+        description=f"{quantity_name} THD for phase {phase.upper()}.",
+    )
+
+
+def build_harmonic_distortion_model(backend: BaseBackend) -> SemanticModel:
+    """Build UTC-aligned 10-minute voltage and current THD metrics."""
     source = backend.table(
         "power_quality_measurements_procem", database=("analytics", "bronze")
     )
@@ -20,21 +32,20 @@ def build_thd_metric(backend: BaseBackend) -> SemanticModel:
     return (
         to_semantic_table(
             source,
-            name="voltage_thd_10m",
+            name="harmonic_distortion_10m",
             description=(
-                "10-min voltage THD with hmin=2, hmax=20"
+                "UTC-aligned 10-minute voltage and current THD, calculated "
+                "from harmonic orders 2–20 as a percentage of the fundamental."
             ),
         )
         .with_dimensions(
-            timestamp=Dimension(
+            ten_minute_end=Dimension(
                 expr=lambda t: (
-                    t.timestamp.cast("timestamp").truncate("hour")
+                    t.timestamp.cast("timestamp").bucket(minutes=10)
                     + ibis.interval(minutes=10)
-                    * (t.timestamp.cast("timestamp").minute() // 10 + 1)
                 ),
                 description="UTC 10-minute interval conclusion timestamp.",
                 is_time_dimension=True,
-                smallest_time_grain="minute",
             ),
             device_name=Dimension(
                 expr=lambda t: t.device_name,
@@ -42,12 +53,11 @@ def build_thd_metric(backend: BaseBackend) -> SemanticModel:
             ),
         )
         .with_measures(
-            **{
-                f"thd_2_20_l{phase}_pct": Measure(
-                    expr=lambda t, phase=f"l{phase}": _thd(t, phase),
-                    description=f"10-min THD (%) for voltage phase L{phase}.",
-                )
-                for phase in range(1, 4)
-            }
+            voltage_thd_2_20_l1_pct=_thd_measure("Voltage", "u", "v", "l1"),
+            voltage_thd_2_20_l2_pct=_thd_measure("Voltage", "u", "v", "l2"),
+            voltage_thd_2_20_l3_pct=_thd_measure("Voltage", "u", "v", "l3"),
+            current_thd_2_20_l1_pct=_thd_measure("Current", "i", "a", "l1"),
+            current_thd_2_20_l2_pct=_thd_measure("Current", "i", "a", "l2"),
+            current_thd_2_20_l3_pct=_thd_measure("Current", "i", "a", "l3"),
         )
     )
