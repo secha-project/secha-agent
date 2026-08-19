@@ -77,23 +77,14 @@ def test_agent_config_keeps_immutable_valid_settings() -> None:
         config.request_limit = 0
 
 
-def test_agent_config_uses_config_default_instead_of_environment(
-    monkeypatch: Any,
-    tmp_path: Any,
-) -> None:
-    env_file = tmp_path / ".env"
-    env_file.write_text(
-        """CATALOG_URL=https://catalog.example
-CATALOG_TOKEN=token
-SPARK_URL=sc://spark.example
-OTEL_EXPORTER_OTLP_ENDPOINT=http://otel.example
-ENABLED_CAPABILITIES=["query"]
-""",
-        encoding="utf-8",
+def test_agent_config_uses_default_capabilities() -> None:
+    config = AgentConfig(
+        _env_file=None,
+        catalog_url="https://catalog.example",
+        catalog_token="token",
+        spark_url="sc://spark.example",
+        otel_exporter_otlp_endpoint="http://otel.example",
     )
-    monkeypatch.setenv("ENABLED_CAPABILITIES", '["catalog", "query"]')
-
-    config = AgentConfig(_env_file=env_file)
 
     assert config.enabled_capabilities == DEFAULT_ENABLED_CAPABILITIES
 

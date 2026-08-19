@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import Protocol
 from uuid import uuid4
 
 from pyspark.sql import SparkSession
 
-if TYPE_CHECKING:
-    from .config import AgentConfig
+
+class SparkSessionConfig(Protocol):
+    catalog_name: str
+    catalog_url: str
+    catalog_token: str
+    spark_url: str
+    schema_name: str
 
 
 class SparkActionTimeoutError(TimeoutError):
@@ -45,7 +50,7 @@ async def run_spark_with_timeout[T](
         ) from exc
 
 
-def get_spark_session(config: AgentConfig) -> SparkSession:
+def get_spark_session(config: SparkSessionConfig) -> SparkSession:
     spark: SparkSession = (
         SparkSession.builder.config(
             f"spark.sql.catalog.{config.catalog_name}",

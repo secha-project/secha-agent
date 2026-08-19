@@ -38,10 +38,9 @@ Optional model defaults use `OPENAI_MODEL_NAME` and
 `agent.model_provider`; changing benchmark providers never requires editing
 `.env`.
 The app and one-off agent use the `AgentConfig` capability default: catalog,
-query, semantic layer, and visualization. Environment variables and `.env` do
-not override this selection. Pass `enabled_capabilities` explicitly when
-constructing `AgentConfig`, or set it in a validation run configuration, to use
-a different profile.
+query, semantic layer, and visualization. Pass `enabled_capabilities`
+explicitly when constructing `AgentConfig`, or set it in a validation run
+configuration, to use a different profile.
 
 Then run a one-off prompt with:
 
@@ -85,7 +84,6 @@ set `SECHA_AUTH_SECURE_COOKIE=true` so the cookie is only sent over HTTPS.
 All responses, tool use and requests can be tracked with OpenTelemetry locally, set up the telemetry backend with:
 
 ```bash
-PHOENIX_SQL_DATABASE_URL=sqlite:///telemetry.db
 phoenix serve
 ```
 
