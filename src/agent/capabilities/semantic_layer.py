@@ -16,16 +16,18 @@ from pydantic_ai.toolsets import FunctionToolset
 
 from ..deps import Deps
 from ..prompt import render_prompt
-from ..spark import concise_spark_error, spark_error_type
+from ..spark_runtime import concise_spark_error, spark_error_type
 from .query import QueryDataResult, create_query_result
 
-NAME = "semantic"
+NAME = "semantic_layer"
+DESCRIPTION = "Query governed semantic models, measures, and dimensions."
 semantic_toolset = FunctionToolset[Deps]()
 
 
 def build(selected: frozenset[str]) -> Capability[Deps]:
     return Capability(
         id=NAME,
+        description=DESCRIPTION,
         instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
         toolsets=[semantic_toolset],
     )

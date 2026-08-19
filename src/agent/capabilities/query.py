@@ -15,16 +15,18 @@ from ..artifacts.base import (
 from ..artifacts.table import SparkTableSource
 from ..deps import Deps
 from ..prompt import render_prompt
-from ..spark import concise_spark_error, spark_error_type
+from ..spark_runtime import concise_spark_error, spark_error_type
 from ..sql_safety import ReadOnlySqlError, require_read_only_sql
 
 NAME = "query"
+DESCRIPTION = "Run read-only SQL and inspect or publish saved query results."
 query_toolset = FunctionToolset[Deps]()
 
 
 def build(selected: frozenset[str]) -> Capability[Deps]:
     return Capability(
         id=NAME,
+        description=DESCRIPTION,
         instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
         toolsets=[query_toolset],
     )

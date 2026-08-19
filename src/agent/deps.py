@@ -4,7 +4,7 @@ from pyspark.sql import SparkSession
 
 from .artifacts.base import RunArtifacts
 from .catalog import UnityCatalogClient
-from .semantic import SemanticRuntime
+from .semantic_runtime import SemanticRuntime
 
 
 @dataclass

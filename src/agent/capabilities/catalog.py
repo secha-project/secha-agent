@@ -44,12 +44,14 @@ class DescribeTableResult(BaseModel):
     missing_columns: list[str]
 
 NAME = "catalog"
+DESCRIPTION = "Discover canonical tables, columns, and schema metadata."
 catalog_toolset = FunctionToolset[Deps]()
 
 
 def build(selected: frozenset[str]) -> Capability[Deps]:
     return Capability(
         id=NAME,
+        description=DESCRIPTION,
         instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
         toolsets=[catalog_toolset],
     )

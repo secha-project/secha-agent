@@ -15,8 +15,8 @@ from src.agent.artifacts.base import ArtifactPolicy, RunArtifacts
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
-from src.agent.semantic import load_semantic_runtime
-from src.agent.spark import get_spark_session
+from src.agent.semantic_runtime import load_semantic_runtime
+from src.agent.spark_runtime import get_spark_session
 from src.validation.config import BENCHMARKS_DIR, RESULTS_DIR, BenchmarkRunConfig
 from src.validation.eval_models import (
     BenchmarkDataset,
@@ -88,7 +88,7 @@ def create_dependencies(config: AgentConfig) -> Deps:
     spark = get_spark_session(config)
     semantic = (
         load_semantic_runtime(spark)
-        if "semantic" in config.enabled_capabilities
+        if "semantic_layer" in config.enabled_capabilities
         else None
     )
     return Deps(

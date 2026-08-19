@@ -5,9 +5,11 @@ from typing import Annotated
 
 from pydantic import AfterValidator
 
-from . import catalog, query, semantic, visualization
+from . import catalog, query, semantic_layer, visualization
 
-CAPABILITIES = (catalog, query, semantic, visualization)
+# This is the canonical order for capability instructions and tools. Keep the
+# semantic layer first so governed measures precede catalog and SQL fallbacks.
+CAPABILITIES = (semantic_layer, catalog, query, visualization)
 
 
 def validate(enabled: Iterable[str]) -> frozenset[str]:
@@ -17,8 +19,8 @@ def validate(enabled: Iterable[str]) -> frozenset[str]:
     if unknown:
         raise ValueError(f"Unknown capabilities: {sorted(unknown)}")
 
-    if "semantic" in selected and "query" not in selected:
-        raise ValueError("The semantic capability requires query.")
+    if "semantic_layer" in selected and "query" not in selected:
+        raise ValueError("The semantic layer capability requires query.")
     if "visualization" in selected and not {"catalog", "query"} <= selected:
         raise ValueError("The visualization capability requires catalog and query.")
     return selected

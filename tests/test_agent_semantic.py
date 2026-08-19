@@ -8,11 +8,11 @@ from pydantic import ValidationError
 from pydantic_ai import ModelRetry
 from pydantic_ai.models.test import TestModel
 
-import src.agent.semantic as semantic_module
+import src.agent.semantic_runtime as semantic_module
 from src.agent.agent import create_agent
 from src.agent.artifacts.base import RunArtifacts
 from src.agent.artifacts.table import SparkTableSource
-from src.agent.capabilities.semantic import (
+from src.agent.capabilities.semantic_layer import (
     SemanticOrder,
     SemanticTimeRange,
     SetSemanticFilter,
@@ -20,7 +20,7 @@ from src.agent.capabilities.semantic import (
     query_semantic_model,
     semantic_toolset,
 )
-from src.agent.semantic import SemanticRuntime, load_semantic_runtime
+from src.agent.semantic_runtime import SemanticRuntime, load_semantic_runtime
 
 
 class StubSchema:
@@ -91,7 +91,7 @@ class StubSemanticRuntime:
 def test_semantic_capability_exposes_structured_tools() -> None:
     model = TestModel(call_tools=[], custom_output_text="done")
 
-    create_agent(("query", "semantic")).run_sync(
+    create_agent(("query", "semantic_layer")).run_sync(
         "question",
         deps=cast(Any, object()),
         model=model,
@@ -100,13 +100,13 @@ def test_semantic_capability_exposes_structured_tools() -> None:
     request = model.last_model_request_parameters
     assert request is not None
     assert [tool.name for tool in request.function_tools] == [
-        "query_data",
-        "inspect_query_result",
-        "display_query_result",
         "list_semantic_models",
         "describe_semantic_model",
         "query_semantic_model",
         "compare_semantic_periods",
+        "query_data",
+        "inspect_query_result",
+        "display_query_result",
     ]
     query_schema = semantic_toolset.tools["query_semantic_model"].function_schema
     assert "$defs" in query_schema.json_schema
@@ -114,8 +114,8 @@ def test_semantic_capability_exposes_structured_tools() -> None:
 
 
 def test_semantic_capability_requires_query_capability() -> None:
-    with pytest.raises(ValueError, match="semantic capability requires query"):
-        create_agent(("semantic",))
+    with pytest.raises(ValueError, match="semantic layer capability requires query"):
+        create_agent(("semantic_layer",))
 
 
 def test_semantic_filter_validates_operator_specific_shape() -> None:

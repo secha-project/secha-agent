@@ -20,8 +20,8 @@ from src.agent.artifacts.base import (
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
-from src.agent.semantic import SemanticRuntime, load_semantic_runtime
-from src.agent.spark import get_spark_session
+from src.agent.semantic_runtime import SemanticRuntime, load_semantic_runtime
+from src.agent.spark_runtime import get_spark_session
 from src.app.artifact_renderer import ArtifactRenderer
 from src.app.auth import (
     AUTH_COOKIE_NAME,
@@ -245,7 +245,7 @@ def load_resources() -> AppResources:
         ),
         semantic=(
             load_semantic_runtime(spark)
-            if "semantic" in config.enabled_capabilities
+            if "semantic_layer" in config.enabled_capabilities
             else None
         ),
         repository=load_repository(),

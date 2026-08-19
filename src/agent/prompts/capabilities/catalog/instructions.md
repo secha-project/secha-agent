@@ -1,3 +1,5 @@
+## Catalog capability
+
 Use the catalog capability to discover and inspect schema metadata.
 
 - Browse tables when a table name is unknown, ambiguous, or possibly misspelled.

@@ -8,7 +8,7 @@ from pydantic_ai.messages import ModelRequest
 from pydantic_ai.models.test import TestModel
 
 from src.agent.agent import create_agent
-from src.agent.capabilities import catalog, query, visualization
+from src.agent.capabilities import catalog, query, semantic_layer, visualization
 from src.agent.deps import Deps
 from src.agent.prompt import render_prompt
 
@@ -26,6 +26,60 @@ VISUALIZATION_INSTRUCTIONS = render_prompt(
     "capabilities/visualization/instructions.md",
     frozenset({"catalog", "query", "visualization"}),
 )
+
+
+@pytest.mark.parametrize(
+    ("selected", "expected_routes"),
+    [
+        (frozenset({"catalog"}), ["Catalog"]),
+        (frozenset({"query"}), ["Query"]),
+        (frozenset({"catalog", "query"}), ["Catalog", "Query"]),
+        (frozenset({"query", "semantic_layer"}), ["Semantic layer", "Query"]),
+        (
+            frozenset({"catalog", "query", "visualization"}),
+            ["Catalog", "Query", "Visualization"],
+        ),
+        (
+            frozenset({"catalog", "query", "semantic_layer", "visualization"}),
+            ["Semantic layer", "Catalog", "Query", "Visualization"],
+        ),
+    ],
+)
+def test_base_prompt_routes_only_selected_capabilities_in_priority_order(
+    selected: frozenset[str],
+    expected_routes: list[str],
+) -> None:
+    prompt = render_prompt("base.md", selected)
+    route_lines = [
+        line
+        for line in prompt.splitlines()
+        if line.lstrip("0123456789. ").startswith("**")
+    ]
+
+    assert [line.split("**")[1].removesuffix(":") for line in route_lines] == (
+        expected_routes
+    )
+    assert [int(line.split(".", 1)[0]) for line in route_lines] == list(
+        range(1, len(expected_routes) + 1)
+    )
+    for capability_name in ("Semantic layer", "Catalog", "Query", "Visualization"):
+        assert (f"**{capability_name}:**" in prompt) == (
+            capability_name in expected_routes
+        )
+
+
+@pytest.mark.parametrize(
+    "capability_module",
+    [semantic_layer, catalog, query, visualization],
+)
+def test_capabilities_have_descriptions(
+    capability_module: Any,
+) -> None:
+    selected = frozenset({"catalog", "query", "semantic_layer", "visualization"})
+    capability = capability_module.build(selected)
+
+    assert capability.get_description() == capability_module.DESCRIPTION
+    assert capability_module.DESCRIPTION
 
 
 def _static_instructions(capability: Capability[Deps]) -> list[str]:
@@ -85,6 +139,48 @@ def test_create_agent_deduplicates_capabilities() -> None:
         "query_data",
         "inspect_query_result",
         "display_query_result",
+    ]
+
+
+def test_create_agent_uses_canonical_capability_order() -> None:
+    model = TestModel(call_tools=[], custom_output_text="done")
+    configured_agent = create_agent(
+        ("visualization", "query", "catalog", "semantic_layer"),
+    )
+
+    with capture_run_messages() as messages:
+        configured_agent.run_sync(
+            "question",
+            deps=cast(Deps, cast(Any, object())),
+            model=model,
+        )
+
+    request = next(message for message in messages if isinstance(message, ModelRequest))
+    assert request.instructions is not None
+    headings = [
+        "## Semantic layer capability",
+        "## Catalog capability",
+        "## Query capability",
+        "## Visualization capability",
+    ]
+    assert [request.instructions.index(heading) for heading in headings] == sorted(
+        request.instructions.index(heading) for heading in headings
+    )
+
+    request_parameters = model.last_model_request_parameters
+    assert request_parameters is not None
+    assert [tool.name for tool in request_parameters.function_tools] == [
+        "list_semantic_models",
+        "describe_semantic_model",
+        "query_semantic_model",
+        "compare_semantic_periods",
+        "browse_tables",
+        "find_columns",
+        "describe_table",
+        "query_data",
+        "inspect_query_result",
+        "display_query_result",
+        "visualize_query_result",
     ]
 
 

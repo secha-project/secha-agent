@@ -1,3 +1,5 @@
+## Query capability
+
 Use the query capability for questions about row data, calculations, aggregates, or data values.
 
 Run read-only Spark SQL with `query_data`. Use the returned preview to answer the question, and call `inspect_query_result` when the preview does not contain enough rows or columns to support the answer.

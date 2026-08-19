@@ -1,16 +1,36 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from pydantic import Field, SecretStr
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from .capabilities import EnabledCapabilities
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+DEFAULT_ENABLED_CAPABILITIES = frozenset(
+    {"catalog", "query", "semantic_layer", "visualization"}
+)
+
+
+def _without_capability_selection(
+    source: PydanticBaseSettingsSource,
+) -> PydanticBaseSettingsSource:
+    """Keep capability selection in explicit config rather than the environment."""
+
+    def filtered_source() -> dict[str, Any]:
+        values = source()
+        values.pop("enabled_capabilities", None)
+        return values
+
+    return cast(PydanticBaseSettingsSource, filtered_source)
 
 
 class TuniProviderConfig(BaseSettings):
@@ -49,7 +69,7 @@ class AgentConfig(BaseSettings):
     model_name: str | None = None
     temperature: float = Field(default=0.0, ge=0.0)
     request_limit: int = Field(default=50, ge=1)
-    enabled_capabilities: EnabledCapabilities
+    enabled_capabilities: EnabledCapabilities = DEFAULT_ENABLED_CAPABILITIES
     otel_exporter_otlp_endpoint: str
     logfire_service_name: str = "secha-agent"
 
@@ -60,6 +80,23 @@ class AgentConfig(BaseSettings):
         frozen=True,
         extra="ignore",
     )
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        del settings_cls
+        return (
+            init_settings,
+            _without_capability_selection(env_settings),
+            _without_capability_selection(dotenv_settings),
+            file_secret_settings,
+        )
 
     def load_provider(self) -> TuniProviderConfig | OpenAIProviderConfig:
         if self.model_provider == "tuni":

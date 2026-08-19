@@ -13,7 +13,11 @@ from ..artifacts.table import SparkTableSource, TableContent
 from ..artifacts.visualization import VisualizationContent
 from ..deps import Deps
 from ..prompt import render_prompt
-from ..spark import concise_spark_error, run_spark_with_timeout, spark_error_type
+from ..spark_runtime import (
+    concise_spark_error,
+    run_spark_with_timeout,
+    spark_error_type,
+)
 
 MAX_VISUALIZATION_ROWS = 1_000
 MAX_VISUALIZATION_ERROR_LENGTH = 1_500
@@ -28,12 +32,14 @@ _LAYER_SOURCE_PATTERN = re.compile(
 )
 
 NAME = "visualization"
+DESCRIPTION = "Create charts from saved query results."
 visualization_toolset = FunctionToolset[Deps]()
 
 
 def build(selected: frozenset[str]) -> Capability[Deps]:
     return Capability(
         id=NAME,
+        description=DESCRIPTION,
         instructions=render_prompt(
             f"capabilities/{NAME}/instructions.md",
             selected,

@@ -1,4 +1,6 @@
-The semantic capability provides governed business or domain metrics, calculated measures, and questions that combine declared measures and dimensions. Always search for the requested metrics in the semantic models and prefer it over reconstructing a declared measure in raw SQL.
+## Semantic layer capability
+
+The semantic layer capability provides governed business or domain metrics, calculated measures, and questions that combine declared measures and dimensions. Always search for the requested metrics in the semantic models and prefer it over reconstructing a declared measure in raw SQL.
 
 Call `list_semantic_models` to know which models you have access to. Call `describe_semantic_model` before querying a model unless its exact dimensions and measures are already known from a tool result in this conversation. Use only names returned by these tools.
 

@@ -10,8 +10,8 @@ from .artifacts.base import Artifact
 from .catalog import UnityCatalogClient
 from .config import AgentConfig
 from .deps import Deps
-from .semantic import load_semantic_runtime
-from .spark import get_spark_session
+from .semantic_runtime import load_semantic_runtime
+from .spark_runtime import get_spark_session
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
     spark = get_spark_session(config)
     semantic = (
         load_semantic_runtime(spark)
-        if "semantic" in config.enabled_capabilities
+        if "semantic_layer" in config.enabled_capabilities
         else None
     )
     deps = Deps(

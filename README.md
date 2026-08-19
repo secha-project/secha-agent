@@ -13,23 +13,19 @@ The agent, built with Pydantic AI, can answer data analytics questions by intera
 - `inspect_query_result`
 - `display_query_result`
 
-An optional Boring Semantic Layer capability adds governed semantic-model
+The Boring Semantic Layer capability adds governed semantic-model
 discovery, metric queries, and period comparisons. It uses an Ibis PySpark
 backend bound to the same authenticated Spark Connect session, and its results
-enter the same table artifact pipeline as raw Spark SQL. Enable it with:
-
-```dotenv
-ENABLED_CAPABILITIES='["catalog", "query", "semantic", "visualization"]'
-```
+enter the same table artifact pipeline as raw Spark SQL.
 
 Define models in `src/agent/semantic_models`. Its model factory receives the
 Ibis backend bound to the application Spark session, which remains the sole
 execution and authorization boundary. Resolve physical tables through that
 backend and return base or composed BSL models from the factory.
 
-Configure the catalog, Spark Connect, model provider, enabled capabilities, and
-OpenTelemetry values in `.env`. Keep credentials for every provider in this
-file; provider selection belongs to the app or benchmark configuration:
+Configure the catalog, Spark Connect, model provider, and OpenTelemetry values
+in `.env`. Keep credentials for every provider in this file; provider and
+capability selection belong to the app or benchmark configuration:
 
 ```dotenv
 OPENAI_API_KEY=...
@@ -41,11 +37,11 @@ Optional model defaults use `OPENAI_MODEL_NAME` and
 `TUNI_INFERENCE_MODEL_NAME`. Select a provider per benchmark with
 `agent.model_provider`; changing benchmark providers never requires editing
 `.env`.
-Select the capability profile with a JSON array:
-
-```dotenv
-ENABLED_CAPABILITIES='["catalog", "query"]'
-```
+The app and one-off agent use the `AgentConfig` capability default: catalog,
+query, semantic layer, and visualization. Environment variables and `.env` do
+not override this selection. Pass `enabled_capabilities` explicitly when
+constructing `AgentConfig`, or set it in a validation run configuration, to use
+a different profile.
 
 Then run a one-off prompt with:
 

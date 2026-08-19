@@ -1,8 +1,10 @@
+## Visualization capability
+
 Use visualization when the user wants to see the data or for comparisons, distributions, relationships, and trends. Resolve uncertain table names, columns, types, and units with catalog tools first.
 
 ### Visualization best practices
 
-Prepare the data to be plotted by executing{% if "semantic" in capabilities %} `query_semantic_model` with the appropiate filters and aggregations or (if needed) {% endif %} `query_data` with the complete read-only SQL for the chart, putting all transformations, filtering, joins, aggregation, ordering, and aliases in that query. Then call `visualize_query_result` with its returned table reference, visual-only ggsql, and a short title.
+Prepare the data to be plotted by executing{% if "semantic_layer" in capabilities %} `query_semantic_model` with the appropriate filters and aggregations or (if needed) {% endif %} `query_data` with the complete read-only SQL for the chart, putting all transformations, filtering, joins, aggregation, ordering, and aliases in that query. Then call `visualize_query_result` with its returned table reference, visual-only ggsql, and a short title.
 
 Do not display the table with `display_query_result` unless the user also asked to see the data or download it.
 
@@ -94,5 +96,5 @@ LABEL x => 'Category', y => 'Total value (unit)'
 
 If rendering fails, correct the columns or grammar using the same table reference. After success, continue the answer without generating cosmetic alternatives.
 
-#### Common pitfails
-- Trying to coerce a column types inside a ggsql command. Remember: all transformation must happen at the query level.
+#### Common pitfalls
+- Trying to coerce column types inside a ggsql command. Remember: all transformations must happen at the query level.
