@@ -152,8 +152,6 @@ async def visualize_query_result(
     visual = _validate_ggsql(ggsql)
 
     deps = ctx.deps
-    if ref.artifact_kind != "table":
-        raise ModelRetry(f"Artifact {ref.artifact_id!r} is not a table artifact.")
     try:
         artifact = deps.artifacts.registry.resolve(ref)
     except (UnknownArtifactError, TypeError) as exc:
@@ -162,6 +160,8 @@ async def visualize_query_result(
             "Call query_data again to create a new artifact; do not retry with "
             "this reference."
         ) from exc
+    if artifact.kind != "table":
+        raise ModelRetry(f"Artifact {ref.artifact_id!r} is not a table artifact.")
 
     try:
         if isinstance(artifact.source, SparkTableSource):

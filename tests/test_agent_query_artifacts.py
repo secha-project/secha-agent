@@ -122,7 +122,7 @@ def test_query_result_tools_expose_stale_references_as_model_retry(
         asyncio.run(
             tool(
                 cast(Any, ctx),
-                ArtifactRef(artifact_id="stale", artifact_kind="table"),
+                ArtifactRef(artifact_id="stale"),
             )
         )
 

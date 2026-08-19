@@ -172,7 +172,7 @@ def test_visualization_rejects_stale_query_reference() -> None:
         asyncio.run(
             visualize_query_result(
                 ctx,
-                ArtifactRef(artifact_id="stale", artifact_kind="table"),
+                ArtifactRef(artifact_id="stale"),
                 GGSQL_QUERY,
                 "Stale",
             )

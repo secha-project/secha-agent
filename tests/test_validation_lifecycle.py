@@ -54,10 +54,7 @@ def _visualization_artifact(
     value: int,
 ) -> Artifact:
     return Artifact(
-        ref=ArtifactRef(
-            artifact_id=artifact_id,
-            artifact_kind="visualization",
-        ),
+        ref=ArtifactRef(artifact_id=artifact_id),
         content=VisualizationContent(
             spec={"mark": "point", "value": value},
         ),

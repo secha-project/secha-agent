@@ -12,8 +12,6 @@ from pyspark.sql import SparkSession
 
 from src.agent.agent import create_agent
 from src.agent.artifacts.base import (
-    DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
-    ArtifactPolicy,
     ArtifactRegistry,
     RunArtifacts,
 )
@@ -659,12 +657,7 @@ def _fresh_deps(
         schema_name=resources.config.schema_name,
         table_column_page_size=resources.config.table_column_page_size,
         semantic=getattr(resources, "semantic", None),
-        artifacts=RunArtifacts(
-            registry=artifact_registry,
-            policy=ArtifactPolicy(
-                table_max_rows=DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
-            ),
-        ),
+        artifacts=RunArtifacts(registry=artifact_registry),
     )
 
 

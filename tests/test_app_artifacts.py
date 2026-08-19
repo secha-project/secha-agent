@@ -3,10 +3,8 @@ from typing import Any, cast
 
 import pandas as pd
 import pyarrow as pa
-import pytest
 
 from src.agent.artifacts.base import (
-    DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
     Artifact,
     ArtifactPolicy,
     ArtifactRef,
@@ -57,11 +55,7 @@ class TaggedSpark:
 
 def test_spark_table_source_uses_the_configured_limit() -> None:
     result = MaterializedResult()
-    artifacts = RunArtifacts(
-        policy=ArtifactPolicy(
-            table_max_rows=DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
-        ),
-    )
+    artifacts = RunArtifacts(policy=ArtifactPolicy())
     ref = artifacts.create(
         SparkTableSource(
             spark=cast(Any, TaggedSpark()),
@@ -71,7 +65,8 @@ def test_spark_table_source_uses_the_configured_limit() -> None:
     content = asyncio.run(artifacts.materialize(ref))
     assert isinstance(content, TableContent)
 
-    assert result.limit_value == DEFAULT_TABLE_ARTIFACT_MAX_ROWS + 1
+    assert artifacts.policy.table_max_rows == 10_000
+    assert result.limit_value == artifacts.policy.table_max_rows + 1
     assert content.row_count == 1
 
 
@@ -91,24 +86,6 @@ def test_artifact_renderer_renders_a_published_artifact(
     assert part.artifact_id == artifact.id
     assert isinstance(container.data, pd.DataFrame)
     assert container.download_button_calls == []
-
-
-def test_artifact_renderer_rejects_mismatched_metadata(
-    make_table_artifact: Any,
-) -> None:
-    artifacts = RunArtifacts()
-    artifact = make_table_artifact([{"id": 1}])
-    artifacts.registry.add(artifact)
-    renderer = ArtifactRenderer(artifacts.registry)
-
-    with pytest.raises(TypeError, match="has kind 'table', not 'image'"):
-        renderer.render_tool_result(
-            ArtifactRef(
-                artifact_id=artifact.id,
-                artifact_kind="image",
-            ),
-            TableContainer(),
-        )
 
 
 def test_historical_arrow_snapshot_is_rendered_as_native_pandas_dataframe(
@@ -176,7 +153,7 @@ def test_visualization_renderer_binds_named_data() -> None:
         },
     }
     content = VisualizationContent(spec=spec)
-    ref = ArtifactRef(artifact_id="viz-1", artifact_kind="visualization")
+    ref = ArtifactRef(artifact_id="viz-1")
     artifact = Artifact(ref=ref, content=content)
     container = VisualizationContainer()
 

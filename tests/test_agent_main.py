@@ -40,14 +40,14 @@ def test_artifact_registry_keeps_logical_artifacts_addressable() -> None:
     assert registry.resolve(second_ref).source is second
 
     with pytest.raises(UnknownArtifactError):
-        registry.resolve(ArtifactRef(artifact_id="stale", artifact_kind="table"))
+        registry.resolve(ArtifactRef(artifact_id="stale"))
 
 
 def test_registered_artifacts_are_immutable_and_content_is_registry_controlled(
     make_table_artifact: Any,
 ) -> None:
     registry = ArtifactRegistry()
-    ref = ArtifactRef(artifact_id="result", artifact_kind="table")
+    ref = ArtifactRef(artifact_id="result")
     artifact = Artifact(ref=ref, source=cast(Any, SimpleNamespace(kind="table")))
     content = make_table_artifact([{"value": 1}]).require_content()
     registry.add(artifact)

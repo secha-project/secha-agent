@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import ClassVar, Literal
 
 import pandas as pd
 import pyarrow as pa
@@ -11,8 +11,6 @@ from pyspark.sql import DataFrame, SparkSession
 
 from ..spark_runtime import run_spark_with_timeout
 from .base import RunArtifacts
-
-ARROW_STREAM_MEDIA_TYPE = "application/vnd.apache.arrow.stream"
 
 
 @dataclass(frozen=True)
@@ -127,11 +125,15 @@ class _TablePreviewSelection:
 class TableContent:
     """Portable, materialized content of a table artifact."""
 
+    MEDIA_TYPE: ClassVar[Literal["application/vnd.apache.arrow.stream"]] = (
+        "application/vnd.apache.arrow.stream"
+    )
+
     arrow_bytes: bytes
     truncated: bool
     kind: Literal["table"] = field(default="table", init=False)
     media_type: Literal["application/vnd.apache.arrow.stream"] = field(
-        default=ARROW_STREAM_MEDIA_TYPE,
+        default=MEDIA_TYPE,
         init=False,
     )
 

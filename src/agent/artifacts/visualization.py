@@ -2,19 +2,21 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any, Literal
-
-VEGA_LITE_MEDIA_TYPE = "application/vnd.vegalite.v6+json"
+from typing import Any, ClassVar, Literal
 
 
 @dataclass(frozen=True)
 class VisualizationContent:
     """Portable, self-contained Vega-Lite output."""
 
+    MEDIA_TYPE: ClassVar[Literal["application/vnd.vegalite.v6+json"]] = (
+        "application/vnd.vegalite.v6+json"
+    )
+
     spec: dict[str, Any]
     kind: Literal["visualization"] = field(default="visualization", init=False)
     media_type: Literal["application/vnd.vegalite.v6+json"] = field(
-        default=VEGA_LITE_MEDIA_TYPE,
+        default=MEDIA_TYPE,
         init=False,
     )
 

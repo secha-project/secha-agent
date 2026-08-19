@@ -19,11 +19,8 @@ from src.agent.artifacts.base import (
     Artifact,
     ArtifactRef,
 )
-from src.agent.artifacts.table import ARROW_STREAM_MEDIA_TYPE, TableContent
-from src.agent.artifacts.visualization import (
-    VEGA_LITE_MEDIA_TYPE,
-    VisualizationContent,
-)
+from src.agent.artifacts.table import TableContent
+from src.agent.artifacts.visualization import VisualizationContent
 
 from .models import (
     DISPLAY_MESSAGES_ADAPTER,
@@ -641,12 +638,9 @@ class ChatRepository:
             ).fetchone()
         if row is None:
             raise ArtifactNotFoundError(artifact_id)
-        if row["kind"] == "table" and row["media_type"] == ARROW_STREAM_MEDIA_TYPE:
+        if row["kind"] == "table" and row["media_type"] == TableContent.MEDIA_TYPE:
             metadata = json.loads(row["metadata_json"])
-            ref = ArtifactRef(
-                artifact_id=row["id"],
-                artifact_kind="table",
-            )
+            ref = ArtifactRef(artifact_id=row["id"])
             return Artifact(
                 ref=ref,
                 content=TableContent(
@@ -654,11 +648,11 @@ class ChatRepository:
                     truncated=bool(metadata["truncated"]),
                 ),
             )
-        if row["kind"] == "visualization" and row["media_type"] == VEGA_LITE_MEDIA_TYPE:
-            ref = ArtifactRef(
-                artifact_id=row["id"],
-                artifact_kind="visualization",
-            )
+        if (
+            row["kind"] == "visualization"
+            and row["media_type"] == VisualizationContent.MEDIA_TYPE
+        ):
+            ref = ArtifactRef(artifact_id=row["id"])
             spec = json.loads(row["payload"])
             if not isinstance(spec, dict):
                 raise TypeError("Saved Vega-Lite content must be a JSON object.")

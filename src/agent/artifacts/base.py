@@ -1,23 +1,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Literal, Protocol, TypeVar
+from typing import Literal, Protocol
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict
 
-DEFAULT_TABLE_ARTIFACT_MAX_ROWS = 10_000
-
-type ArtifactKind = Literal["table", "image", "visualization"]
+type ArtifactKind = Literal["table", "visualization"]
 
 
 class ArtifactRef(BaseModel):
-    """Stable identity for an artifact in every representation."""
+    """Stable identity for an artifact."""
 
     model_config = ConfigDict(frozen=True)
 
     artifact_id: str
-    artifact_kind: ArtifactKind
 
 
 class ArtifactContent(Protocol):
@@ -31,7 +28,7 @@ class ArtifactContent(Protocol):
 class ArtifactPolicy:
     """Execution-specific choices used while materializing artifacts."""
 
-    table_max_rows: int | None = DEFAULT_TABLE_ARTIFACT_MAX_ROWS
+    table_max_rows: int | None = 10_000
 
     def __post_init__(self) -> None:
         if self.table_max_rows is not None and self.table_max_rows < 1:
@@ -61,17 +58,14 @@ class Artifact:
     def __post_init__(self) -> None:
         if self.source is None and self.content is None:
             raise ValueError("An artifact must have a source or materialized content.")
-        if self.source is not None and self.source.kind != self.ref.artifact_kind:
+        if (
+            self.source is not None
+            and self.content is not None
+            and self.source.kind != self.content.kind
+        ):
             raise ValueError(
-                f"Artifact {self.ref.artifact_id!r} has kind "
-                f"{self.ref.artifact_kind!r}, but its source has kind "
-                f"{self.source.kind!r}."
-            )
-        if self.content is not None and self.content.kind != self.ref.artifact_kind:
-            raise ValueError(
-                f"Artifact {self.ref.artifact_id!r} has kind "
-                f"{self.ref.artifact_kind!r}, but its content has kind "
-                f"{self.content.kind!r}."
+                f"Artifact {self.ref.artifact_id!r} has source kind "
+                f"{self.source.kind!r}, but its content has kind {self.content.kind!r}."
             )
 
     @property
@@ -80,7 +74,10 @@ class Artifact:
 
     @property
     def kind(self) -> ArtifactKind:
-        return self.ref.artifact_kind
+        if self.content is not None:
+            return self.content.kind
+        assert self.source is not None
+        return self.source.kind
 
     def require_content(self) -> ArtifactContent:
         if self.content is None:
@@ -131,9 +128,6 @@ class ArtifactDependencyCycleError(RuntimeError):
         )
 
 
-ArtifactSourceT = TypeVar("ArtifactSourceT", bound=ArtifactSource)
-
-
 class ArtifactRegistry:
     """Keep the live representations of logical artifacts addressable."""
 
@@ -141,18 +135,12 @@ class ArtifactRegistry:
         self._artifacts: dict[str, Artifact] = {}
 
     def create(self, source: ArtifactSource) -> ArtifactRef:
-        ref = ArtifactRef(
-            artifact_id=uuid4().hex,
-            artifact_kind=source.kind,
-        )
+        ref = ArtifactRef(artifact_id=uuid4().hex)
         self.add(Artifact(ref=ref, source=source))
         return ref
 
     def create_content(self, content: ArtifactContent) -> ArtifactRef:
-        ref = ArtifactRef(
-            artifact_id=uuid4().hex,
-            artifact_kind=content.kind,
-        )
+        ref = ArtifactRef(artifact_id=uuid4().hex)
         return self.add(Artifact(ref=ref, content=content))
 
     def add(self, artifact: Artifact) -> ArtifactRef:
@@ -166,18 +154,13 @@ class ArtifactRegistry:
             artifact = self._artifacts[ref.artifact_id]
         except KeyError as exc:
             raise UnknownArtifactError(ref) from exc
-        if artifact.kind != ref.artifact_kind:
-            raise TypeError(
-                f"Artifact {ref.artifact_id!r} has kind {artifact.kind!r}, "
-                f"not {ref.artifact_kind!r}."
-            )
         return artifact
 
-    def resolve_source(
+    def resolve_source[SourceT: ArtifactSource](
         self,
         ref: ArtifactRef,
-        expected_type: type[ArtifactSourceT],
-    ) -> ArtifactSourceT:
+        expected_type: type[SourceT],
+    ) -> SourceT:
         source = self.resolve(ref).source
         if source is None:
             raise ArtifactSourceUnavailableError(ref)
@@ -224,11 +207,11 @@ class RunArtifacts:
     def create_content(self, content: ArtifactContent) -> ArtifactRef:
         return self.registry.create_content(content)
 
-    def resolve_source(
+    def resolve_source[SourceT: ArtifactSource](
         self,
         ref: ArtifactRef,
-        expected_type: type[ArtifactSourceT],
-    ) -> ArtifactSourceT:
+        expected_type: type[SourceT],
+    ) -> SourceT:
         return self.registry.resolve_source(ref, expected_type)
 
     async def materialize(self, ref: ArtifactRef) -> ArtifactContent:

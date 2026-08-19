@@ -270,10 +270,7 @@ def test_visualization_round_trip_persists_only_vega_lite_spec(
     conversation = repository.create_conversation(alice.id)
     spec = {"data": {"values": [{"x": 1}]}, "mark": "point"}
     artifact = Artifact(
-        ref=ArtifactRef(
-            artifact_id="visualization-1",
-            artifact_kind="visualization",
-        ),
+        ref=ArtifactRef(artifact_id="visualization-1"),
         content=VisualizationContent(spec=spec),
     )
 

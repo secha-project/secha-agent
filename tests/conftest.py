@@ -7,7 +7,6 @@ import pytest
 from pyarrow import ipc
 
 from src.agent.artifacts.base import (
-    DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
     Artifact,
     ArtifactRef,
 )
@@ -21,7 +20,7 @@ def make_table_artifact() -> Callable[..., Artifact]:
     def make(
         value: Any,
         *,
-        max_rows: int | None = DEFAULT_TABLE_ARTIFACT_MAX_ROWS,
+        max_rows: int | None = 10_000,
         artifact_id: str | None = None,
     ) -> Artifact:
         table = value if isinstance(value, pa.Table) else pa.Table.from_pylist(value)
@@ -31,10 +30,7 @@ def make_table_artifact() -> Callable[..., Artifact]:
         with ipc.new_stream(sink, visible.schema) as writer:
             writer.write_table(visible)
         return Artifact(
-            ref=ArtifactRef(
-                artifact_id=artifact_id or uuid4().hex,
-                artifact_kind="table",
-            ),
+            ref=ArtifactRef(artifact_id=artifact_id or uuid4().hex),
             content=TableContent(
                 arrow_bytes=sink.getvalue().to_pybytes(),
                 truncated=truncated,

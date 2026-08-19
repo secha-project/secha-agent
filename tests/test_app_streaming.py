@@ -191,10 +191,7 @@ def _make_visualization_artifact(artifact_id: str) -> Artifact:
         "mark": "point",
     }
     return Artifact(
-        ref=ArtifactRef(
-            artifact_id=artifact_id,
-            artifact_kind="visualization",
-        ),
+        ref=ArtifactRef(artifact_id=artifact_id),
         content=VisualizationContent(spec=spec),
     )
 

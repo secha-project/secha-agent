@@ -171,9 +171,10 @@ async def display_query_result(
         ref: A result reference available in the current live session.
     """
     deps = ctx.deps
-    if ref.artifact_kind != "table":
-        raise ModelRetry(f"Artifact {ref.artifact_id!r} is not a table artifact.")
     try:
+        artifact = deps.artifacts.registry.resolve(ref)
+        if artifact.kind != "table":
+            raise ModelRetry(f"Artifact {ref.artifact_id!r} is not a table artifact.")
         artifact_ref = await deps.artifacts.publish(ref)
     except (UnknownArtifactError, ArtifactSourceUnavailableError) as exc:
         raise ModelRetry(

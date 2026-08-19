@@ -92,10 +92,7 @@ def test_csv_and_tool_metadata_are_json_safe(make_table_artifact) -> None:
                     tool_name="display_query_result",
                     tool_call_id="call-1",
                     content="displayed",
-                    metadata=ArtifactRef(
-                        artifact_id="artifact-17",
-                        artifact_kind="table",
-                    ),
+                    metadata=ArtifactRef(artifact_id="artifact-17"),
                 )
             ]
         )
@@ -104,10 +101,7 @@ def test_csv_and_tool_metadata_are_json_safe(make_table_artifact) -> None:
     restored = ModelMessagesTypeAdapter.validate_json(serialized)
     part = restored[0].parts[0]
     assert isinstance(part, ToolReturnPart)
-    assert part.metadata == {
-        "artifact_id": "artifact-17",
-        "artifact_kind": "table",
-    }
+    assert part.metadata == {"artifact_id": "artifact-17"}
 
 
 def test_materialized_table_content_produces_a_preview(make_table_artifact) -> None:
