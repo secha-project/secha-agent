@@ -3,10 +3,16 @@ from typing import Any, cast
 
 import pytest
 
-import src.app.main as app_module
+import src.app.state as state_module
 from src.agent.artifacts.base import (
     ArtifactRegistry,
     UnknownArtifactError,
+)
+from src.app.resources import fresh_deps
+from src.app.routes.auth import AUTH_COOKIE_NAME
+from src.app.views.sidebar import (
+    CONVERSATION_BUTTON_LABEL_MAX_LENGTH,
+    conversation_button_label,
 )
 
 
@@ -25,11 +31,12 @@ def app_resources() -> SimpleNamespace:
         model_messages=[],
     )
     return SimpleNamespace(
-        repository=SimpleNamespace(
+        history=SimpleNamespace(
             load_conversation=lambda _user_id, _conversation_id: conversation,
         ),
         spark=object(),
         catalog=object(),
+        semantic=None,
         config=SimpleNamespace(
             schema_name="bronze",
             table_column_page_size=20,
@@ -39,16 +46,14 @@ def app_resources() -> SimpleNamespace:
 
 def test_conversation_button_label_respects_maximum_length() -> None:
     title = "Show all measurements for the Helsinki facility"
-    label = app_module._conversation_button_label(title)
+    label = conversation_button_label(title)
 
     assert label == "Show all measurements for…"
-    assert len(label) == app_module.CONVERSATION_BUTTON_LABEL_MAX_LENGTH
+    assert len(label) == CONVERSATION_BUTTON_LABEL_MAX_LENGTH
 
 
 def test_short_conversation_button_label_is_unchanged() -> None:
-    assert app_module._conversation_button_label("Show measurements") == (
-        "Show measurements"
-    )
+    assert conversation_button_label("Show measurements") == "Show measurements"
 
 
 def test_current_user_is_restored_from_auth_cookie(
@@ -59,17 +64,17 @@ def test_current_user_is_restored_from_auth_cookie(
     fake_streamlit = SimpleNamespace(
         session_state=state,
         query_params={},
-        context=SimpleNamespace(cookies={app_module.AUTH_COOKIE_NAME: "session-token"}),
+        context=SimpleNamespace(cookies={AUTH_COOKIE_NAME: "session-token"}),
     )
-    repository = SimpleNamespace(
+    history = SimpleNamespace(
         get_user_by_auth_session=lambda token: (
             user if token == "session-token" else None
         )
     )
-    monkeypatch.setattr(app_module, "st", fake_streamlit)
+    monkeypatch.setattr(state_module, "st", fake_streamlit)
 
-    assert app_module._current_user(cast(Any, repository)) is user
-    assert state[app_module.AUTHENTICATED_USER_KEY] == user.id
+    assert state_module.current_user(cast(Any, history)) is user
+    assert state[state_module.AUTHENTICATED_USER_KEY] == user.id
 
 
 def test_active_conversation_reuses_its_artifact_registry_across_turns(
@@ -77,10 +82,10 @@ def test_active_conversation_reuses_its_artifact_registry_across_turns(
 ) -> None:
     state = SessionState()
     fake_streamlit = SimpleNamespace(session_state=state, query_params={})
-    monkeypatch.setattr(app_module, "st", fake_streamlit)
+    monkeypatch.setattr(state_module, "st", fake_streamlit)
     resources = app_resources()
 
-    assert app_module.activate_conversation(
+    assert state_module.activate_conversation(
         cast(Any, resources),
         "user-1",
         "conversation-1",
@@ -89,14 +94,14 @@ def test_active_conversation_reuses_its_artifact_registry_across_turns(
     ref = registry.create(cast(Any, SimpleNamespace(kind="table")))
 
     assert (
-        app_module._ensure_active_conversation(
+        state_module.ensure_active_conversation(
             cast(Any, resources),
             "user-1",
         )
         == "conversation-1"
     )
-    first_turn = app_module._fresh_deps(cast(Any, resources), registry)
-    second_turn = app_module._fresh_deps(cast(Any, resources), registry)
+    first_turn = fresh_deps(cast(Any, resources), registry)
+    second_turn = fresh_deps(cast(Any, resources), registry)
 
     assert first_turn.artifacts.registry is registry
     assert second_turn.artifacts.registry.resolve(ref) is registry.resolve(ref)
@@ -108,10 +113,10 @@ def test_reloading_a_conversation_discards_live_references_without_replay(
 ) -> None:
     state = SessionState()
     fake_streamlit = SimpleNamespace(session_state=state, query_params={})
-    monkeypatch.setattr(app_module, "st", fake_streamlit)
+    monkeypatch.setattr(state_module, "st", fake_streamlit)
     resources = app_resources()
 
-    app_module.activate_conversation(
+    state_module.activate_conversation(
         cast(Any, resources),
         "user-1",
         "conversation-1",
@@ -119,7 +124,7 @@ def test_reloading_a_conversation_discards_live_references_without_replay(
     old_registry: ArtifactRegistry = state.artifact_registry
     old_ref = old_registry.create(cast(Any, SimpleNamespace(kind="table")))
 
-    app_module.activate_conversation(
+    state_module.activate_conversation(
         cast(Any, resources),
         "user-1",
         "conversation-1",
@@ -141,15 +146,15 @@ def test_deleting_inactive_conversation_refreshes_history(
     )
     fake_streamlit = SimpleNamespace(session_state=state, query_params={})
     resources = SimpleNamespace(
-        repository=SimpleNamespace(
+        history=SimpleNamespace(
             delete_conversation=lambda user_id, conversation_id: deleted.append(
                 (user_id, conversation_id)
             ),
         )
     )
-    monkeypatch.setattr(app_module, "st", fake_streamlit)
+    monkeypatch.setattr(state_module, "st", fake_streamlit)
 
-    app_module.delete_conversation(
+    state_module.delete_conversation(
         cast(Any, resources),
         "user-1",
         "conversation-2",
@@ -171,17 +176,15 @@ def test_deleting_active_conversation_selects_remaining_conversation(
     state = SessionState(current_conversation_id="conversation-1")
     fake_streamlit = SimpleNamespace(session_state=state, query_params={})
     resources = SimpleNamespace(
-        repository=SimpleNamespace(
+        history=SimpleNamespace(
             delete_conversation=lambda _user_id, _conversation_id: None,
-            list_conversations=lambda _user_id: [
-                SimpleNamespace(id=replacement.id)
-            ],
+            list_conversations=lambda _user_id: [SimpleNamespace(id=replacement.id)],
             load_conversation=lambda _user_id, _conversation_id: replacement,
         )
     )
-    monkeypatch.setattr(app_module, "st", fake_streamlit)
+    monkeypatch.setattr(state_module, "st", fake_streamlit)
 
-    app_module.delete_conversation(
+    state_module.delete_conversation(
         cast(Any, resources),
         "user-1",
         "conversation-1",

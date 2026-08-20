@@ -4,13 +4,12 @@ from pathlib import Path
 
 import streamlit as st
 
-from src.app.auth import create_auth_routes
-from src.app.storage import ChatRepository
+from src.app.routes.auth import create_auth_routes
+from src.app.storage.history import load_history
 
-repository = ChatRepository()
-repository.initialize()
+history = load_history()
 
 app = st.App(
-    Path(__file__).with_name("main.py"),
-    routes=create_auth_routes(repository),
+    Path(__file__).with_name("application.py"),
+    routes=create_auth_routes(history),
 )

@@ -3,16 +3,20 @@ from pathlib import Path
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from src.app.auth import AUTH_COOKIE_NAME, AUTH_REQUEST_HEADER, create_auth_routes
-from src.app.storage import AUTH_SESSION_TTL_SECONDS, ChatRepository
+from src.app.routes.auth import (
+    AUTH_COOKIE_NAME,
+    AUTH_REQUEST_HEADER,
+    create_auth_routes,
+)
+from src.app.storage.history import AUTH_SESSION_TTL_SECONDS, History
 
 
 def test_auth_cookie_is_http_only_and_revoked_on_logout(tmp_path: Path) -> None:
-    repository = ChatRepository(tmp_path / "chat.sqlite3")
-    repository.initialize()
-    user = repository.create_user("Alice", "correct-horse")
-    token = repository.create_auth_session(user.id)
-    app = Starlette(routes=create_auth_routes(repository))
+    history = History(tmp_path / "chat.sqlite3")
+    history.initialize()
+    user = history.create_user("Alice", "correct-horse")
+    token = history.create_auth_session(user.id)
+    app = Starlette(routes=create_auth_routes(history))
     headers = {AUTH_REQUEST_HEADER: "1"}
 
     with TestClient(app) as client:
@@ -30,14 +34,14 @@ def test_auth_cookie_is_http_only_and_revoked_on_logout(tmp_path: Path) -> None:
         response = client.post("/auth/logout", headers=headers)
 
         assert response.status_code == 204
-        assert repository.get_user_by_auth_session(token) is None
+        assert history.get_user_by_auth_session(token) is None
         assert client.cookies.get(AUTH_COOKIE_NAME) is None
 
 
 def test_auth_cookie_rejects_unknown_token(tmp_path: Path) -> None:
-    repository = ChatRepository(tmp_path / "chat.sqlite3")
-    repository.initialize()
-    app = Starlette(routes=create_auth_routes(repository))
+    history = History(tmp_path / "chat.sqlite3")
+    history.initialize()
+    app = Starlette(routes=create_auth_routes(history))
 
     with TestClient(app) as client:
         response = client.post(
@@ -51,11 +55,11 @@ def test_auth_cookie_rejects_unknown_token(tmp_path: Path) -> None:
 
 
 def test_auth_cookie_is_secure_over_https(tmp_path: Path) -> None:
-    repository = ChatRepository(tmp_path / "chat.sqlite3")
-    repository.initialize()
-    user = repository.create_user("Alice", "correct-horse")
-    token = repository.create_auth_session(user.id)
-    app = Starlette(routes=create_auth_routes(repository))
+    history = History(tmp_path / "chat.sqlite3")
+    history.initialize()
+    user = history.create_user("Alice", "correct-horse")
+    token = history.create_auth_session(user.id)
+    app = Starlette(routes=create_auth_routes(history))
 
     with TestClient(app, base_url="https://testserver") as client:
         response = client.post(
@@ -71,11 +75,11 @@ def test_auth_cookie_is_secure_over_https(tmp_path: Path) -> None:
 def test_auth_cookie_routes_reject_cross_site_style_requests(
     tmp_path: Path,
 ) -> None:
-    repository = ChatRepository(tmp_path / "chat.sqlite3")
-    repository.initialize()
-    user = repository.create_user("Alice", "correct-horse")
-    token = repository.create_auth_session(user.id)
-    app = Starlette(routes=create_auth_routes(repository))
+    history = History(tmp_path / "chat.sqlite3")
+    history.initialize()
+    user = history.create_user("Alice", "correct-horse")
+    token = history.create_auth_session(user.id)
+    app = Starlette(routes=create_auth_routes(history))
 
     with TestClient(app) as client:
         create_response = client.post("/auth/session", content=token)
@@ -83,4 +87,4 @@ def test_auth_cookie_routes_reject_cross_site_style_requests(
 
     assert create_response.status_code == 403
     assert logout_response.status_code == 403
-    assert repository.get_user_by_auth_session(token) == user
+    assert history.get_user_by_auth_session(token) == user

@@ -74,6 +74,10 @@ OpenTelemetry values in `.env`, then start the Streamlit app:
 uv run python -m streamlit run src/app/server.py
 ```
 
+`server.py` is the single ASGI entry point. It mounts the Streamlit UI from
+`src/app/application.py` and the authentication routes from
+`src/app/routes/auth.py` on the same listener.
+
 The app uses OpenAI as its model provider and stores chat history locally by
 default. Users must create an account in the app. Login sessions are kept for
 seven days in an HTTP-only browser cookie. If the app is served over HTTPS,

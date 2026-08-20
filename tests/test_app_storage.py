@@ -11,10 +11,10 @@ from pydantic_ai import ModelMessage, ModelRequest, UserPromptPart
 from src.agent.artifacts.base import Artifact, ArtifactRef
 from src.agent.artifacts.visualization import VisualizationContent
 from src.app.models import AssistantDisplayMessage, TextDisplayPart, User
-from src.app.storage import (
+from src.app.storage.history import (
     ArtifactNotFoundError,
-    ChatRepository,
     ConversationNotFoundError,
+    History,
     InvalidUsernameError,
     UsernameAlreadyExistsError,
     WeakPasswordError,
@@ -22,63 +22,63 @@ from src.app.storage import (
 
 
 @pytest.fixture
-def repository(tmp_path: Path) -> ChatRepository:
-    value = ChatRepository(tmp_path / "chat.sqlite3")
+def history(tmp_path: Path) -> History:
+    value = History(tmp_path / "chat.sqlite3")
     value.initialize()
     return value
 
 
 @pytest.fixture
-def users(repository: ChatRepository) -> tuple[User, User]:
+def users(history: History) -> tuple[User, User]:
     return (
-        repository.create_user("Alice", "correct-horse"),
-        repository.create_user("Bob", "battery-staple"),
+        history.create_user("Alice", "correct-horse"),
+        history.create_user("Bob", "battery-staple"),
     )
 
 
 def test_users_are_registered_and_authenticated_case_insensitively(
-    repository: ChatRepository,
+    history: History,
 ) -> None:
-    alice = repository.create_user("Alice", "correct-horse")
+    alice = history.create_user("Alice", "correct-horse")
 
-    assert repository.authenticate_user("alice", "correct-horse") == alice
-    assert repository.authenticate_user(" ALICE ", "correct-horse") == alice
-    assert repository.authenticate_user("alice", "wrong-password") is None
-    assert repository.authenticate_user("missing", "correct-horse") is None
+    assert history.authenticate_user("alice", "correct-horse") == alice
+    assert history.authenticate_user(" ALICE ", "correct-horse") == alice
+    assert history.authenticate_user("alice", "wrong-password") is None
+    assert history.authenticate_user("missing", "correct-horse") is None
 
-    with sqlite3.connect(repository.db_path) as connection:
+    with sqlite3.connect(history.db_path) as connection:
         stored_hash = connection.execute(
             "SELECT password_hash FROM users WHERE id = ?",
             (alice.id,),
         ).fetchone()[0]
     assert stored_hash.startswith("$argon2id$")
     assert "correct-horse" not in stored_hash
-    assert stat.S_IMODE(repository.db_path.stat().st_mode) == 0o600
+    assert stat.S_IMODE(history.db_path.stat().st_mode) == 0o600
 
 
 def test_registration_validates_credentials_and_unique_usernames(
-    repository: ChatRepository,
+    history: History,
 ) -> None:
-    repository.create_user("Alice", "correct-horse")
+    history.create_user("Alice", "correct-horse")
 
     with pytest.raises(UsernameAlreadyExistsError):
-        repository.create_user("alice", "another-password")
+        history.create_user("alice", "another-password")
     with pytest.raises(InvalidUsernameError):
-        repository.create_user("no spaces allowed", "correct-horse")
+        history.create_user("no spaces allowed", "correct-horse")
     with pytest.raises(WeakPasswordError):
-        repository.create_user("Charlie", "short")
+        history.create_user("Charlie", "short")
 
 
 def test_auth_sessions_are_hashed_and_can_be_revoked(
-    repository: ChatRepository,
+    history: History,
 ) -> None:
-    alice = repository.create_user("Alice", "correct-horse")
-    token = repository.create_auth_session(alice.id)
+    alice = history.create_user("Alice", "correct-horse")
+    token = history.create_auth_session(alice.id)
 
-    assert repository.get_user_by_auth_session(token) == alice
-    assert repository.get_user_by_auth_session("not-a-session-token") is None
+    assert history.get_user_by_auth_session(token) == alice
+    assert history.get_user_by_auth_session("not-a-session-token") is None
 
-    with sqlite3.connect(repository.db_path) as connection:
+    with sqlite3.connect(history.db_path) as connection:
         stored_hash = connection.execute(
             "SELECT token_hash FROM auth_sessions WHERE user_id = ?",
             (alice.id,),
@@ -86,50 +86,50 @@ def test_auth_sessions_are_hashed_and_can_be_revoked(
     assert stored_hash == sha256(token.encode("ascii")).hexdigest()
     assert token != stored_hash
 
-    repository.revoke_auth_session(token)
-    assert repository.get_user_by_auth_session(token) is None
+    history.revoke_auth_session(token)
+    assert history.get_user_by_auth_session(token) is None
 
 
 def test_expired_auth_sessions_are_rejected(
-    repository: ChatRepository,
+    history: History,
 ) -> None:
-    alice = repository.create_user("Alice", "correct-horse")
-    token = repository.create_auth_session(alice.id)
+    alice = history.create_user("Alice", "correct-horse")
+    token = history.create_auth_session(alice.id)
     expired_at = (datetime.now(UTC) - timedelta(seconds=1)).isoformat()
-    with sqlite3.connect(repository.db_path) as connection:
+    with sqlite3.connect(history.db_path) as connection:
         connection.execute(
             "UPDATE auth_sessions SET expires_at = ?",
             (expired_at,),
         )
 
-    assert repository.get_user_by_auth_session(token) is None
+    assert history.get_user_by_auth_session(token) is None
 
 
 def test_user_ownership_for_conversations_and_artifacts(
-    repository: ChatRepository,
+    history: History,
     users: tuple[User, User],
     make_table_artifact,
 ) -> None:
     alice, bob = users
-    alpha = repository.create_conversation(alice.id)
+    alpha = history.create_conversation(alice.id)
 
     with pytest.raises(ConversationNotFoundError):
-        repository.load_conversation(bob.id, alpha.id)
+        history.load_conversation(bob.id, alpha.id)
 
     artifact = make_table_artifact([{"value": 1}])
-    repository.save_artifact(alice.id, alpha.id, artifact)
+    history.save_artifact(alice.id, alpha.id, artifact)
     with pytest.raises(ArtifactNotFoundError):
-        repository.load_artifact(bob.id, alpha.id, artifact.id)
+        history.load_artifact(bob.id, alpha.id, artifact.id)
 
 
 def test_user_and_completed_assistant_are_saved_in_two_steps(
-    repository: ChatRepository,
+    history: History,
     users: tuple[User, User],
     make_table_artifact,
 ) -> None:
     alice, _ = users
-    conversation = repository.create_conversation(alice.id)
-    after_user = repository.append_user(
+    conversation = history.create_conversation(alice.id)
+    after_user = history.append_user(
         alice.id,
         conversation.id,
         "Show measurements",
@@ -142,7 +142,7 @@ def test_user_and_completed_assistant_are_saved_in_two_steps(
         ModelRequest(parts=[UserPromptPart(content="Show measurements")])
     ]
     artifact = make_table_artifact([{"measurement": 1}])
-    completed = repository.commit_assistant(
+    completed = history.commit_assistant(
         alice.id,
         conversation.id,
         AssistantDisplayMessage(
@@ -157,35 +157,35 @@ def test_user_and_completed_assistant_are_saved_in_two_steps(
         "assistant",
     ]
     assert len(completed.model_messages) == 1
-    assert repository.load_artifact(alice.id, conversation.id, artifact.id) == artifact
+    assert history.load_artifact(alice.id, conversation.id, artifact.id) == artifact
 
 
 def test_conversation_appears_in_history_only_after_first_user_message(
-    repository: ChatRepository,
+    history: History,
     users: tuple[User, User],
 ) -> None:
     alice, _ = users
-    conversation = repository.create_conversation(alice.id)
+    conversation = history.create_conversation(alice.id)
 
-    assert repository.list_conversations(alice.id) == []
+    assert history.list_conversations(alice.id) == []
 
-    repository.append_user(alice.id, conversation.id, "Show measurements")
+    history.append_user(alice.id, conversation.id, "Show measurements")
 
-    summaries = repository.list_conversations(alice.id)
+    summaries = history.list_conversations(alice.id)
     assert [summary.id for summary in summaries] == [conversation.id]
     assert summaries[0].title == "Show measurements"
 
 
 def test_assistant_and_artifacts_are_committed_atomically(
-    repository: ChatRepository,
+    history: History,
     users: tuple[User, User],
     make_table_artifact,
 ) -> None:
     alice, _ = users
-    conversation = repository.create_conversation(alice.id)
-    repository.append_user(alice.id, conversation.id, "Show measurements")
+    conversation = history.create_conversation(alice.id)
+    history.append_user(alice.id, conversation.id, "Show measurements")
     existing_artifact = make_table_artifact([{"measurement": 1}])
-    repository.save_artifact(
+    history.save_artifact(
         alice.id,
         conversation.id,
         existing_artifact,
@@ -196,7 +196,7 @@ def test_assistant_and_artifacts_are_committed_atomically(
     )
 
     with pytest.raises(sqlite3.IntegrityError):
-        repository.commit_assistant(
+        history.commit_assistant(
             alice.id,
             conversation.id,
             AssistantDisplayMessage(
@@ -206,25 +206,25 @@ def test_assistant_and_artifacts_are_committed_atomically(
             [conflicting_artifact],
         )
 
-    restored = repository.load_conversation(alice.id, conversation.id)
+    restored = history.load_conversation(alice.id, conversation.id)
     assert [message.role for message in restored.display_messages] == ["user"]
     assert restored.model_messages == []
 
 
 def test_persisting_the_same_logical_artifact_again_is_idempotent(
-    repository: ChatRepository,
+    history: History,
     users: tuple[User, User],
     make_table_artifact,
 ) -> None:
     alice, _ = users
-    conversation = repository.create_conversation(alice.id)
+    conversation = history.create_conversation(alice.id)
     artifact = make_table_artifact([{"measurement": 1}])
-    repository.save_artifact(alice.id, conversation.id, artifact)
+    history.save_artifact(alice.id, conversation.id, artifact)
 
-    repository.save_artifact(alice.id, conversation.id, artifact)
+    history.save_artifact(alice.id, conversation.id, artifact)
 
     assert (
-        repository.load_artifact(
+        history.load_artifact(
             alice.id,
             conversation.id,
             artifact.id,
@@ -234,28 +234,28 @@ def test_persisting_the_same_logical_artifact_again_is_idempotent(
 
 
 def test_delete_conversation_is_user_scoped_and_cascades(
-    repository: ChatRepository,
+    history: History,
     users: tuple[User, User],
     make_table_artifact,
 ) -> None:
     alice, bob = users
-    conversation = repository.create_conversation(alice.id)
+    conversation = history.create_conversation(alice.id)
     artifact = make_table_artifact([{"value": 1}])
-    repository.save_artifact(
+    history.save_artifact(
         alice.id,
         conversation.id,
         artifact,
     )
 
     with pytest.raises(ConversationNotFoundError):
-        repository.delete_conversation(bob.id, conversation.id)
+        history.delete_conversation(bob.id, conversation.id)
 
-    repository.delete_conversation(alice.id, conversation.id)
+    history.delete_conversation(alice.id, conversation.id)
 
     with pytest.raises(ConversationNotFoundError):
-        repository.load_conversation(alice.id, conversation.id)
+        history.load_conversation(alice.id, conversation.id)
     with pytest.raises(ArtifactNotFoundError):
-        repository.load_artifact(
+        history.load_artifact(
             alice.id,
             conversation.id,
             artifact.id,
@@ -263,19 +263,19 @@ def test_delete_conversation_is_user_scoped_and_cascades(
 
 
 def test_visualization_round_trip_persists_only_vega_lite_spec(
-    repository: ChatRepository,
+    history: History,
     users: tuple[User, User],
 ) -> None:
     alice, _ = users
-    conversation = repository.create_conversation(alice.id)
+    conversation = history.create_conversation(alice.id)
     spec = {"data": {"values": [{"x": 1}]}, "mark": "point"}
     artifact = Artifact(
         ref=ArtifactRef(artifact_id="visualization-1"),
         content=VisualizationContent(spec=spec),
     )
 
-    repository.save_artifact(alice.id, conversation.id, artifact)
-    restored = repository.load_artifact(
+    history.save_artifact(alice.id, conversation.id, artifact)
+    restored = history.load_artifact(
         alice.id,
         conversation.id,
         artifact.id,
@@ -284,7 +284,7 @@ def test_visualization_round_trip_persists_only_vega_lite_spec(
     restored_content = restored.require_content()
     assert isinstance(restored_content, VisualizationContent)
     assert restored_content.to_spec() == spec
-    with sqlite3.connect(repository.db_path) as connection:
+    with sqlite3.connect(history.db_path) as connection:
         payload = connection.execute(
             "SELECT payload FROM artifacts WHERE id = ?",
             (artifact.id,),

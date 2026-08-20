@@ -30,6 +30,7 @@ from .models import (
     ToolDisplayPart,
 )
 
+
 @dataclass(frozen=True)
 class StreamResult:
     assistant_message: AssistantDisplayMessage

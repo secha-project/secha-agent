@@ -7,6 +7,7 @@ import secrets
 import sqlite3
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
+from functools import cache
 from hashlib import sha256
 from pathlib import Path
 from uuid import uuid4
@@ -22,7 +23,7 @@ from src.agent.artifacts.base import (
 from src.agent.artifacts.table import TableContent
 from src.agent.artifacts.visualization import VisualizationContent
 
-from .models import (
+from ..models import (
     DISPLAY_MESSAGES_ADAPTER,
     AssistantDisplayMessage,
     Conversation,
@@ -31,6 +32,7 @@ from .models import (
     User,
     UserDisplayMessage,
 )
+from .schema import initialize_database
 
 DEFAULT_DB_PATH = Path(".data/secha_chat.sqlite3")
 MIN_PASSWORD_LENGTH = 8
@@ -96,7 +98,7 @@ def conversation_title(messages: Iterable[DisplayMessage]) -> str:
     return "New conversation"
 
 
-class ChatRepository:
+class History:
     """Short-lived SQLite operations with user ownership checks."""
 
     def __init__(self, db_path: str | Path | None = None) -> None:
@@ -111,68 +113,7 @@ class ChatRepository:
         return connection
 
     def initialize(self) -> None:
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        with self._connect() as connection:
-            connection.execute("PRAGMA journal_mode = WAL")
-            connection.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS users (
-                    id TEXT PRIMARY KEY,
-                    username TEXT NOT NULL,
-                    normalized_username TEXT NOT NULL UNIQUE,
-                    password_hash TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS conversations (
-                    id TEXT PRIMARY KEY,
-                    user_id TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    display_messages_json TEXT NOT NULL,
-                    model_messages_json BLOB NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    FOREIGN KEY (user_id)
-                        REFERENCES users (id)
-                        ON DELETE CASCADE
-                );
-
-                CREATE INDEX IF NOT EXISTS conversations_user_updated_idx
-                    ON conversations (user_id, updated_at DESC);
-
-                CREATE TABLE IF NOT EXISTS auth_sessions (
-                    token_hash TEXT PRIMARY KEY,
-                    user_id TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    expires_at TEXT NOT NULL,
-                    FOREIGN KEY (user_id)
-                        REFERENCES users (id)
-                        ON DELETE CASCADE
-                );
-
-                CREATE INDEX IF NOT EXISTS auth_sessions_user_idx
-                    ON auth_sessions (user_id, expires_at);
-
-                CREATE TABLE IF NOT EXISTS artifacts (
-                    id TEXT PRIMARY KEY,
-                    conversation_id TEXT NOT NULL,
-                    kind TEXT NOT NULL,
-                    media_type TEXT NOT NULL,
-                    payload BLOB NOT NULL,
-                    metadata_json TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    FOREIGN KEY (conversation_id)
-                        REFERENCES conversations (id)
-                        ON DELETE CASCADE
-                );
-
-                CREATE INDEX IF NOT EXISTS artifacts_conversation_idx
-                    ON artifacts (conversation_id, id);
-
-                PRAGMA user_version = 5;
-                """
-            )
-        self.db_path.chmod(0o600)
+        initialize_database(self.db_path, self._connect)
 
     @staticmethod
     def _now() -> str:
@@ -666,3 +607,11 @@ class ChatRepository:
             f"SQLite storage cannot load artifact kind {row['kind']!r} "
             f"with media type {row['media_type']!r}."
         )
+
+
+@cache
+def load_history() -> History:
+    """Return the process-wide history shared by UI and HTTP routes."""
+    history = History()
+    history.initialize()
+    return history
