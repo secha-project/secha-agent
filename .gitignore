@@ -13,3 +13,5 @@ telemetry.duckdb*
 benchmark-results/
 # Agents stuff
 AGENTS.md
+# macos stuff
+*.DS_Store
