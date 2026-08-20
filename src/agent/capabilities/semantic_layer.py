@@ -66,7 +66,7 @@ class DescribeSemanticModelResult(BaseModel):
     measures: list[SemanticMeasure]
 
 
-ValueFilterOperator = Literal[
+FilterOperator = Literal[
     "=",
     "eq",
     "equals",
@@ -79,53 +79,78 @@ ValueFilterOperator = Literal[
     "not like",
     "ilike",
     "not ilike",
+    "in",
+    "not in",
+    "is null",
+    "is not null",
+    "AND",
+    "OR",
 ]
-SetFilterOperator = Literal["in", "not in"]
-NullFilterOperator = Literal["is null", "is not null"]
-LogicalFilterOperator = Literal["AND", "OR"]
+
+VALUE_FILTER_OPERATORS = {
+    "=",
+    "eq",
+    "equals",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "like",
+    "not like",
+    "ilike",
+    "not ilike",
+}
+SET_FILTER_OPERATORS = {"in", "not in"}
+NULL_FILTER_OPERATORS = {"is null", "is not null"}
+LOGICAL_FILTER_OPERATORS = {"AND", "OR"}
 
 
-class _SemanticFilter(BaseModel):
+class SemanticFilter(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    operator: FilterOperator
+    field: SemanticName | None = None
+    value: Any = None
+    values: tuple[Any, ...] | None = None
+    conditions: tuple[SemanticFilter, ...] | None = None
+
+    @model_validator(mode="after")
+    def validate_operator_arguments(self) -> SemanticFilter:
+        if self.operator in LOGICAL_FILTER_OPERATORS:
+            if not self.conditions:
+                raise ValueError("AND and OR filters require non-empty conditions.")
+            if self.model_fields_set & {"field", "value", "values"}:
+                raise ValueError(
+                    "AND and OR filters accept conditions only, not field, value, or values."
+                )
+        elif self.operator in SET_FILTER_OPERATORS:
+            if self.field is None or not self.values:
+                raise ValueError(
+                    "in and not in filters require a field and non-empty values."
+                )
+            if self.model_fields_set & {"value", "conditions"}:
+                raise ValueError(
+                    "in and not in filters accept values, not value or conditions."
+                )
+        elif self.operator in NULL_FILTER_OPERATORS:
+            if self.field is None:
+                raise ValueError("is null and is not null filters require a field.")
+            if self.model_fields_set & {"value", "values", "conditions"}:
+                raise ValueError(
+                    "is null and is not null filters do not accept value, values, or conditions."
+                )
+        elif self.operator in VALUE_FILTER_OPERATORS:
+            if self.field is None or "value" not in self.model_fields_set:
+                raise ValueError("Comparison filters require both a field and a value.")
+            if self.model_fields_set & {"values", "conditions"}:
+                raise ValueError(
+                    "Comparison filters accept value, not values or conditions."
+                )
+        return self
+
     def as_bsl_filter(self) -> dict[str, Any]:
-        return self.model_dump(mode="json")
-
-
-class ValueSemanticFilter(_SemanticFilter):
-    field: SemanticName
-    operator: ValueFilterOperator
-    value: Any
-
-
-class SetSemanticFilter(_SemanticFilter):
-    field: SemanticName
-    operator: SetFilterOperator
-    values: tuple[Any, ...] = Field(min_length=1)
-
-
-class NullSemanticFilter(_SemanticFilter):
-    field: SemanticName
-    operator: NullFilterOperator
-
-
-class LogicalSemanticFilter(_SemanticFilter):
-    operator: LogicalFilterOperator
-    conditions: tuple[
-        ValueSemanticFilter
-        | SetSemanticFilter
-        | NullSemanticFilter
-        | LogicalSemanticFilter,
-        ...,
-    ] = Field(min_length=1)
-
-
-type SemanticFilter = (
-    ValueSemanticFilter
-    | SetSemanticFilter
-    | NullSemanticFilter
-    | LogicalSemanticFilter
-)
+        return self.model_dump(mode="json", exclude_unset=True)
 
 
 class SemanticOrder(BaseModel):
@@ -270,7 +295,8 @@ async def query_semantic_model(
         model_name: Exact model name returned by ``list_semantic_models``.
         dimensions: Governed dimensions used to group the result.
         measures: Governed measures to calculate.
-        filters: Dimension or measure filters using BSL filter operators.
+        filters: Dimension or measure filters. Use ``value`` for comparisons,
+            ``values`` for ``in``/``not in``, and ``conditions`` for ``AND``/``OR``.
         order_by: Selected result fields and their sort directions.
         limit: Maximum result rows.
         time_grain: One grain applied to selected time dimensions.

@@ -13,10 +13,9 @@ from src.agent.agent import create_agent
 from src.agent.artifacts.base import RunArtifacts
 from src.agent.artifacts.table import SparkTableSource
 from src.agent.capabilities.semantic_layer import (
+    SemanticFilter,
     SemanticOrder,
     SemanticTimeRange,
-    SetSemanticFilter,
-    ValueSemanticFilter,
     query_semantic_model,
     semantic_toolset,
 )
@@ -120,7 +119,7 @@ def test_semantic_capability_requires_table_results_capability() -> None:
 
 
 def test_semantic_filter_validates_operator_specific_shape() -> None:
-    assert SetSemanticFilter(
+    assert SemanticFilter(
         field="status",
         operator="in",
         values=["active", "pending"],
@@ -130,11 +129,38 @@ def test_semantic_filter_validates_operator_specific_shape() -> None:
         "values": ["active", "pending"],
     }
 
-    with pytest.raises(ValidationError, match="Field required"):
-        SetSemanticFilter.model_validate({"field": "status", "operator": "in"})
+    with pytest.raises(ValidationError, match="require a field and non-empty values"):
+        SemanticFilter.model_validate({"field": "status", "operator": "in"})
 
-    with pytest.raises(ValidationError, match="at least 1 item"):
-        SetSemanticFilter(field="status", operator="in", values=[])
+    with pytest.raises(ValidationError, match="require a field and non-empty values"):
+        SemanticFilter(field="status", operator="in", values=[])
+
+    assert SemanticFilter(
+        field="status",
+        operator="=",
+        value=None,
+    ).as_bsl_filter() == {"operator": "=", "field": "status", "value": None}
+
+    assert SemanticFilter(
+        operator="AND",
+        conditions=[
+            SemanticFilter(field="site", operator="=", value="A"),
+            SemanticFilter(field="status", operator="is not null"),
+        ],
+    ).as_bsl_filter() == {
+        "operator": "AND",
+        "conditions": [
+            {"operator": "=", "field": "site", "value": "A"},
+            {"operator": "is not null", "field": "status"},
+        ],
+    }
+
+    with pytest.raises(ValidationError, match="accept conditions only"):
+        SemanticFilter(
+            field="status",
+            operator="OR",
+            conditions=[SemanticFilter(field="site", operator="=", value="A")],
+        )
 
 
 def test_semantic_time_range_requires_ordered_iso_bounds() -> None:
@@ -164,7 +190,7 @@ def test_semantic_query_uses_the_standard_spark_table_artifact_path() -> None:
             model_name="energy",
             dimensions=["site"],
             measures=["total_energy"],
-            filters=[ValueSemanticFilter(field="site", operator="=", value="A")],
+            filters=[SemanticFilter(field="site", operator="=", value="A")],
             order_by=[SemanticOrder(field="total_energy", direction="desc")],
             time_range=SemanticTimeRange(
                 start="2026-01-01",
