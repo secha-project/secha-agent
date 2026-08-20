@@ -12,7 +12,7 @@ from .capabilities import EnabledCapabilities
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 DEFAULT_ENABLED_CAPABILITIES = frozenset(
-    {"catalog", "query", "semantic_layer", "visualization"}
+    {"catalog", "query", "semantic_layer", "table_results", "visualization"}
 )
 
 

@@ -16,7 +16,7 @@ from src.agent.capabilities.visualization import (
     MAX_VISUALIZATION_ROWS,
     normalize_datetime_precision,
     visualization_toolset,
-    visualize_query_result,
+    visualize_table_result,
 )
 
 GGSQL_QUERY = """
@@ -83,7 +83,7 @@ def _context(
 
 
 def test_visualization_tool_exposes_retry_contract_in_definition() -> None:
-    tool = visualization_toolset.tools["visualize_query_result"]
+    tool = visualization_toolset.tools["visualize_table_result"]
 
     assert tool.max_retries == 3
     assert tool.sequential is True
@@ -95,7 +95,7 @@ def test_visualization_publishes_registered_spec() -> None:
     ctx, spark, ref = _context()
 
     result = asyncio.run(
-        visualize_query_result(ctx, ref, GGSQL_QUERY, "Power by category")
+        visualize_table_result(ctx, ref, GGSQL_QUERY, "Power by category")
     )
 
     assert isinstance(result.metadata, ArtifactRef)
@@ -111,7 +111,7 @@ def test_visualization_publishes_registered_spec() -> None:
 def test_visualization_reports_row_truncation() -> None:
     ctx, _, ref = _context(rows=MAX_VISUALIZATION_ROWS + 1)
 
-    result = asyncio.run(visualize_query_result(ctx, ref, GGSQL_QUERY, "Limited chart"))
+    result = asyncio.run(visualize_table_result(ctx, ref, GGSQL_QUERY, "Limited chart"))
 
     assert "first 1,000 rows" in result.return_value
 
@@ -145,7 +145,7 @@ def test_visualization_validation_failures_are_model_retries(
     ctx, _, ref = _context()
 
     with pytest.raises(ModelRetry, match=message):
-        asyncio.run(visualize_query_result(ctx, ref, ggsql_text, "Title"))
+        asyncio.run(visualize_table_result(ctx, ref, ggsql_text, "Title"))
 
 
 def test_datetime_normalization_uses_microseconds_and_utc() -> None:
@@ -165,12 +165,12 @@ def test_datetime_normalization_uses_microseconds_and_utc() -> None:
     assert normalized.loc[0, "value"] == 1
 
 
-def test_visualization_rejects_stale_query_reference() -> None:
+def test_visualization_rejects_stale_table_reference() -> None:
     ctx, _, _ = _context()
 
-    with pytest.raises(ModelRetry, match="Call query_data again"):
+    with pytest.raises(ModelRetry, match="Rerun the tool"):
         asyncio.run(
-            visualize_query_result(
+            visualize_table_result(
                 ctx,
                 ArtifactRef(artifact_id="stale"),
                 GGSQL_QUERY,
@@ -201,6 +201,4 @@ def test_visualization_exposes_spark_failure_as_model_retry() -> None:
         ModelRetry,
         match="Visualization data loading failed.*backend unavailable",
     ):
-        asyncio.run(
-            visualize_query_result(cast(Any, ctx), ref, GGSQL_QUERY, "Broken")
-        )
+        asyncio.run(visualize_table_result(cast(Any, ctx), ref, GGSQL_QUERY, "Broken"))

@@ -13,12 +13,12 @@ from src.agent.artifacts.base import (
     RunArtifacts,
 )
 from src.agent.artifacts.table import SparkTableSource, TableContent
-from src.agent.capabilities.query import (
-    InspectQueryResult,
-    display_query_result,
-    inspect_query_result,
-    query_data,
+from src.agent.capabilities.query import query_data
+from src.agent.capabilities.table_results import (
+    display_table_result,
+    inspect_table_result,
 )
+from src.agent.table_result import TableResult
 
 
 class StubSchema:
@@ -79,7 +79,7 @@ def test_result_preview_rejects_invalid_row_ranges(
         asyncio.run(source.preview(start_row=start_row, end_row=end_row))
 
 
-def test_inspect_query_result_exposes_unknown_columns_as_model_retry() -> None:
+def test_inspect_table_result_exposes_unknown_columns_as_model_retry() -> None:
     artifacts = RunArtifacts()
     ref = artifacts.create(
         SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
@@ -93,7 +93,7 @@ def test_inspect_query_result_exposes_unknown_columns_as_model_retry() -> None:
 
     with pytest.raises(ModelRetry, match="Unknown result columns: missing_column"):
         asyncio.run(
-            inspect_query_result(
+            inspect_table_result(
                 cast(Any, ctx),
                 ref,
                 column_names=["missing_column"],
@@ -103,9 +103,9 @@ def test_inspect_query_result_exposes_unknown_columns_as_model_retry() -> None:
 
 @pytest.mark.parametrize(
     "tool",
-    [inspect_query_result, display_query_result],
+    [inspect_table_result, display_table_result],
 )
-def test_query_result_tools_expose_stale_references_as_model_retry(
+def test_table_result_tools_expose_stale_references_as_model_retry(
     tool: Callable[..., Any],
 ) -> None:
     ctx = SimpleNamespace(
@@ -117,7 +117,7 @@ def test_query_result_tools_expose_stale_references_as_model_retry(
 
     with pytest.raises(
         ModelRetry,
-        match=r"(?:source for table artifact|Table artifact) 'stale'.*Call query_data again",
+        match=r"(?:source for table artifact|Table artifact) 'stale'.*Rerun the tool",
     ):
         asyncio.run(
             tool(
@@ -153,7 +153,7 @@ def test_query_data_returns_structured_result_preview() -> None:
     assert isinstance(source.dataframe, StubResult)
 
 
-def test_display_query_result_publishes_the_same_logical_artifact() -> None:
+def test_display_table_result_publishes_the_same_logical_artifact() -> None:
     artifacts = RunArtifacts(
         policy=ArtifactPolicy(table_max_rows=10),
     )
@@ -168,7 +168,7 @@ def test_display_query_result_publishes_the_same_logical_artifact() -> None:
     )
 
     result = asyncio.run(
-        display_query_result(
+        display_table_result(
             cast(Any, ctx),
             ref,
         )
@@ -181,7 +181,7 @@ def test_display_query_result_publishes_the_same_logical_artifact() -> None:
     assert artifact.content.row_count == 1
 
 
-def test_display_query_result_can_publish_materialized_content_without_a_source(
+def test_display_table_result_can_publish_materialized_content_without_a_source(
     make_table_artifact,
 ) -> None:
     artifacts = RunArtifacts()
@@ -195,7 +195,7 @@ def test_display_query_result_can_publish_materialized_content_without_a_source(
     )
 
     result = asyncio.run(
-        display_query_result(
+        display_table_result(
             cast(Any, ctx),
             artifact.ref,
         )
@@ -228,7 +228,7 @@ def test_query_data_rejects_mutating_sql_before_calling_spark() -> None:
         )
 
 
-def test_inspect_query_result_returns_structured_result_preview() -> None:
+def test_inspect_table_result_returns_structured_result_preview() -> None:
     artifacts = RunArtifacts()
     ref = artifacts.create(
         SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
@@ -241,13 +241,13 @@ def test_inspect_query_result_returns_structured_result_preview() -> None:
     )
 
     result = asyncio.run(
-        inspect_query_result(
+        inspect_table_result(
             cast(Any, ctx),
             ref,
         )
     )
 
-    assert result == InspectQueryResult(
+    assert result == TableResult(
         artifact_ref=ref,
         preview_markdown="## Row 1\n\nknown_column: 1",
     )

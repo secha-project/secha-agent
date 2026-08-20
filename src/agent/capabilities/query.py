@@ -1,25 +1,17 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
-from pydantic_ai import ModelRetry, RunContext, ToolReturn
+from pydantic_ai import ModelRetry, RunContext
 from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
-from pyspark.sql import DataFrame
 
-from ..artifacts.base import (
-    ArtifactRef,
-    ArtifactSourceUnavailableError,
-    UnexpectedArtifactSourceTypeError,
-    UnknownArtifactError,
-)
-from ..artifacts.table import SparkTableSource
 from ..deps import Deps
 from ..prompt import render_prompt
 from ..spark_runtime import concise_spark_error, spark_error_type
 from ..sql_safety import ReadOnlySqlError, require_read_only_sql
+from ..table_result import TableResult, create_table_result
 
 NAME = "query"
-DESCRIPTION = "Run read-only SQL and inspect or publish saved query results."
+DESCRIPTION = "Run read-only SQL and produce saved table results."
 query_toolset = FunctionToolset[Deps]()
 
 
@@ -32,49 +24,13 @@ def build(selected: frozenset[str]) -> Capability[Deps]:
     )
 
 
-class QueryDataResult(BaseModel):
-    artifact_ref: ArtifactRef
-    preview_markdown: str
-
-
-class InspectQueryResult(BaseModel):
-    artifact_ref: ArtifactRef
-    preview_markdown: str
-
-
-async def create_query_result(
-    deps: Deps,
-    dataframe: DataFrame,
-    *,
-    error_prefix: str = "SQL execution failed while reading the preview",
-) -> QueryDataResult:
-    """Register and preview a Spark DataFrame using the shared artifact path."""
-    source = SparkTableSource(
-        spark=deps.spark,
-        dataframe=dataframe,
-    )
-    try:
-        preview = await source.preview()
-    except Exception as exc:
-        raise ModelRetry(
-            f"{error_prefix} ({spark_error_type(exc)}): {concise_spark_error(exc)}."
-        ) from exc
-
-    ref = deps.artifacts.create(source)
-    return QueryDataResult(
-        artifact_ref=ref,
-        preview_markdown=preview.to_markdown(),
-    )
-
-
 @query_toolset.tool(retries=3, sequential=True)
-async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
+async def query_data(ctx: RunContext[Deps], sql: str) -> TableResult:
     """Run Spark SQL and preview its first 10 rows and columns.
 
     Use this for questions about row data, calculations, aggregates, or data
-    values. This tool does not display data to the user, if the user asks to see or
-    download data, pass the reference this tool returns to display data using
-    display_query_result.
+    values. This tool does not display data to the user. If the user asks to see
+    or download data, pass its returned reference to ``display_table_result``.
 
     Args:
         sql: The Spark SQL query to execute.
@@ -102,94 +58,8 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> QueryDataResult:
             f"{concise_spark_error(exc)}. "
         ) from exc
 
-    return await create_query_result(deps, result)
-
-
-@query_toolset.tool(sequential=True)
-async def inspect_query_result(
-    ctx: RunContext[Deps],
-    ref: ArtifactRef,
-    start_row: int = 1,
-    end_row: int | None = None,
-    column_names: list[str] | None = None,
-) -> InspectQueryResult:
-    """Inspect rows and columns from result ``ref`` saved by ``query_data``.
-
-    The row range is 1-based and inclusive. By default, this shows 10 rows and
-    the first 10 columns. ``column_names`` selects specific columns instead.
-    Row positions are only deterministic when the original SQL defines an order.
-
-    Args:
-        ref: A result reference available in the current live session.
-        start_row: First row to show (1-based and inclusive).
-        end_row: Last row to show (1-based and inclusive).
-        column_names: Specific columns to show instead of the first 10.
-    """
-    deps = ctx.deps
-    try:
-        source = deps.artifacts.resolve_source(ref, SparkTableSource)
-    except (UnknownArtifactError, ArtifactSourceUnavailableError) as exc:
-        raise ModelRetry(
-            f"The live source for table artifact {ref.artifact_id!r} is no "
-            "longer available. Call query_data again to create a new artifact; "
-            "do not retry with this reference."
-        ) from exc
-    except UnexpectedArtifactSourceTypeError as exc:
-        raise ModelRetry(str(exc)) from exc
-
-    try:
-        preview = await source.preview(
-            start_row=start_row,
-            end_row=end_row,
-            column_names=column_names,
-        )
-    except Exception as exc:
-        raise ModelRetry(
-            "SQL execution failed while inspecting the result "
-            f"({spark_error_type(exc)}): {concise_spark_error(exc)}."
-        ) from exc
-    return InspectQueryResult(
-        artifact_ref=ref,
-        preview_markdown=preview.to_markdown(),
-    )
-
-
-@query_toolset.tool(sequential=True)
-async def display_query_result(
-    ctx: RunContext[Deps],
-    ref: ArtifactRef,
-) -> ToolReturn[str]:
-    """Display a saved query result as a table in the user interface.
-
-    Use this when the user requests data, rows, records, a table, or
-    downloadable data. Do not use it for a scalar answer or explanation alone.
-    Displaying the table does not replace the rest of the response: after
-    it succeeds, continue with any explanation, interpretation, caveats, or
-    other parts the user requested.
-
-    Args:
-        ref: A result reference available in the current live session.
-    """
-    deps = ctx.deps
-    try:
-        artifact = deps.artifacts.registry.resolve(ref)
-        if artifact.kind != "table":
-            raise ModelRetry(f"Artifact {ref.artifact_id!r} is not a table artifact.")
-        artifact_ref = await deps.artifacts.publish(ref)
-    except (UnknownArtifactError, ArtifactSourceUnavailableError) as exc:
-        raise ModelRetry(
-            f"Table artifact {ref.artifact_id!r} is no longer available in "
-            "memory. Call query_data again to create a new artifact; "
-            "do not retry with this reference."
-        ) from exc
-    except TypeError as exc:
-        raise ModelRetry(str(exc)) from exc
-
-    return ToolReturn(
-        return_value=(
-            f"Table artifact {ref.artifact_id} was published. "
-            "Continue with any explanation or other requested parts of the answer. "
-            "If nothing else was requested, briefly confirm that it is available."
-        ),
-        metadata=artifact_ref,
+    return await create_table_result(
+        deps,
+        result,
+        error_prefix="SQL execution failed while reading the preview",
     )

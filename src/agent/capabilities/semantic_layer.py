@@ -17,7 +17,7 @@ from pydantic_ai.toolsets import FunctionToolset
 from ..deps import Deps
 from ..prompt import render_prompt
 from ..spark_runtime import concise_spark_error, spark_error_type
-from .query import QueryDataResult, create_query_result
+from ..table_result import TableResult, create_table_result
 
 NAME = "semantic_layer"
 DESCRIPTION = "Query governed semantic models, measures, and dimensions."
@@ -31,6 +31,7 @@ def build(selected: frozenset[str]) -> Capability[Deps]:
         instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
         toolsets=[semantic_toolset],
     )
+
 
 SemanticName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 SemanticNames = Annotated[list[SemanticName], Field(min_length=1)]
@@ -172,7 +173,7 @@ def _model(ctx: RunContext[Deps], model_name: str):
 async def _execute_semantic_expression(
     ctx: RunContext[Deps],
     expression: Any,
-) -> QueryDataResult:
+) -> TableResult:
     runtime = _runtime(ctx)
     try:
         sql = runtime.compile(expression)
@@ -184,7 +185,7 @@ async def _execute_semantic_expression(
             f"({spark_error_type(exc)}): {concise_spark_error(exc)}."
         ) from exc
 
-    return await create_query_result(
+    return await create_table_result(
         ctx.deps,
         dataframe,
         error_prefix="Semantic query execution failed while reading the preview",
@@ -259,10 +260,10 @@ async def query_semantic_model(
     time_grain: SemanticName | None = None,
     time_grains: dict[SemanticName, SemanticName] | None = None,
     time_range: SemanticTimeRange | None = None,
-) -> QueryDataResult:
+) -> TableResult:
     """Query governed dimensions and measures from one semantic model.
 
-    The result is saved as the same live table artifact used by ``query_data``.
+    The result is saved as a shared table result.
     Use this instead of recreating a declared business measure in raw SQL.
 
     Args:
@@ -311,11 +312,11 @@ async def compare_semantic_periods(
     time_grains: dict[SemanticName, SemanticName] | None = None,
     order_by: list[SemanticOrder] | None = None,
     limit: Annotated[int | None, Field(ge=1, le=100_000)] = None,
-) -> QueryDataResult:
+) -> TableResult:
     """Compare governed measures across two explicit time ranges.
 
     The result includes current, previous, delta, and percentage-change columns
-    and is saved as the same live table artifact used by ``query_data``.
+    and is saved as a shared table result.
     """
     if not measures:
         raise ModelRetry("Select at least one measure to compare.")

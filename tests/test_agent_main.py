@@ -67,12 +67,14 @@ def test_agent_config_keeps_immutable_valid_settings() -> None:
         catalog_token="token",
         spark_url="sc://spark.example",
         model_provider="openai",
-        enabled_capabilities=("catalog", "catalog", "query"),
+        enabled_capabilities=("catalog", "catalog", "query", "table_results"),
         otel_exporter_otlp_endpoint="http://otel.example",
     )
 
     assert config.model_provider == "openai"
-    assert config.enabled_capabilities == frozenset({"catalog", "query"})
+    assert config.enabled_capabilities == frozenset(
+        {"catalog", "query", "table_results"}
+    )
     with pytest.raises(ValidationError, match="Instance is frozen"):
         config.request_limit = 0
 
@@ -92,7 +94,7 @@ def test_agent_config_uses_default_capabilities() -> None:
 def test_agent_config_rejects_invalid_cross_field_state() -> None:
     with pytest.raises(
         ValidationError,
-        match="semantic layer capability requires query",
+        match="semantic_layer capability requires table_results",
     ):
         AgentConfig(
             _env_file=None,
@@ -119,7 +121,7 @@ def test_agent_config_loads_only_the_selected_provider_from_environment(
         catalog_token="token",
         spark_url="sc://spark.example",
         model_provider="tuni",
-        enabled_capabilities=("query",),
+        enabled_capabilities=("query", "table_results"),
         otel_exporter_otlp_endpoint="http://otel.example",
     )
     provider = config.load_provider()
@@ -137,7 +139,7 @@ def test_agent_config_loads_only_the_selected_provider_from_environment(
         catalog_token="token",
         spark_url="sc://spark.example",
         model_provider="openai",
-        enabled_capabilities=("query",),
+        enabled_capabilities=("query", "table_results"),
         otel_exporter_otlp_endpoint="http://otel.example",
     )
     openai_provider = openai_config.load_provider()
@@ -155,7 +157,7 @@ def test_agent_config_accepts_a_per_run_model_override() -> None:
         spark_url="sc://spark.example",
         model_provider="tuni",
         model_name="experiment-model",
-        enabled_capabilities=("query",),
+        enabled_capabilities=("query", "table_results"),
         otel_exporter_otlp_endpoint="http://otel.example",
     )
 
@@ -200,7 +202,7 @@ def test_run_uses_run_scoped_artifacts(
             table_column_page_size=20,
             temperature=0.0,
             request_limit=3,
-            enabled_capabilities=("catalog", "query"),
+            enabled_capabilities=("catalog", "query", "table_results"),
             create_model=lambda: "model",
         ),
     )
@@ -208,6 +210,7 @@ def test_run_uses_run_scoped_artifacts(
     captured: dict[str, Any] = {}
 
     monkeypatch.setattr(main_module, "get_spark_session", lambda _config: spark)
+
     def run_sync(prompt: str, **kwargs: Any) -> SimpleNamespace:
         captured["prompt"] = prompt
         captured.update(kwargs)
@@ -256,11 +259,12 @@ def test_run_returns_artifacts_published_during_the_one_off_run(
             table_column_page_size=20,
             temperature=0.0,
             request_limit=3,
-            enabled_capabilities=("query",),
+            enabled_capabilities=("query", "table_results"),
             create_model=lambda: "model",
         ),
     )
     monkeypatch.setattr(main_module, "get_spark_session", lambda _config: object())
+
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         artifact = make_table_artifact([{"value": 1}])
         context = kwargs["deps"].artifacts

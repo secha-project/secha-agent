@@ -8,7 +8,13 @@ from pydantic_ai.messages import ModelRequest
 from pydantic_ai.models.test import TestModel
 
 from src.agent.agent import create_agent
-from src.agent.capabilities import catalog, query, semantic_layer, visualization
+from src.agent.capabilities import (
+    catalog,
+    query,
+    semantic_layer,
+    table_results,
+    visualization,
+)
 from src.agent.deps import Deps
 from src.agent.prompt import render_prompt
 
@@ -17,14 +23,17 @@ CATALOG_INSTRUCTIONS = render_prompt(
     frozenset({"catalog"}),
 )
 QUERY_TEMPLATE = "capabilities/query/instructions.md"
-QUERY_STANDALONE = render_prompt(QUERY_TEMPLATE, frozenset({"query"}))
+QUERY_STANDALONE = render_prompt(
+    QUERY_TEMPLATE,
+    frozenset({"query", "table_results"}),
+)
 QUERY_WITH_CATALOG = render_prompt(
     QUERY_TEMPLATE,
-    frozenset({"catalog", "query"}),
+    frozenset({"catalog", "query", "table_results"}),
 )
 VISUALIZATION_INSTRUCTIONS = render_prompt(
     "capabilities/visualization/instructions.md",
-    frozenset({"catalog", "query", "visualization"}),
+    frozenset({"query", "table_results", "visualization"}),
 )
 
 
@@ -32,15 +41,33 @@ VISUALIZATION_INSTRUCTIONS = render_prompt(
     ("selected", "expected_routes"),
     [
         (frozenset({"catalog"}), ["Catalog"]),
-        (frozenset({"query"}), ["Query"]),
-        (frozenset({"catalog", "query"}), ["Catalog", "Query"]),
-        (frozenset({"query", "semantic_layer"}), ["Semantic layer", "Query"]),
+        (frozenset({"query", "table_results"}), ["Query"]),
         (
-            frozenset({"catalog", "query", "visualization"}),
+            frozenset({"catalog", "query", "table_results"}),
+            ["Catalog", "Query"],
+        ),
+        (
+            frozenset({"semantic_layer", "table_results"}),
+            ["Semantic layer"],
+        ),
+        (
+            frozenset({"query", "table_results", "visualization"}),
+            ["Query", "Visualization"],
+        ),
+        (
+            frozenset({"catalog", "query", "table_results", "visualization"}),
             ["Catalog", "Query", "Visualization"],
         ),
         (
-            frozenset({"catalog", "query", "semantic_layer", "visualization"}),
+            frozenset(
+                {
+                    "catalog",
+                    "query",
+                    "semantic_layer",
+                    "table_results",
+                    "visualization",
+                }
+            ),
             ["Semantic layer", "Catalog", "Query", "Visualization"],
         ),
     ],
@@ -70,12 +97,14 @@ def test_base_prompt_routes_only_selected_capabilities_in_priority_order(
 
 @pytest.mark.parametrize(
     "capability_module",
-    [semantic_layer, catalog, query, visualization],
+    [semantic_layer, catalog, query, table_results, visualization],
 )
 def test_capabilities_have_descriptions(
     capability_module: Any,
 ) -> None:
-    selected = frozenset({"catalog", "query", "semantic_layer", "visualization"})
+    selected = frozenset(
+        {"catalog", "query", "semantic_layer", "table_results", "visualization"}
+    )
     capability = capability_module.build(selected)
 
     assert capability.get_description() == capability_module.DESCRIPTION
@@ -101,13 +130,13 @@ def test_catalog_instructions_do_not_depend_on_query() -> None:
 
 
 def test_query_uses_standalone_instructions_without_catalog() -> None:
-    capability = query.build(frozenset({"query"}))
+    capability = query.build(frozenset({"query", "table_results"}))
 
     assert _static_instructions(capability) == [QUERY_STANDALONE]
 
 
 def test_query_replaces_standalone_instructions_when_catalog_is_selected() -> None:
-    capability = query.build(frozenset({"catalog", "query"}))
+    capability = query.build(frozenset({"catalog", "query", "table_results"}))
     instructions = _static_instructions(capability)
 
     assert instructions == [QUERY_WITH_CATALOG]
@@ -117,7 +146,9 @@ def test_query_replaces_standalone_instructions_when_catalog_is_selected() -> No
 
 def test_create_agent_deduplicates_capabilities() -> None:
     model = TestModel(call_tools=[], custom_output_text="done")
-    configured_agent = create_agent(("catalog", "catalog", "query", "query"))
+    configured_agent = create_agent(
+        ("catalog", "catalog", "query", "query", "table_results", "table_results")
+    )
 
     with capture_run_messages() as messages:
         configured_agent.run_sync(
@@ -137,15 +168,21 @@ def test_create_agent_deduplicates_capabilities() -> None:
         "find_columns",
         "describe_table",
         "query_data",
-        "inspect_query_result",
-        "display_query_result",
+        "inspect_table_result",
+        "display_table_result",
     ]
 
 
 def test_create_agent_uses_canonical_capability_order() -> None:
     model = TestModel(call_tools=[], custom_output_text="done")
     configured_agent = create_agent(
-        ("visualization", "query", "catalog", "semantic_layer"),
+        (
+            "visualization",
+            "table_results",
+            "query",
+            "catalog",
+            "semantic_layer",
+        ),
     )
 
     with capture_run_messages() as messages:
@@ -161,6 +198,7 @@ def test_create_agent_uses_canonical_capability_order() -> None:
         "## Semantic layer capability",
         "## Catalog capability",
         "## Query capability",
+        "## Table results capability",
         "## Visualization capability",
     ]
     assert [request.instructions.index(heading) for heading in headings] == sorted(
@@ -178,9 +216,9 @@ def test_create_agent_uses_canonical_capability_order() -> None:
         "find_columns",
         "describe_table",
         "query_data",
-        "inspect_query_result",
-        "display_query_result",
-        "visualize_query_result",
+        "inspect_table_result",
+        "display_table_result",
+        "visualize_table_result",
     ]
 
 
@@ -191,36 +229,55 @@ def test_create_agent_rejects_unknown_capabilities() -> None:
 
 def test_visualization_uses_one_instruction_prompt_and_exposes_one_tool() -> None:
     capability = visualization.build(
-        frozenset({"catalog", "query", "visualization"}),
+        frozenset({"query", "table_results", "visualization"}),
     )
     assert _static_instructions(capability) == [VISUALIZATION_INSTRUCTIONS]
 
     model = TestModel(call_tools=[], custom_output_text="done")
-    create_agent(("catalog", "query", "visualization")).run_sync(
+    create_agent(("query", "table_results", "visualization")).run_sync(
         "question",
         deps=cast(Deps, cast(Any, object())),
         model=model,
     )
     request_parameters = model.last_model_request_parameters
     assert request_parameters is not None
-    assert request_parameters.function_tools[-1].name == "visualize_query_result"
+    assert request_parameters.function_tools[-1].name == "visualize_table_result"
+
+
+def test_semantic_results_can_be_visualized_without_query_or_catalog() -> None:
+    model = TestModel(call_tools=[], custom_output_text="done")
+    create_agent(("semantic_layer", "table_results", "visualization")).run_sync(
+        "question",
+        deps=cast(Deps, cast(Any, object())),
+        model=model,
+    )
+
+    request_parameters = model.last_model_request_parameters
+    assert request_parameters is not None
+    assert [tool.name for tool in request_parameters.function_tools] == [
+        "list_semantic_models",
+        "describe_semantic_model",
+        "query_semantic_model",
+        "compare_semantic_periods",
+        "inspect_table_result",
+        "display_table_result",
+        "visualize_table_result",
+    ]
 
 
 @pytest.mark.parametrize(
-    "capabilities",
+    ("capabilities", "message"),
     [
-        ("visualization",),
-        ("catalog", "visualization"),
-        ("query", "visualization"),
+        (("visualization",), "requires table_results"),
+        (("table_results", "visualization"), "requires semantic_layer or query"),
+        (("query", "visualization"), "requires table_results"),
     ],
 )
-def test_visualization_requires_catalog_and_query(
+def test_visualization_requires_table_results_and_a_producer(
     capabilities: tuple[str, ...],
+    message: str,
 ) -> None:
-    with pytest.raises(
-        ValueError,
-        match="visualization capability requires catalog and query",
-    ):
+    with pytest.raises(ValueError, match=message):
         create_agent(cast(Any, capabilities))
 
 
@@ -229,13 +286,13 @@ def test_differently_configured_agents_do_not_contaminate_each_other() -> None:
     combined_model = TestModel(call_tools=[], custom_output_text="combined")
 
     with capture_run_messages() as standalone_messages:
-        create_agent(("query",)).run_sync(
+        create_agent(("query", "table_results")).run_sync(
             "question",
             deps=cast(Deps, cast(Any, object())),
             model=standalone_model,
         )
     with capture_run_messages() as combined_messages:
-        create_agent(("catalog", "query")).run_sync(
+        create_agent(("catalog", "query", "table_results")).run_sync(
             "question",
             deps=cast(Deps, cast(Any, object())),
             model=combined_model,

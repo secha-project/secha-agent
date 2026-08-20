@@ -32,7 +32,7 @@ _LAYER_SOURCE_PATTERN = re.compile(
 )
 
 NAME = "visualization"
-DESCRIPTION = "Create charts from saved query results."
+DESCRIPTION = "Create charts from saved table results."
 visualization_toolset = FunctionToolset[Deps]()
 
 
@@ -129,21 +129,21 @@ def _standalone_spec(chart: Any) -> dict[str, Any]:
 
 
 @visualization_toolset.tool(retries=3, sequential=True)
-async def visualize_query_result(
+async def visualize_table_result(
     ctx: RunContext[Deps],
     ref: ArtifactRef,
     ggsql: str,
     title: str,
 ) -> ToolReturn[str]:
-    """Create a chart from a saved query result and visual-only ggsql.
+    """Create a chart from a saved table result and visual-only ggsql.
 
     Use this for comparisons, distributions, relationships, and trends. The tool
     validates the visualization grammar, and retryable failures are returned as
     ModelRetry messages so you can correct the statement.
 
     Args:
-        ref: A table reference returned by a previous query_data call.
-        ggsql: VISUALISE and DRAW clauses for columns in the saved query result.
+        ref: A reference returned by a tool that produced a table result.
+        ggsql: VISUALISE and DRAW clauses for columns in the saved table result.
         title: A brief, user-friendly chart title. Do not put the title in ggsql.
     """
     if not title.strip():
@@ -157,7 +157,7 @@ async def visualize_query_result(
     except (UnknownArtifactError, TypeError) as exc:
         raise ModelRetry(
             f"Table artifact {ref.artifact_id!r} is no longer available. "
-            "Call query_data again to create a new artifact; do not retry with "
+            "Rerun the tool that produced this table result; do not retry with "
             "this reference."
         ) from exc
     if artifact.kind != "table":
@@ -179,7 +179,7 @@ async def visualize_query_result(
         else:
             raise ModelRetry(
                 f"The live source for table artifact {ref.artifact_id!r} is no "
-                "longer available. Call query_data again to create a new artifact; "
+                "longer available. Rerun the tool that produced this table result; "
                 "do not retry with this reference."
             )
     except ModelRetry:

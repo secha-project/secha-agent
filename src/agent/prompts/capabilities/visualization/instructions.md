@@ -4,11 +4,11 @@ Use visualization when the user wants to see the data or for comparisons, distri
 
 ### Visualization best practices
 
-Prepare the data to be plotted by executing{% if "semantic_layer" in capabilities %} `query_semantic_model` with the appropriate filters and aggregations or (if needed) {% endif %} `query_data` with the complete read-only SQL for the chart, putting all transformations, filtering, joins, aggregation, ordering, and aliases in that query. Then call `visualize_query_result` with its returned table reference, visual-only ggsql, and a short title.
+Prepare the data to be plotted with {% if "semantic_layer" in capabilities %}`query_semantic_model` using the appropriate filters and aggregations{% if "query" in capabilities %}, or with `query_data` when raw SQL is needed{% endif %}{% else %}`query_data` with complete read-only SQL{% endif %}. Put all transformations, filtering, joins, aggregation, ordering, and aliases in the producing query. Then call `visualize_table_result` with its returned table reference, visual-only ggsql, and a short title.
 
-Do not display the table with `display_query_result` unless the user also asked to see the data or download it.
+Do not display the table with `display_table_result` unless the user also asked to see the data or download it.
 
-The ggsql must begin with `VISUALISE`, reference only columns in the query result, and include at least one `DRAW`. Do not include SQL, `FROM`, `_data`, expressions in `VISUALISE` or `MAPPING`, or `LABEL title`; use the tool's `title` argument.
+The ggsql must begin with `VISUALISE`, reference only columns in the table result, and include at least one `DRAW`. Do not include SQL, `FROM`, `_data`, expressions in `VISUALISE` or `MAPPING`, or `LABEL title`; use the tool's `title` argument.
 
 Follow the principles below to produce clear, interpretable charts.
 

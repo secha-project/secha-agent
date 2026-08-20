@@ -91,7 +91,7 @@ class StubSemanticRuntime:
 def test_semantic_capability_exposes_structured_tools() -> None:
     model = TestModel(call_tools=[], custom_output_text="done")
 
-    create_agent(("query", "semantic_layer")).run_sync(
+    create_agent(("semantic_layer", "table_results")).run_sync(
         "question",
         deps=cast(Any, object()),
         model=model,
@@ -104,17 +104,18 @@ def test_semantic_capability_exposes_structured_tools() -> None:
         "describe_semantic_model",
         "query_semantic_model",
         "compare_semantic_periods",
-        "query_data",
-        "inspect_query_result",
-        "display_query_result",
+        "inspect_table_result",
+        "display_table_result",
     ]
     query_schema = semantic_toolset.tools["query_semantic_model"].function_schema
     assert "$defs" in query_schema.json_schema
     assert "filters" in query_schema.json_schema["properties"]
 
 
-def test_semantic_capability_requires_query_capability() -> None:
-    with pytest.raises(ValueError, match="semantic layer capability requires query"):
+def test_semantic_capability_requires_table_results_capability() -> None:
+    with pytest.raises(
+        ValueError, match="semantic_layer capability requires table_results"
+    ):
         create_agent(("semantic_layer",))
 
 

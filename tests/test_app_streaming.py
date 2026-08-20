@@ -93,14 +93,14 @@ class AgentStub:
         async def events() -> AsyncIterator[Any]:
             yield FunctionToolCallEvent(
                 ToolCallPart(
-                    tool_name="display_query_result",
+                    tool_name="display_table_result",
                     args={"ref": "df-1"},
                     tool_call_id="call-1",
                 )
             )
             yield FunctionToolResultEvent(
                 ToolReturnPart(
-                    tool_name="display_query_result",
+                    tool_name="display_table_result",
                     content="displayed",
                     tool_call_id="call-1",
                     metadata=self.artifact_ref,
@@ -141,7 +141,7 @@ def test_stream_returns_owned_assistant_and_pending_artifacts(
     )
 
     assert result is not None
-    assert container.status_args == ("Used display query result",)
+    assert container.status_args == ("Used display table result",)
     assert container.status_kwargs["type"] == "compact"
     assert container.status_container.container_kwargs == {"gap": "xsmall"}
     assert len(result.artifacts) == 1
@@ -166,14 +166,14 @@ class VisualizationAgentStub:
                 tool_id = f"viz-{index}"
                 yield FunctionToolCallEvent(
                     ToolCallPart(
-                        tool_name="visualize_query_result",
+                        tool_name="visualize_table_result",
                         args={"ggsql": "SELECT ...", "title": f"Attempt {index}"},
                         tool_call_id=tool_id,
                     )
                 )
                 yield FunctionToolResultEvent(
                     ToolReturnPart(
-                        tool_name="visualize_query_result",
+                        tool_name="visualize_table_result",
                         content="rendered",
                         tool_call_id=tool_id,
                         metadata=reference,

@@ -6,6 +6,7 @@ agent:
   enabled_capabilities:
     - catalog
     - query
+    - table_results
     - visualization
 
 dataset: power-quality-monitoring

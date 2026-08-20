@@ -43,8 +43,9 @@ class DescribeTableResult(BaseModel):
     columns: list[ColumnMetadata]
     missing_columns: list[str]
 
+
 NAME = "catalog"
-DESCRIPTION = "Discover canonical tables, columns, and schema metadata."
+DESCRIPTION = "Discover tables, columns, and schema metadata."
 catalog_toolset = FunctionToolset[Deps]()
 
 

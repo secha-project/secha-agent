@@ -89,7 +89,7 @@ def test_csv_and_tool_metadata_are_json_safe(make_table_artifact) -> None:
         ModelRequest(
             parts=[
                 ToolReturnPart(
-                    tool_name="display_query_result",
+                    tool_name="display_table_result",
                     tool_call_id="call-1",
                     content="displayed",
                     metadata=ArtifactRef(artifact_id="artifact-17"),

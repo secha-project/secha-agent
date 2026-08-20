@@ -10,8 +10,8 @@ The agent, built with Pydantic AI, can answer data analytics questions by intera
 - `find_columns`
 - `describe_table`
 - `query_data`
-- `inspect_query_result`
-- `display_query_result`
+- `inspect_table_result`
+- `display_table_result`
 
 The Boring Semantic Layer capability adds governed semantic-model
 discovery, metric queries, and period comparisons. It uses an Ibis PySpark
@@ -38,7 +38,7 @@ Optional model defaults use `OPENAI_MODEL_NAME` and
 `agent.model_provider`; changing benchmark providers never requires editing
 `.env`.
 The app and one-off agent use the `AgentConfig` capability default: catalog,
-query, semantic layer, and visualization. Pass `enabled_capabilities`
+query, semantic layer, table results, and visualization. Pass `enabled_capabilities`
 explicitly when constructing `AgentConfig`, or set it in a validation run
 configuration, to use a different profile.
 
@@ -56,7 +56,7 @@ The validation suite, built with Pydantic Evals, aims to validate the quality of
 agent:
   model_provider: openai
   model_name: gpt-5.4-mini
-  enabled_capabilities: [catalog, query, visualization]
+  enabled_capabilities: [catalog, query, table_results, visualization]
 ```
 
 That example config file evaluates the agent in the small dataset in `src/validation/benchmark/power-quality-monitoring/dataset.yaml`, you can run it with:
