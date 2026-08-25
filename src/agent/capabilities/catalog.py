@@ -92,8 +92,11 @@ def _full_table_name(
 def browse_tables(ctx: RunContext[Deps]) -> BrowseTablesResult:
     """List tables in the configured schema with canonical names and short descriptions.
 
-    Use this when a table name is unknown, ambiguous, or possibly misspelled.
-    This tool does not return column metadata.
+    Use this first when a table name is unknown, ambiguous, or possibly
+    misspelled, including when locating a metadata table that may map a human
+    device name to its stored identifier. This tool does not return columns or
+    search row values; after selecting a table, use ``find_columns`` or
+    ``describe_table`` to inspect its schema.
     """
     deps = ctx.deps
     schema_name = deps.schema_name.split(".")[-1]
@@ -116,10 +119,12 @@ def find_columns(
     table_name: str,
     keywords: str,
 ) -> SearchColumnsResult:
-    """Search for keywords in column names and metadata from a specific table.
+    """Find columns in one known table using human-language metadata keywords.
 
-    This searches schema metadata only. It does not search table data or row
-    values; use ``query_data`` to filter or search data.
+    Use this when the exact column identifier is unknown or the user describes
+    a field in natural language. This searches column names and comments only;
+    it cannot find device IDs or other row values. Use ``query_data`` to search
+    or filter actual data. Returned identifiers are canonical.
 
     Args:
         table_name: A bare, schema-qualified, or fully qualified table name.
@@ -199,12 +204,13 @@ def describe_table(
     end_column: int | None = None,
     column_names: list[str] | None = None,
 ) -> DescribeTableResult:
-    """Show the full description and selected column metadata for one known table.
+    """Show the description and selected column metadata for one known table.
 
-    By default this returns the configured first page of columns. Use
-    ``start_column`` and ``end_column`` for a 1-based inclusive range, or
-    ``column_names`` for exact identifiers. ``column_names`` takes precedence
-    over the range. Use ``find_columns`` for human-language wording.
+    Use this only after the canonical table identifier is known. By default it
+    returns the first configured page of columns. Page through wide schemas
+    with ``start_column`` and ``end_column``, or request known exact identifiers
+    with ``column_names``; exact names take precedence over the range. Use
+    ``find_columns`` instead for human-language concepts or unknown names.
 
     Args:
         table_name: A bare, schema-qualified, or fully qualified table name.

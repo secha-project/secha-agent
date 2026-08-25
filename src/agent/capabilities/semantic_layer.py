@@ -219,7 +219,13 @@ async def _execute_semantic_expression(
 
 @semantic_toolset.tool
 def list_semantic_models(ctx: RunContext[Deps]) -> ListSemanticModelsResult:
-    """List the governed semantic models and their business descriptions."""
+    """List governed semantic models and their business descriptions.
+
+    Use this before catalog or raw SQL for any possible governed metric, KPI,
+    aggregate, or calculation. Do not assume a metric is absent without
+    checking. Describe a plausible model next unless its exact fields are
+    already known from tool results. Use only returned model names.
+    """
     runtime = _runtime(ctx)
     return ListSemanticModelsResult(
         models=[
@@ -235,6 +241,10 @@ def describe_semantic_model(
     model_name: str,
 ) -> DescribeSemanticModelResult:
     """Describe one semantic model's governed dimensions and measures.
+
+    Use this before querying a plausible model unless its exact fields are
+    already known from tool results. Model summaries and catalog columns are not
+    semantic field schemas. Use only names returned by semantic tools.
 
     Args:
         model_name: Exact model name returned by ``list_semantic_models``.
@@ -288,8 +298,17 @@ async def query_semantic_model(
 ) -> TableResult:
     """Query governed dimensions and measures from one semantic model.
 
-    The result is saved as a shared table result.
-    Use this instead of recreating a declared business measure in raw SQL.
+    Use this when the model represents the request; never recreate, approximate,
+    or verify its measures with raw SQL. Dimensions group or filter; measures
+    calculate governed values. All field names must come from semantic
+    discovery, while filter values may come from the user or data results.
+
+    Prefer ``time_range`` for time restrictions (inclusive start, exclusive
+    end). Use time grains only when different aggregation is requested.
+
+    The result is saved with a preview: answer from it when sufficient, inspect
+    it for more rows or columns, display it when the user requests the data, or
+    pass it to the visualization tool for a chart.
 
     Args:
         model_name: Exact model name returned by ``list_semantic_models``.
@@ -341,8 +360,23 @@ async def compare_semantic_periods(
 ) -> TableResult:
     """Compare governed measures across two explicit time ranges.
 
-    The result includes current, previous, delta, and percentage-change columns
-    and is saved as a shared table result.
+    Use this for period-over-period questions instead of combining queries or
+    raw SQL. Discover and describe the model first, then use only returned
+    semantic names. The saved result contains current, previous, delta, and
+    percentage-change columns.
+
+    Args:
+        model_name: Exact model name returned by ``list_semantic_models``.
+        measures: Governed measures to compare.
+        current_time_range: Inclusive start and exclusive end for the current period.
+        previous_time_range: Inclusive start and exclusive end for the prior period.
+        dimensions: Optional governed dimensions used to group the comparison.
+        filters: Dimension or measure filters applied to both periods.
+        time_dimension: Time dimension to use when the model has more than one.
+        time_grain: One grain applied to selected time dimensions.
+        time_grains: Per-dimension grains; cannot be combined with time_grain.
+        order_by: Selected result fields and their sort directions.
+        limit: Maximum result rows.
     """
     if not measures:
         raise ModelRetry("Select at least one measure to compare.")

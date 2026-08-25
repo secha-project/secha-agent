@@ -140,8 +140,8 @@ def test_query_replaces_standalone_instructions_when_catalog_is_selected() -> No
     instructions = _static_instructions(capability)
 
     assert instructions == [QUERY_WITH_CATALOG]
-    assert "Use catalog tools first" in instructions[0]
-    assert "cannot inspect catalog metadata" not in instructions[0]
+    assert "Resolve uncertain" in instructions[0]
+    assert "catalog metadata is unavailable" not in instructions[0]
 
 
 def test_create_agent_deduplicates_capabilities() -> None:
@@ -306,7 +306,33 @@ def test_differently_configured_agents_do_not_contaminate_each_other() -> None:
     )
     assert standalone_request.instructions is not None
     assert combined_request.instructions is not None
-    assert "cannot inspect catalog metadata" in standalone_request.instructions
-    assert "Use catalog tools first" not in standalone_request.instructions
-    assert "Use catalog tools first" in combined_request.instructions
-    assert "cannot inspect catalog metadata" not in combined_request.instructions
+    assert "catalog metadata is unavailable" in standalone_request.instructions
+    assert "Resolve uncertain" not in standalone_request.instructions
+    assert "Resolve uncertain" in combined_request.instructions
+    assert "catalog metadata is unavailable" not in combined_request.instructions
+
+
+def test_full_capability_prompt_keeps_tool_mechanics_out_of_instructions() -> None:
+    selected = frozenset(
+        {"catalog", "query", "semantic_layer", "table_results", "visualization"}
+    )
+    prompt = "\n".join(
+        [
+            render_prompt("base.md", selected),
+            *[
+                render_prompt(f"capabilities/{name}/instructions.md", selected)
+                for name in (
+                    "semantic_layer",
+                    "catalog",
+                    "query",
+                    "table_results",
+                    "visualization",
+                )
+            ],
+        ]
+    )
+
+    assert len(prompt) < 3_500
+    assert "VISUALISE" not in prompt
+    assert "Call `browse_tables`" not in prompt
+    assert "Call `list_semantic_models`" not in prompt

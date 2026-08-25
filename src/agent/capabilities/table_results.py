@@ -40,10 +40,11 @@ async def inspect_table_result(
 ) -> TableResult:
     """Inspect rows and columns from a saved table result.
 
-    The row range is 1-based and inclusive. By default, this shows 10 rows and
-    the first 10 columns. ``column_names`` selects specific columns instead.
-    Row positions are only deterministic when the producing query defines an
-    order.
+    Use this when the producer's preview does not contain enough rows or columns
+    to answer reliably. The row range is 1-based and inclusive. By default this
+    shows 10 rows and the first 10 columns; ``column_names`` selects specific
+    columns instead. Row positions are deterministic only when the producing
+    query defines an order. Inspection does not publish the table to the user.
 
     Args:
         ref: A table-result reference available in the current live session.
@@ -85,13 +86,13 @@ async def display_table_result(
     ctx: RunContext[Deps],
     ref: ArtifactRef,
 ) -> ToolReturn[str]:
-    """Display a saved table result in the user interface.
+    """Publish a saved table result in the user interface for viewing or download.
 
-    Use this when the user requests data, rows, records, a table, or
-    downloadable data. Do not use it for a scalar answer or explanation alone.
-    Displaying the table does not replace the rest of the response: after it
-    succeeds, continue with any requested explanation, interpretation, or
-    caveats.
+    Use this when the user asks to see, get, or download rows, records, tables,
+    sample data, or a sample time series. Do not use it for a scalar answer or
+    explanation alone, and do not manually reproduce the result as a Markdown
+    or text table. Publishing does not replace requested explanation,
+    interpretation, or caveats.
 
     Args:
         ref: A table-result reference available in the current live session.

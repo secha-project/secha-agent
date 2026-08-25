@@ -26,14 +26,26 @@ def build(selected: frozenset[str]) -> Capability[Deps]:
 
 @query_toolset.tool(retries=3, sequential=True)
 async def query_data(ctx: RunContext[Deps], sql: str) -> TableResult:
-    """Run Spark SQL and preview its first 10 rows and columns.
+    """Run read-only Spark SQL and save a table result with a small preview.
 
-    Use this for questions about row data, calculations, aggregates, or data
-    values. This tool does not display data to the user. If the user asks to see
-    or download data, pass its returned reference to ``display_table_result``.
+    Use this for row-level data, actual values, aggregates, and calculations not
+    represented by a governed semantic measure. Resolve uncertain identifiers
+    with catalog tools first; do not use schema-search tools for row values.
+
+    For a possible governed metric, KPI, aggregate, or calculation, check
+    semantic models and describe plausible matches first. Use raw SQL only when
+    no model represents the calculation or row-level analysis is required.
+    Never duplicate or validate a governed result with hand-written SQL.
+
+    Answer from the preview when it is sufficient. Otherwise pass the returned
+    reference to ``inspect_table_result``. This tool does not publish data in
+    the UI: when the user asks to see or download rows, records, a table, sample
+    data, or a sample time series, pass the reference to
+    ``display_table_result`` instead of reproducing the result in Markdown.
 
     Args:
-        sql: The Spark SQL query to execute.
+        sql: One complete read-only Spark SQL query. Data-changing statements
+            and multiple statements are rejected.
     """
     deps = ctx.deps
     if not sql.strip():

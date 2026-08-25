@@ -84,10 +84,24 @@ def _context(
 
 def test_visualization_tool_exposes_retry_contract_in_definition() -> None:
     tool = visualization_toolset.tools["visualize_table_result"]
+    description = " ".join((tool.description or "").split())
 
     assert tool.max_retries == 3
     assert tool.sequential is True
-    assert "ModelRetry" in (tool.description or "")
+    assert "ModelRetry" in description
+    assert "ordered bars for categories" in description
+    assert "Aggregate or bin large data" in description
+    assert "PROJECT y, x TO cartesian" in description
+    assert "Never invent ``y2`` or ``y3``" in description
+    assert "``SCALE x VIA date`` accepts dates" in description
+    assert "never timestamps" in description
+    assert "no expressions, functions, or ``RENAMING``" in description
+    assert "Do not add ``FROM`` or ``_data``" in description
+    ggsql_description = " ".join(
+        tool.function_schema.json_schema["properties"]["ggsql"]["description"].split()
+    )
+    assert "beginning with ``VISUALISE``" in ggsql_description
+    assert "at least one ``DRAW``" in ggsql_description
     assert tool.function_schema.json_schema["required"] == ["ref", "ggsql", "title"]
 
 

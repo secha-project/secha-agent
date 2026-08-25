@@ -22,4 +22,4 @@ Score according to the following criteria.
  - 1 if the generated plot is blank, empty, or shows no data except the axes
  - 0 otherwise
 
-Provide a short and concise "rationale" for the scoring.
+Provide a short and concise rationale for the scoring.

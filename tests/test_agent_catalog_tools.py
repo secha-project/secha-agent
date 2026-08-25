@@ -49,11 +49,10 @@ def test_find_columns_exposes_requested_name_and_description() -> None:
     tool = catalog_toolset.tools["find_columns"]
 
     assert "search_columns" not in catalog_toolset.tools
-    assert tool.description == (
-        "Search for keywords in column names and metadata from a specific table.\n\n"
-        "This searches schema metadata only. It does not search table data or row\n"
-        "values; use ``query_data`` to filter or search data."
-    )
+    assert tool.description is not None
+    assert "exact column identifier is unknown" in tool.description
+    assert "cannot find device IDs or other row values" in tool.description
+    assert "Returned identifiers are canonical" in tool.description
     assert tool.function_schema.json_schema["required"] == [
         "table_name",
         "keywords",

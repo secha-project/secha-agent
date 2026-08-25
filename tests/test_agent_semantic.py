@@ -12,6 +12,7 @@ import src.agent.semantic_runtime as semantic_module
 from src.agent.agent import create_agent
 from src.agent.artifacts.base import RunArtifacts
 from src.agent.artifacts.table import SparkTableSource
+from src.agent.capabilities.query import query_toolset
 from src.agent.capabilities.semantic_layer import (
     SemanticFilter,
     SemanticOrder,
@@ -109,6 +110,34 @@ def test_semantic_capability_exposes_structured_tools() -> None:
     query_schema = semantic_toolset.tools["query_semantic_model"].function_schema
     assert "$defs" in query_schema.json_schema
     assert "filters" in query_schema.json_schema["properties"]
+
+
+def test_semantic_tool_descriptions_enforce_discovery_before_raw_sql() -> None:
+    list_description = " ".join(
+        (semantic_toolset.tools["list_semantic_models"].description or "").split()
+    )
+    describe_description = " ".join(
+        (semantic_toolset.tools["describe_semantic_model"].description or "").split()
+    )
+    query_description = " ".join(
+        (semantic_toolset.tools["query_semantic_model"].description or "").split()
+    )
+    compare_description = " ".join(
+        (semantic_toolset.tools["compare_semantic_periods"].description or "").split()
+    )
+    raw_query_description = " ".join(
+        (query_toolset.tools["query_data"].description or "").split()
+    )
+
+    assert "before catalog or raw SQL" in list_description
+    assert "Do not assume a metric is absent" in list_description
+    assert "not semantic field schemas" in describe_description
+    assert "never recreate, approximate, or verify" in query_description
+    assert "All field names must come from semantic discovery" in query_description
+    assert "Prefer ``time_range``" in query_description
+    assert "period-over-period questions" in compare_description
+    assert "check semantic models" in raw_query_description
+    assert "Never duplicate or validate" in raw_query_description
 
 
 def test_semantic_capability_requires_table_results_capability() -> None:

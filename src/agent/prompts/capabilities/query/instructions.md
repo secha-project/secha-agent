@@ -1,11 +1,9 @@
 ## Query capability
 
-Use the query capability for questions about row data, calculations, aggregates, or data values.
-
-Run read-only Spark SQL with `query_data`. It returns a saved table result with a preview; use the table results capability to inspect or display that result.
+Use the query capability for row-level data, actual values, aggregates, or calculations{% if "semantic_layer" in capabilities %} not represented by a governed semantic measure{% endif %}. SQL must be read-only Spark SQL.
 
 {% if "catalog" in capabilities %}
-Use catalog tools first for uncertain table, column, or device identifiers. `find_columns` searches schema metadata only; never use it to search or filter table data or row values. Use `query_data` for data values. Query directly when identifiers are already canonical. When the user asks to see or download rows, run the query and then display its artifact.
+Resolve uncertain table, column, and device identifiers with catalog metadata before querying; query directly when identifiers are already canonical.
 {% else %}
-Query only when the required table and column identifiers are known from the conversation. If they are uncertain, explain that this configuration cannot inspect catalog metadata instead of inventing identifiers.
+Query only with identifiers established in the conversation. If they are uncertain, explain that catalog metadata is unavailable rather than inventing them.
 {% endif %}
