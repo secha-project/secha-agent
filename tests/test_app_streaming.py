@@ -1,32 +1,20 @@
 import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 from pydantic_ai import (
     AgentRunResult,
     AgentRunResultEvent,
     FunctionToolCallEvent,
     FunctionToolResultEvent,
-    ModelSettings,
     ToolCallPart,
     ToolReturnPart,
-    UsageLimits,
 )
 
-from src.agent.deps import Deps
 from src.agent.outputs.artifacts import ArtifactCollector, ArtifactRef, ChartArtifact
 from src.app.models import ArtifactDisplayPart, ToolDisplayPart
 from src.app.streaming import stream_agent_response
-
-
-class TaggedSpark:
-    def addTag(self, _tag: str) -> None:
-        pass
-
-    def removeTag(self, _tag: str) -> None:
-        pass
 
 
 class StatusContainer:
@@ -106,30 +94,24 @@ class AgentStub:
         yield events()
 
 
+async def agent_events(agent: Any) -> AsyncIterator[object]:
+    async with agent.run_stream_events() as events:
+        async for event in events:
+            yield event
+
+
 def test_stream_returns_owned_assistant_and_pending_artifacts(
     make_table_artifact: Any,
 ) -> None:
     artifacts = ArtifactCollector()
     artifact = make_table_artifact([{"id": 1}])
     artifact_ref = artifacts.publish(artifact)
-    deps = cast(
-        Deps,
-        SimpleNamespace(
-            spark=TaggedSpark(),
-            artifacts=artifacts,
-        ),
-    )
     container = StreamingContainer()
 
     result = asyncio.run(
         stream_agent_response(
-            prompt="show rows",
-            message_history=[],
-            deps=deps,
-            agent_instance=AgentStub(artifact_ref),
-            model=object(),
-            model_settings=ModelSettings(),
-            usage_limits=UsageLimits(),
+            events=agent_events(AgentStub(artifact_ref)),
+            artifacts=artifacts,
             container=container,
         )
     )
@@ -195,26 +177,14 @@ def test_stream_renders_each_published_visualization() -> None:
     ]
     for artifact in published:
         run_artifacts.publish(artifact)
-    deps = cast(
-        Deps,
-        SimpleNamespace(
-            spark=TaggedSpark(),
-            artifacts=run_artifacts,
-        ),
-    )
     container = StreamingContainer()
 
     result = asyncio.run(
         stream_agent_response(
-            prompt="make a chart",
-            message_history=[],
-            deps=deps,
-            agent_instance=VisualizationAgentStub(
-                [artifact.ref for artifact in published]
+            events=agent_events(
+                VisualizationAgentStub([artifact.ref for artifact in published])
             ),
-            model=object(),
-            model_settings=ModelSettings(),
-            usage_limits=UsageLimits(),
+            artifacts=run_artifacts,
             container=container,
         )
     )

@@ -1,17 +1,15 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any
 
 from pydantic_ai import (
     AgentRunResultEvent,
     ModelMessage,
-    ModelSettings,
-    UsageLimits,
 )
 
-from src.agent.deps import Deps
-from src.agent.outputs.artifacts import Artifact
+from src.agent.outputs.artifacts import Artifact, ArtifactCollector
 
 from .models import AssistantDisplayMessage
 from .response_events import ResponseEventRenderer
@@ -26,33 +24,20 @@ class StreamResult:
 
 async def stream_agent_response(
     *,
-    prompt: str,
-    message_history: list[ModelMessage],
-    deps: Deps,
-    agent_instance: Any,
-    model: Any,
-    model_settings: ModelSettings,
-    usage_limits: UsageLimits,
+    events: AsyncIterator[object],
+    artifacts: ArtifactCollector,
     container: Any,
 ) -> StreamResult | None:
-    """Render ordered run events and return output only after terminal success."""
-    renderer = ResponseEventRenderer(container, deps.artifacts)
+    """Render agent events and return display state after terminal success."""
+    renderer = ResponseEventRenderer(container, artifacts)
 
-    async with agent_instance.run_stream_events(
-        prompt,
-        deps=deps,
-        model=model,
-        model_settings=model_settings,
-        usage_limits=usage_limits,
-        message_history=message_history,
-    ) as events:
-        async for event in events:
-            if isinstance(event, AgentRunResultEvent):
-                return StreamResult(
-                    assistant_message=renderer.message,
-                    model_messages=event.result.all_messages(),
-                    artifacts=deps.artifacts.published,
-                )
-            renderer.render(event)
+    async for event in events:
+        if isinstance(event, AgentRunResultEvent):
+            return StreamResult(
+                assistant_message=renderer.message,
+                model_messages=event.result.all_messages(),
+                artifacts=artifacts.published,
+            )
+        renderer.render(event)
 
     return None

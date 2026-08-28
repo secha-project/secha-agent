@@ -3,13 +3,12 @@ from __future__ import annotations
 import asyncio
 
 import streamlit as st
-from pydantic_ai import ModelSettings, UsageLimits
 
 from src.agent.outputs.tables import TableOutputStore
 
 from ..artifact_renderer import ArtifactRenderer
 from ..models import User
-from ..resources import AppResources, fresh_deps
+from ..resources import AppResources
 from ..state import create_conversation, ensure_active_conversation
 from ..streaming import stream_agent_response
 from .messages import render_message
@@ -102,17 +101,16 @@ def render_chat(resources: AppResources, user: User) -> None:
     )
 
     container = st.chat_message("assistant")
-    deps = fresh_deps(resources, table_outputs)
+    run = resources.agent.start_run(
+        prompt=prompt,
+        message_history=st.session_state.model_messages,
+        table_outputs=table_outputs,
+    )
     try:
         result = asyncio.run(
             stream_agent_response(
-                prompt=prompt,
-                message_history=st.session_state.model_messages,
-                deps=deps,
-                agent_instance=resources.agent,
-                model=resources.config.create_model(),
-                model_settings=ModelSettings(temperature=resources.config.temperature),
-                usage_limits=UsageLimits(request_limit=resources.config.request_limit),
+                events=run.events,
+                artifacts=run.artifacts,
                 container=container,
             )
         )

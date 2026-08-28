@@ -9,7 +9,6 @@ from src.agent.outputs.tables import (
     TableOutputStore,
     UnknownTableOutputError,
 )
-from src.app.resources import fresh_deps
 from src.app.routes.auth import AUTH_COOKIE_NAME
 from src.app.views.sidebar import (
     CONVERSATION_BUTTON_LABEL_MAX_LENGTH,
@@ -78,7 +77,7 @@ def test_current_user_is_restored_from_auth_cookie(
     assert state[state_module.AUTHENTICATED_USER_KEY] == user.id
 
 
-def test_active_conversation_reuses_its_table_outputs_across_turns(
+def test_active_conversation_reuses_its_table_outputs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     state = SessionState()
@@ -101,12 +100,7 @@ def test_active_conversation_reuses_its_table_outputs_across_turns(
         )
         == "conversation-1"
     )
-    first_turn = fresh_deps(cast(Any, resources), outputs)
-    second_turn = fresh_deps(cast(Any, resources), outputs)
-
-    assert first_turn.table_outputs is outputs
-    assert second_turn.table_outputs.resolve(ref) is outputs.resolve(ref)
-    assert first_turn.artifacts is not second_turn.artifacts
+    assert state.table_outputs.resolve(ref) is outputs.resolve(ref)
 
 
 def test_reloading_a_conversation_discards_live_references_without_replay(

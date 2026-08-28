@@ -40,7 +40,7 @@ def render_auth_request(endpoint: str, token: str | None = None) -> None:
             if (!response.ok) {{
                 document.getElementById("auth-transition").textContent =
                     "Unable to update the login cookie. Start the app via " +
-                    "src/app/server.py and try again.";
+                    "streamlit_app.py and try again.";
                 return;
             }}
             window.location.reload();

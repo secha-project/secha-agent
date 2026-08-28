@@ -5,6 +5,25 @@ SECHA-agent is an AI data assistant for SECHA's data platform. It consists of th
 See the [C4 architecture diagrams](docs/c4-architecture.md) for the system
 context, containers, and conversational request path.
 
+## Run the app
+
+Configure the required catalog, Spark Connect, selected model provider, and
+OpenTelemetry values in `.env`, then start the Streamlit app:
+
+```bash
+uv run streamlit run
+```
+
+`streamlit_app.py` is the single ASGI entry point. Its conventional filename
+lets Streamlit find it without a path argument. It mounts the Streamlit UI from
+`src/app/application.py` and the authentication routes from
+`src/app/routes/auth.py` on the same listener.
+
+The app uses OpenAI as its model provider and stores chat history locally by
+default. Users must create an account in the app. Login sessions are kept for
+seven days in an HTTP-only browser cookie. If the app is served over HTTPS,
+set `SECHA_AUTH_SECURE_COOKIE=true` so the cookie is only sent over HTTPS.
+
 ## Agent
 
 The agent, built with Pydantic AI, can answer data analytics questions by interacting with the Unity Catalog through the REST API and SparkSQL using the following tools:
@@ -67,24 +86,6 @@ That example config file evaluates the agent in the small dataset in `src/valida
 ```bash
 uv run python -m src.validation.run_benchmark --config openai-mini
 ```
-
-## Run the app
-
-Configure the required catalog, Spark Connect, selected model provider, and
-OpenTelemetry values in `.env`, then start the Streamlit app:
-
-```bash
-uv run python -m streamlit run src/app/server.py
-```
-
-`server.py` is the single ASGI entry point. It mounts the Streamlit UI from
-`src/app/application.py` and the authentication routes from
-`src/app/routes/auth.py` on the same listener.
-
-The app uses OpenAI as its model provider and stores chat history locally by
-default. Users must create an account in the app. Login sessions are kept for
-seven days in an HTTP-only browser cookie. If the app is served over HTTPS,
-set `SECHA_AUTH_SECURE_COOKIE=true` so the cookie is only sent over HTTPS.
 
 ## Telemetry
 
