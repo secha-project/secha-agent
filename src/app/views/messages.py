@@ -6,7 +6,7 @@ from ..artifact_renderer import ArtifactRenderer
 from ..models import DisplayMessage
 from ..resources import AppResources
 from ..storage.history import ArtifactNotFoundError
-from ..streaming import render_tool
+from ..streaming_display import render_tool
 
 
 def render_message(

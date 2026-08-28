@@ -15,3 +15,5 @@ benchmark-results/
 AGENTS.md
 # macos stuff
 *.DS_Store
+# vscode stuff
+.vscode/

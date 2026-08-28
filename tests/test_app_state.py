@@ -4,9 +4,10 @@ from typing import Any, cast
 import pytest
 
 import src.app.state as state_module
-from src.agent.artifacts.base import (
-    ArtifactRegistry,
-    UnknownArtifactError,
+from src.agent.outputs.tables import (
+    LiveTableOutput,
+    TableOutputStore,
+    UnknownTableOutputError,
 )
 from src.app.resources import fresh_deps
 from src.app.routes.auth import AUTH_COOKIE_NAME
@@ -77,7 +78,7 @@ def test_current_user_is_restored_from_auth_cookie(
     assert state[state_module.AUTHENTICATED_USER_KEY] == user.id
 
 
-def test_active_conversation_reuses_its_artifact_registry_across_turns(
+def test_active_conversation_reuses_its_table_outputs_across_turns(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     state = SessionState()
@@ -90,8 +91,8 @@ def test_active_conversation_reuses_its_artifact_registry_across_turns(
         "user-1",
         "conversation-1",
     )
-    registry = state.artifact_registry
-    ref = registry.create(cast(Any, SimpleNamespace(kind="table")))
+    outputs = state.table_outputs
+    ref = outputs.add(LiveTableOutput(cast(Any, object()), cast(Any, object())))
 
     assert (
         state_module.ensure_active_conversation(
@@ -100,11 +101,11 @@ def test_active_conversation_reuses_its_artifact_registry_across_turns(
         )
         == "conversation-1"
     )
-    first_turn = fresh_deps(cast(Any, resources), registry)
-    second_turn = fresh_deps(cast(Any, resources), registry)
+    first_turn = fresh_deps(cast(Any, resources), outputs)
+    second_turn = fresh_deps(cast(Any, resources), outputs)
 
-    assert first_turn.artifacts.registry is registry
-    assert second_turn.artifacts.registry.resolve(ref) is registry.resolve(ref)
+    assert first_turn.table_outputs is outputs
+    assert second_turn.table_outputs.resolve(ref) is outputs.resolve(ref)
     assert first_turn.artifacts is not second_turn.artifacts
 
 
@@ -121,19 +122,21 @@ def test_reloading_a_conversation_discards_live_references_without_replay(
         "user-1",
         "conversation-1",
     )
-    old_registry: ArtifactRegistry = state.artifact_registry
-    old_ref = old_registry.create(cast(Any, SimpleNamespace(kind="table")))
+    old_outputs: TableOutputStore = state.table_outputs
+    old_ref = old_outputs.add(
+        LiveTableOutput(cast(Any, object()), cast(Any, object()))
+    )
 
     state_module.activate_conversation(
         cast(Any, resources),
         "user-1",
         "conversation-1",
     )
-    new_registry: ArtifactRegistry = state.artifact_registry
+    new_outputs: TableOutputStore = state.table_outputs
 
-    assert new_registry is not old_registry
-    with pytest.raises(UnknownArtifactError):
-        new_registry.resolve(old_ref)
+    assert new_outputs is not old_outputs
+    with pytest.raises(UnknownTableOutputError):
+        new_outputs.resolve(old_ref)
 
 
 def test_deleting_inactive_conversation_refreshes_history(

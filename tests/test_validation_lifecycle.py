@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import src.validation.lifecycle as lifecycle_module
-from src.agent.artifacts.base import Artifact, ArtifactRef
-from src.agent.artifacts.visualization import VisualizationContent
+from src.agent.outputs.artifacts import Artifact, ChartArtifact
 from src.validation.lifecycle import (
     EvaluationArtifactScope,
     write_evaluation_artifacts,
@@ -49,15 +48,13 @@ def test_evaluation_writer_requires_no_scope_when_nothing_was_published() -> Non
     assert write_evaluation_artifacts(()) == ()
 
 
-def _visualization_artifact(
+def _chart_artifact(
     artifact_id: str,
     value: int,
 ) -> Artifact:
-    return Artifact(
-        ref=ArtifactRef(artifact_id=artifact_id),
-        content=VisualizationContent(
-            spec={"mark": "point", "value": value},
-        ),
+    return ChartArtifact(
+        id=artifact_id,
+        spec={"mark": "point", "value": value},
     )
 
 
@@ -82,8 +79,8 @@ def test_evaluation_writer_saves_only_the_last_visualization(
     try:
         paths = write_evaluation_artifacts(
             (
-                _visualization_artifact("first", 1),
-                _visualization_artifact("last", 2),
+                _chart_artifact("first", 1),
+                _chart_artifact("last", 2),
             )
         )
     finally:

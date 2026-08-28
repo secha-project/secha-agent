@@ -19,10 +19,10 @@ Prefer capabilities in this order when more than one could answer the request:
  not represented in the semantic layer
 {%- endif %}.
 {% elif capability == "visualization" %}
- **Visualization:** Use after obtaining an appropriate table result when the user requests a chart or a visual materially improves the answer.
+ **Visualization:** Use after obtaining an appropriate table output when the user requests a chart or a visual materially improves the answer.
 {% endif %}
 {% endfor %}
 
-{% if "table_results" in capabilities %}
-Table-result tools handle saved results downstream; they are not an alternative analytical route.
+{% if "table_outputs" in capabilities %}
+Table-output tools handle saved outputs downstream; they are not an alternative analytical route.
 {% endif %}

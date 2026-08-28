@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from pydantic_ai import ModelSettings, UsageLimits
 
 from .agent import create_agent
-from .artifacts.base import Artifact
 from .catalog import UnityCatalogClient
 from .config import AgentConfig
 from .deps import Deps
+from .outputs.artifacts import Artifact
 from .semantic_runtime import load_semantic_runtime
 from .spark_runtime import get_spark_session
 

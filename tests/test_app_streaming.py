@@ -15,13 +15,8 @@ from pydantic_ai import (
     UsageLimits,
 )
 
-from src.agent.artifacts.base import (
-    Artifact,
-    ArtifactRef,
-    RunArtifacts,
-)
-from src.agent.artifacts.visualization import VisualizationContent
 from src.agent.deps import Deps
+from src.agent.outputs.artifacts import ArtifactCollector, ArtifactRef, ChartArtifact
 from src.app.models import ArtifactDisplayPart, ToolDisplayPart
 from src.app.streaming import stream_agent_response
 
@@ -93,14 +88,14 @@ class AgentStub:
         async def events() -> AsyncIterator[Any]:
             yield FunctionToolCallEvent(
                 ToolCallPart(
-                    tool_name="display_table_result",
+                    tool_name="display_table_output",
                     args={"ref": "df-1"},
                     tool_call_id="call-1",
                 )
             )
             yield FunctionToolResultEvent(
                 ToolReturnPart(
-                    tool_name="display_table_result",
+                    tool_name="display_table_output",
                     content="displayed",
                     tool_call_id="call-1",
                     metadata=self.artifact_ref,
@@ -114,10 +109,9 @@ class AgentStub:
 def test_stream_returns_owned_assistant_and_pending_artifacts(
     make_table_artifact: Any,
 ) -> None:
-    artifacts = RunArtifacts()
+    artifacts = ArtifactCollector()
     artifact = make_table_artifact([{"id": 1}])
-    artifacts.registry.add(artifact)
-    artifact_ref = asyncio.run(artifacts.publish(artifact.ref))
+    artifact_ref = artifacts.publish(artifact)
     deps = cast(
         Deps,
         SimpleNamespace(
@@ -141,7 +135,7 @@ def test_stream_returns_owned_assistant_and_pending_artifacts(
     )
 
     assert result is not None
-    assert container.status_args == ("Used display table result",)
+    assert container.status_args == ("Used display table output",)
     assert container.status_kwargs["type"] == "compact"
     assert container.status_container.container_kwargs == {"gap": "xsmall"}
     assert len(result.artifacts) == 1
@@ -166,14 +160,14 @@ class VisualizationAgentStub:
                 tool_id = f"viz-{index}"
                 yield FunctionToolCallEvent(
                     ToolCallPart(
-                        tool_name="visualize_table_result",
+                        tool_name="visualize_table_output",
                         args={"ggsql": "SELECT ...", "title": f"Attempt {index}"},
                         tool_call_id=tool_id,
                     )
                 )
                 yield FunctionToolResultEvent(
                     ToolReturnPart(
-                        tool_name="visualize_table_result",
+                        tool_name="visualize_table_output",
                         content="rendered",
                         tool_call_id=tool_id,
                         metadata=reference,
@@ -184,27 +178,23 @@ class VisualizationAgentStub:
         yield events()
 
 
-def _make_visualization_artifact(artifact_id: str) -> Artifact:
+def _make_chart_artifact(artifact_id: str) -> ChartArtifact:
     spec = {
         "data": {"name": "source"},
         "datasets": {"source": [{"x": 1, "y": 2}]},
         "mark": "point",
     }
-    return Artifact(
-        ref=ArtifactRef(artifact_id=artifact_id),
-        content=VisualizationContent(spec=spec),
-    )
+    return ChartArtifact(id=artifact_id, spec=spec)
 
 
 def test_stream_renders_each_published_visualization() -> None:
-    run_artifacts = RunArtifacts()
+    run_artifacts = ArtifactCollector()
     published = [
-        _make_visualization_artifact("viz-first"),
-        _make_visualization_artifact("viz-last"),
+        _make_chart_artifact("viz-first"),
+        _make_chart_artifact("viz-last"),
     ]
     for artifact in published:
-        run_artifacts.registry.add(artifact)
-        asyncio.run(run_artifacts.publish(artifact.ref))
+        run_artifacts.publish(artifact)
     deps = cast(
         Deps,
         SimpleNamespace(

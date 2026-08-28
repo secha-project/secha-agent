@@ -8,16 +8,11 @@ from pydantic_ai import ModelRetry, RunContext, ToolReturn
 from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
 
-from ..artifacts.base import ArtifactRef, UnknownArtifactError
-from ..artifacts.table import SparkTableSource, TableContent
-from ..artifacts.visualization import VisualizationContent
 from ..deps import Deps
+from ..outputs.artifacts import ChartArtifact
+from ..outputs.tables import TableOutputRef, UnknownTableOutputError
 from ..prompt import render_prompt
-from ..spark_runtime import (
-    concise_spark_error,
-    run_spark_with_timeout,
-    spark_error_type,
-)
+from ..spark_runtime import concise_spark_error, spark_error_type
 
 MAX_VISUALIZATION_ROWS = 1_000
 MAX_VISUALIZATION_ERROR_LENGTH = 1_500
@@ -32,7 +27,7 @@ _LAYER_SOURCE_PATTERN = re.compile(
 )
 
 NAME = "visualization"
-DESCRIPTION = "Create charts from saved table results."
+DESCRIPTION = "Create charts from saved table outputs."
 visualization_toolset = FunctionToolset[Deps]()
 
 
@@ -129,13 +124,13 @@ def _standalone_spec(chart: Any) -> dict[str, Any]:
 
 
 @visualization_toolset.tool(retries=3, sequential=True)
-async def visualize_table_result(
+async def visualize_table_output(
     ctx: RunContext[Deps],
-    ref: ArtifactRef,
+    ref: TableOutputRef,
     ggsql: str,
     title: str,
 ) -> ToolReturn[str]:
-    """Create a chart from a saved table result and visual-only ggsql.
+    """Create a chart from a saved table output and visual-only ggsql.
 
     Prepare filtering, joins, transformations, aggregation, ordering, types, and
     aliases in the producing query. Publish the table only if also requested.
@@ -165,10 +160,10 @@ async def visualize_table_result(
     data is wrong. Do not generate cosmetic alternatives after success.
 
     Args:
-        ref: A reference returned by a tool that produced a table result.
+        ref: A reference returned by a tool that produced a table output.
         ggsql: Visual-only syntax beginning with ``VISUALISE`` and containing at
             least one ``DRAW``. Follow the syntax and common-error rules in this
-            tool description and reference only columns in the saved result.
+            tool description and reference only columns in the saved output.
             Put the title in ``title``, never ``LABEL title``.
         title: A short, user-friendly chart title.
     """
@@ -179,35 +174,16 @@ async def visualize_table_result(
 
     deps = ctx.deps
     try:
-        artifact = deps.artifacts.registry.resolve(ref)
-    except (UnknownArtifactError, TypeError) as exc:
+        output = deps.table_outputs.resolve(ref)
+    except UnknownTableOutputError as exc:
         raise ModelRetry(
-            f"Table artifact {ref.artifact_id!r} is no longer available. "
-            "Rerun the tool that produced this table result; do not retry with "
+            f"Table output {ref.output_id!r} is no longer available. "
+            "Rerun the tool that produced this table output; do not retry with "
             "this reference."
         ) from exc
-    if artifact.kind != "table":
-        raise ModelRetry(f"Artifact {ref.artifact_id!r} is not a table artifact.")
 
     try:
-        if isinstance(artifact.source, SparkTableSource):
-            pandas_frame = await run_spark_with_timeout(
-                artifact.source.spark,
-                artifact.source.dataframe.limit(MAX_VISUALIZATION_ROWS + 1).toPandas,
-            )
-            truncated = len(pandas_frame.index) > MAX_VISUALIZATION_ROWS
-        elif isinstance(artifact.content, TableContent):
-            pandas_frame = artifact.content.to_pandas()
-            truncated = (
-                artifact.content.truncated
-                or len(pandas_frame.index) > MAX_VISUALIZATION_ROWS
-            )
-        else:
-            raise ModelRetry(
-                f"The live source for table artifact {ref.artifact_id!r} is no "
-                "longer available. Rerun the tool that produced this table result; "
-                "do not retry with this reference."
-            )
+        pandas_frame, truncated = await output.sample(MAX_VISUALIZATION_ROWS)
     except ModelRetry:
         raise
     except Exception as exc:
@@ -216,7 +192,6 @@ async def visualize_table_result(
             f"{concise_spark_error(exc)}."
         ) from exc
 
-    pandas_frame = pandas_frame.iloc[:MAX_VISUALIZATION_ROWS].reset_index(drop=True)
     pandas_frame.attrs = {}
     pandas_frame = normalize_datetime_precision(pandas_frame)
 
@@ -232,10 +207,7 @@ async def visualize_table_result(
             f"Visualization rendering failed: {_concise_visualization_error(exc)}"
         ) from exc
 
-    visualization_ref = deps.artifacts.create_content(
-        VisualizationContent(spec=spec)
-    )
-    await deps.artifacts.publish(visualization_ref)
+    chart_ref = deps.artifacts.publish(ChartArtifact(spec=spec))
 
     row_note = (
         f" The chart uses the first {MAX_VISUALIZATION_ROWS:,} rows because the "
@@ -246,5 +218,5 @@ async def visualize_table_result(
     )
     return ToolReturn(
         return_value=f"Visualization rendered successfully.{row_note}",
-        metadata=visualization_ref,
+        metadata=chart_ref,
     )

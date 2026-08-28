@@ -11,12 +11,8 @@ from pydantic_ai import (
     ToolReturnPart,
 )
 
-from src.agent.artifacts.base import (
-    ArtifactPolicy,
-    ArtifactRef,
-    RunArtifacts,
-)
-from src.agent.artifacts.table import SparkTableSource, TableContent
+from src.agent.outputs.artifacts import ArtifactRef, TableArtifact
+from src.agent.outputs.tables import LiveTableOutput
 
 
 class MaterializedResult:
@@ -54,21 +50,16 @@ def test_table_artifact_caps_and_round_trips_exact_arrow_values() -> None:
         }
     )
 
-    context = RunArtifacts(
-        policy=ArtifactPolicy(table_max_rows=10_000),
+    output = LiveTableOutput(
+        spark=cast(Any, TaggedSpark()),
+        dataframe=cast(Any, MaterializedResult(source)),
     )
-    ref = context.create(
-        SparkTableSource(
-            spark=cast(Any, TaggedSpark()),
-            dataframe=cast(Any, MaterializedResult(source)),
-        )
-    )
-    content = asyncio.run(context.materialize(ref))
-    assert isinstance(content, TableContent)
-    restored = content.to_arrow_table()
+    artifact = asyncio.run(output.to_artifact(10_000))
+    assert isinstance(artifact, TableArtifact)
+    restored = artifact.to_arrow_table()
 
-    assert content.row_count == 10_000
-    assert content.truncated is True
+    assert artifact.row_count == 10_000
+    assert artifact.truncated is True
     assert restored.schema == source.schema
     assert restored["nullable"][0].as_py() is None
     assert restored["nested"][0].as_py() == [1, 2]
@@ -81,7 +72,7 @@ def test_csv_and_tool_metadata_are_json_safe(make_table_artifact) -> None:
         max_rows=1,
     )
     rows = list(
-        csv.DictReader(io.StringIO(artifact.require_content().to_csv().decode("utf-8")))
+        csv.DictReader(io.StringIO(artifact.to_csv().decode("utf-8")))
     )
     assert rows == [{"id": "1", "value": "a,b"}]
 
@@ -89,7 +80,7 @@ def test_csv_and_tool_metadata_are_json_safe(make_table_artifact) -> None:
         ModelRequest(
             parts=[
                 ToolReturnPart(
-                    tool_name="display_table_result",
+                    tool_name="display_table_output",
                     tool_call_id="call-1",
                     content="displayed",
                     metadata=ArtifactRef(artifact_id="artifact-17"),
@@ -102,25 +93,3 @@ def test_csv_and_tool_metadata_are_json_safe(make_table_artifact) -> None:
     part = restored[0].parts[0]
     assert isinstance(part, ToolReturnPart)
     assert part.metadata == {"artifact_id": "artifact-17"}
-
-
-def test_materialized_table_content_produces_a_preview(make_table_artifact) -> None:
-    artifact = make_table_artifact(
-        [
-            {"id": 1, "value": "first"},
-            {"id": 2, "value": "second"},
-        ]
-    )
-
-    preview = artifact.require_content().preview(
-        start_row=2,
-        end_row=2,
-        column_names=["value"],
-    )
-
-    assert preview.rows == (("second",),)
-    assert preview.to_markdown() == (
-        "## Row 2\n\nvalue: second\n\n"
-        "[showing only the requested 1 row out of the 2 available, "
-        "showing only the requested 1 column out of the 2 available]"
-    )

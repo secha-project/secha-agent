@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from src.agent.artifacts.base import ArtifactRegistry
+from src.agent.outputs.tables import TableOutputStore
 
 from .models import User
 from .resources import AppResources
@@ -16,7 +16,7 @@ AUTH_SESSION_KEYS = (
     "current_conversation_id",
     "display_messages",
     "model_messages",
-    "artifact_registry",
+    "table_outputs",
     SIDEBAR_HISTORY_REVISION_KEY,
 )
 
@@ -69,7 +69,7 @@ def activate_conversation(
     st.session_state.current_conversation_id = conversation.id
     st.session_state.display_messages = conversation.display_messages
     st.session_state.model_messages = conversation.model_messages
-    st.session_state.artifact_registry = ArtifactRegistry()
+    st.session_state.table_outputs = TableOutputStore()
     st.query_params["chat"] = conversation.id
     return True
 
@@ -86,7 +86,7 @@ def start_new_conversation() -> None:
     st.session_state.current_conversation_id = None
     st.session_state.display_messages = []
     st.session_state.model_messages = []
-    st.session_state.artifact_registry = None
+    st.session_state.table_outputs = None
     if "chat" in st.query_params:
         del st.query_params["chat"]
 
@@ -125,7 +125,7 @@ def ensure_active_conversation(
 ) -> str | None:
     requested_id = st.query_params.get("chat")
     current_id = st.session_state.get("current_conversation_id")
-    artifact_registry = st.session_state.get("artifact_registry")
+    table_outputs = st.session_state.get("table_outputs")
 
     if requested_id:
         requested_id = str(requested_id)
@@ -133,7 +133,7 @@ def ensure_active_conversation(
             requested_id == current_id
             and isinstance(st.session_state.get("display_messages"), list)
             and isinstance(st.session_state.get("model_messages"), list)
-            and isinstance(artifact_registry, ArtifactRegistry)
+            and isinstance(table_outputs, TableOutputStore)
         )
         if not state_is_loaded:
             if activate_conversation(resources, user_id, requested_id):
@@ -146,13 +146,13 @@ def ensure_active_conversation(
         if current_id is None:
             st.session_state.setdefault("display_messages", [])
             st.session_state.setdefault("model_messages", [])
-            st.session_state["artifact_registry"] = None
+            st.session_state["table_outputs"] = None
             return None
         if isinstance(current_id, str):
             state_is_loaded = (
                 isinstance(st.session_state.get("display_messages"), list)
                 and isinstance(st.session_state.get("model_messages"), list)
-                and isinstance(artifact_registry, ArtifactRegistry)
+                and isinstance(table_outputs, TableOutputStore)
             )
             if state_is_loaded or activate_conversation(resources, user_id, current_id):
                 return current_id

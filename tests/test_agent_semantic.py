@@ -10,8 +10,6 @@ from pydantic_ai.models.test import TestModel
 
 import src.agent.semantic_runtime as semantic_module
 from src.agent.agent import create_agent
-from src.agent.artifacts.base import RunArtifacts
-from src.agent.artifacts.table import SparkTableSource
 from src.agent.capabilities.query import query_toolset
 from src.agent.capabilities.semantic_layer import (
     SemanticFilter,
@@ -20,6 +18,8 @@ from src.agent.capabilities.semantic_layer import (
     query_semantic_model,
     semantic_toolset,
 )
+from src.agent.outputs.artifacts import ArtifactCollector
+from src.agent.outputs.tables import LiveTableOutput, TableOutputStore
 from src.agent.semantic_runtime import SemanticRuntime, load_semantic_runtime
 
 
@@ -91,7 +91,7 @@ class StubSemanticRuntime:
 def test_semantic_capability_exposes_structured_tools() -> None:
     model = TestModel(call_tools=[], custom_output_text="done")
 
-    create_agent(("semantic_layer", "table_results")).run_sync(
+    create_agent(("semantic_layer", "table_outputs")).run_sync(
         "question",
         deps=cast(Any, object()),
         model=model,
@@ -104,8 +104,8 @@ def test_semantic_capability_exposes_structured_tools() -> None:
         "describe_semantic_model",
         "query_semantic_model",
         "compare_semantic_periods",
-        "inspect_table_result",
-        "display_table_result",
+        "inspect_table_output",
+        "display_table_output",
     ]
     query_schema = semantic_toolset.tools["query_semantic_model"].function_schema
     assert "$defs" in query_schema.json_schema
@@ -140,9 +140,9 @@ def test_semantic_tool_descriptions_enforce_discovery_before_raw_sql() -> None:
     assert "Never duplicate or validate" in raw_query_description
 
 
-def test_semantic_capability_requires_table_results_capability() -> None:
+def test_semantic_capability_requires_table_outputs_capability() -> None:
     with pytest.raises(
-        ValueError, match="semantic_layer capability requires table_results"
+        ValueError, match="semantic_layer capability requires table_outputs"
     ):
         create_agent(("semantic_layer",))
 
@@ -204,12 +204,13 @@ def test_semantic_query_uses_the_standard_spark_table_artifact_path() -> None:
     spark = StubSpark()
     model = StubSemanticModel()
     runtime = StubSemanticRuntime(model)
-    artifacts = RunArtifacts()
+    table_outputs = TableOutputStore()
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=spark,
             semantic=runtime,
-            artifacts=artifacts,
+            artifacts=ArtifactCollector(),
+            table_outputs=table_outputs,
         )
     )
 
@@ -240,11 +241,9 @@ def test_semantic_query_uses_the_standard_spark_table_artifact_path() -> None:
         "time_grains": None,
         "time_range": {"start": "2026-01-01", "end": "2026-02-01"},
     }
-    source = artifacts.resolve_source(
-        result.artifact_ref,
-        SparkTableSource,
-    )
-    assert isinstance(source.dataframe, StubResult)
+    output = table_outputs.resolve(result.output_ref)
+    assert isinstance(output, LiveTableOutput)
+    assert isinstance(output.dataframe, StubResult)
 
 
 def test_semantic_query_reports_unknown_models_as_retry() -> None:
@@ -252,7 +251,8 @@ def test_semantic_query_reports_unknown_models_as_retry() -> None:
         deps=SimpleNamespace(
             spark=StubSpark(),
             semantic=StubSemanticRuntime(StubSemanticModel()),
-            artifacts=RunArtifacts(),
+            artifacts=ArtifactCollector(),
+            table_outputs=TableOutputStore(),
         )
     )
 

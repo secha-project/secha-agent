@@ -5,7 +5,7 @@ import asyncio
 import streamlit as st
 from pydantic_ai import ModelSettings, UsageLimits
 
-from src.agent.artifacts.base import ArtifactRegistry
+from src.agent.outputs.tables import TableOutputStore
 
 from ..artifact_renderer import ArtifactRenderer
 from ..models import User
@@ -16,20 +16,20 @@ from .messages import render_message
 from .sidebar import render_sidebar
 
 
-def _artifact_renderer(conversation_id: str | None) -> ArtifactRenderer | None:
+def _table_outputs(conversation_id: str | None) -> TableOutputStore | None:
     if conversation_id is None:
         return None
-    registry = st.session_state.artifact_registry
-    if not isinstance(registry, ArtifactRegistry):
-        raise TypeError("The active conversation has no artifact registry.")
-    return ArtifactRenderer(registry)
+    outputs = st.session_state.table_outputs
+    if not isinstance(outputs, TableOutputStore):
+        raise TypeError("The active conversation has no table output store.")
+    return outputs
 
 
 def _render_prompt_input(
     resources: AppResources,
     user: User,
     conversation_id: str | None,
-    artifact_renderer: ArtifactRenderer | None,
+    table_outputs: TableOutputStore | None,
 ) -> str | None:
     if conversation_id is None:
         with st.container(
@@ -51,8 +51,9 @@ def _render_prompt_input(
                 width=720,
             )
 
-    if artifact_renderer is None:
-        raise RuntimeError("The active conversation has no artifact renderer.")
+    if table_outputs is None:
+        raise RuntimeError("The active conversation has no table output store.")
+    artifact_renderer = ArtifactRenderer()
     for message in st.session_state.display_messages:
         render_message(
             message,
@@ -70,23 +71,24 @@ def _render_prompt_input(
 
 def render_chat(resources: AppResources, user: User) -> None:
     conversation_id = ensure_active_conversation(resources, user.id)
-    artifact_renderer = _artifact_renderer(conversation_id)
+    table_outputs = _table_outputs(conversation_id)
     render_sidebar(resources, user)
     prompt = _render_prompt_input(
         resources,
         user,
         conversation_id,
-        artifact_renderer,
+        table_outputs,
     )
     if not prompt:
         return
 
     if conversation_id is None:
         conversation_id = st.session_state.current_conversation_id
-    if artifact_renderer is None:
-        artifact_renderer = _artifact_renderer(conversation_id)
-    if artifact_renderer is None:
-        raise RuntimeError("The submitted prompt has no artifact renderer.")
+    if table_outputs is None:
+        table_outputs = _table_outputs(conversation_id)
+    if table_outputs is None:
+        raise RuntimeError("The submitted prompt has no table output store.")
+    artifact_renderer = ArtifactRenderer()
 
     saved = resources.history.append_user(user.id, conversation_id, prompt)
     st.session_state.display_messages = saved.display_messages
@@ -100,7 +102,7 @@ def render_chat(resources: AppResources, user: User) -> None:
     )
 
     container = st.chat_message("assistant")
-    deps = fresh_deps(resources, artifact_renderer.registry)
+    deps = fresh_deps(resources, table_outputs)
     try:
         result = asyncio.run(
             stream_agent_response(

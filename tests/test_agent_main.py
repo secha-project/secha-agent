@@ -1,6 +1,3 @@
-import asyncio
-import re
-from dataclasses import FrozenInstanceError
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -8,14 +5,6 @@ import pytest
 from pydantic import ValidationError
 
 import src.agent.main as main_module
-from src.agent.artifacts.base import (
-    Artifact,
-    ArtifactRef,
-    ArtifactRegistry,
-    RunArtifacts,
-    UnknownArtifactError,
-)
-from src.agent.artifacts.table import TableContent
 from src.agent.config import (
     DEFAULT_ENABLED_CAPABILITIES,
     AgentConfig,
@@ -23,41 +12,7 @@ from src.agent.config import (
     TuniProviderConfig,
 )
 from src.agent.main import AgentOutcome
-
-
-def test_artifact_registry_keeps_logical_artifacts_addressable() -> None:
-    registry = ArtifactRegistry()
-    first = SimpleNamespace(kind="table")
-    second = SimpleNamespace(kind="table")
-
-    first_ref = registry.create(cast(Any, first))
-    second_ref = registry.create(cast(Any, second))
-
-    assert re.fullmatch(r"[0-9a-f]{32}", first_ref.artifact_id)
-    assert re.fullmatch(r"[0-9a-f]{32}", second_ref.artifact_id)
-    assert first_ref != second_ref
-    assert registry.resolve(first_ref).source is first
-    assert registry.resolve(second_ref).source is second
-
-    with pytest.raises(UnknownArtifactError):
-        registry.resolve(ArtifactRef(artifact_id="stale"))
-
-
-def test_registered_artifacts_are_immutable_and_content_is_registry_controlled(
-    make_table_artifact: Any,
-) -> None:
-    registry = ArtifactRegistry()
-    ref = ArtifactRef(artifact_id="result")
-    artifact = Artifact(ref=ref, source=cast(Any, SimpleNamespace(kind="table")))
-    content = make_table_artifact([{"value": 1}]).require_content()
-    registry.add(artifact)
-
-    updated = registry.set_content(ref, content)
-
-    assert artifact.content is None
-    assert registry.resolve(ref) is updated
-    with pytest.raises(FrozenInstanceError):
-        artifact.content = None  # ty: ignore[invalid-assignment]
+from src.agent.outputs.artifacts import ArtifactCollector, TableArtifact
 
 
 def test_agent_config_keeps_immutable_valid_settings() -> None:
@@ -67,13 +22,13 @@ def test_agent_config_keeps_immutable_valid_settings() -> None:
         catalog_token="token",
         spark_url="sc://spark.example",
         model_provider="openai",
-        enabled_capabilities=("catalog", "catalog", "query", "table_results"),
+        enabled_capabilities=("catalog", "catalog", "query", "table_outputs"),
         otel_exporter_otlp_endpoint="http://otel.example",
     )
 
     assert config.model_provider == "openai"
     assert config.enabled_capabilities == frozenset(
-        {"catalog", "query", "table_results"}
+        {"catalog", "query", "table_outputs"}
     )
     with pytest.raises(ValidationError, match="Instance is frozen"):
         config.request_limit = 0
@@ -94,7 +49,7 @@ def test_agent_config_uses_default_capabilities() -> None:
 def test_agent_config_rejects_invalid_cross_field_state() -> None:
     with pytest.raises(
         ValidationError,
-        match="semantic_layer capability requires table_results",
+        match="semantic_layer capability requires table_outputs",
     ):
         AgentConfig(
             _env_file=None,
@@ -121,7 +76,7 @@ def test_agent_config_loads_only_the_selected_provider_from_environment(
         catalog_token="token",
         spark_url="sc://spark.example",
         model_provider="tuni",
-        enabled_capabilities=("query", "table_results"),
+        enabled_capabilities=("query", "table_outputs"),
         otel_exporter_otlp_endpoint="http://otel.example",
     )
     provider = config.load_provider()
@@ -139,7 +94,7 @@ def test_agent_config_loads_only_the_selected_provider_from_environment(
         catalog_token="token",
         spark_url="sc://spark.example",
         model_provider="openai",
-        enabled_capabilities=("query", "table_results"),
+        enabled_capabilities=("query", "table_outputs"),
         otel_exporter_otlp_endpoint="http://otel.example",
     )
     openai_provider = openai_config.load_provider()
@@ -157,36 +112,12 @@ def test_agent_config_accepts_a_per_run_model_override() -> None:
         spark_url="sc://spark.example",
         model_provider="tuni",
         model_name="experiment-model",
-        enabled_capabilities=("query", "table_results"),
+        enabled_capabilities=("query", "table_outputs"),
         otel_exporter_otlp_endpoint="http://otel.example",
     )
 
     assert config.model_provider == "tuni"
     assert config.model_name == "experiment-model"
-
-
-def test_artifact_source_can_materialize_from_an_artifact_reference(
-    make_table_artifact: Any,
-) -> None:
-    artifacts = RunArtifacts()
-    input_artifact = make_table_artifact([{"value": 1}])
-    artifacts.registry.add(input_artifact)
-
-    class ReferencedTableSource:
-        kind = "table"
-
-        def __init__(self, input_ref: ArtifactRef) -> None:
-            self.input_ref = input_ref
-
-        async def materialize(self, artifacts: RunArtifacts) -> TableContent:
-            content = await artifacts.materialize(self.input_ref)
-            assert isinstance(content, TableContent)
-            return content
-
-    output_ref = artifacts.create(cast(Any, ReferencedTableSource(input_artifact.ref)))
-
-    assert asyncio.run(artifacts.materialize(output_ref)) is input_artifact.content
-    assert artifacts.registry.resolve(output_ref).ref == output_ref
 
 
 def test_run_uses_run_scoped_artifacts(
@@ -202,7 +133,7 @@ def test_run_uses_run_scoped_artifacts(
             table_column_page_size=20,
             temperature=0.0,
             request_limit=3,
-            enabled_capabilities=("catalog", "query", "table_results"),
+            enabled_capabilities=("catalog", "query", "table_outputs"),
             create_model=lambda: "model",
         ),
     )
@@ -227,7 +158,7 @@ def test_run_uses_run_scoped_artifacts(
     assert outcome == AgentOutcome(output="answer", artifacts=())
     assert captured["prompt"] == "question"
     assert captured["deps"].spark is spark
-    assert isinstance(captured["deps"].artifacts, RunArtifacts)
+    assert isinstance(captured["deps"].artifacts, ArtifactCollector)
 
 
 def test_main_accepts_a_prompt_argument(
@@ -259,7 +190,7 @@ def test_run_returns_artifacts_published_during_the_one_off_run(
             table_column_page_size=20,
             temperature=0.0,
             request_limit=3,
-            enabled_capabilities=("query", "table_results"),
+            enabled_capabilities=("query", "table_outputs"),
             create_model=lambda: "model",
         ),
     )
@@ -267,9 +198,7 @@ def test_run_returns_artifacts_published_during_the_one_off_run(
 
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         artifact = make_table_artifact([{"value": 1}])
-        context = kwargs["deps"].artifacts
-        context.registry.add(artifact)
-        asyncio.run(context.publish(artifact.ref))
+        kwargs["deps"].artifacts.publish(artifact)
         return SimpleNamespace(output="answer")
 
     monkeypatch.setattr(
@@ -282,4 +211,4 @@ def test_run_returns_artifacts_published_during_the_one_off_run(
 
     assert outcome.output == "answer"
     assert len(outcome.artifacts) == 1
-    assert outcome.artifacts[0].kind == "table"
+    assert isinstance(outcome.artifacts[0], TableArtifact)

@@ -2,8 +2,9 @@ from dataclasses import dataclass, field
 
 from pyspark.sql import SparkSession
 
-from .artifacts.base import RunArtifacts
 from .catalog import UnityCatalogClient
+from .outputs.artifacts import ArtifactCollector
+from .outputs.tables import TableOutputStore
 from .semantic_runtime import SemanticRuntime
 
 
@@ -14,4 +15,6 @@ class Deps:
     schema_name: str
     table_column_page_size: int
     semantic: SemanticRuntime | None = None
-    artifacts: RunArtifacts = field(default_factory=RunArtifacts)
+    table_outputs: TableOutputStore = field(default_factory=TableOutputStore)
+    artifacts: ArtifactCollector = field(default_factory=ArtifactCollector)
+    table_artifact_max_rows: int | None = 10_000

@@ -8,8 +8,7 @@ from pathlib import Path
 import pytest
 from pydantic_ai import ModelMessage, ModelRequest, UserPromptPart
 
-from src.agent.artifacts.base import Artifact, ArtifactRef
-from src.agent.artifacts.visualization import VisualizationContent
+from src.agent.outputs.artifacts import ChartArtifact
 from src.app.models import AssistantDisplayMessage, TextDisplayPart, User
 from src.app.storage.history import (
     ArtifactNotFoundError,
@@ -262,17 +261,14 @@ def test_delete_conversation_is_user_scoped_and_cascades(
         )
 
 
-def test_visualization_round_trip_persists_only_vega_lite_spec(
+def test_chart_round_trip_persists_only_vega_lite_spec(
     history: History,
     users: tuple[User, User],
 ) -> None:
     alice, _ = users
     conversation = history.create_conversation(alice.id)
     spec = {"data": {"values": [{"x": 1}]}, "mark": "point"}
-    artifact = Artifact(
-        ref=ArtifactRef(artifact_id="visualization-1"),
-        content=VisualizationContent(spec=spec),
-    )
+    artifact = ChartArtifact(id="chart-1", spec=spec)
 
     history.save_artifact(alice.id, conversation.id, artifact)
     restored = history.load_artifact(
@@ -281,9 +277,8 @@ def test_visualization_round_trip_persists_only_vega_lite_spec(
         artifact.id,
     )
 
-    restored_content = restored.require_content()
-    assert isinstance(restored_content, VisualizationContent)
-    assert restored_content.to_spec() == spec
+    assert isinstance(restored, ChartArtifact)
+    assert restored.to_spec() == spec
     with sqlite3.connect(history.db_path) as connection:
         payload = connection.execute(
             "SELECT payload FROM artifacts WHERE id = ?",

@@ -6,9 +6,7 @@ import vl_convert as vlc
 from pydantic_evals import set_eval_attribute
 from pydantic_evals.lifecycle import CaseLifecycle
 
-from src.agent.artifacts.base import Artifact
-from src.agent.artifacts.table import TableContent
-from src.agent.artifacts.visualization import VisualizationContent
+from src.agent.outputs.artifacts import Artifact, ChartArtifact, TableArtifact
 from src.validation.eval_models import BenchmarkCase, BenchmarkOutput, CaseMetadata
 
 
@@ -37,27 +35,24 @@ def write_evaluation_artifacts(
 
     paths: list[Path] = []
     table_paths: list[Path] = []
-    visualization: VisualizationContent | None = None
+    chart: ChartArtifact | None = None
     for artifact in artifacts:
-        content = artifact.require_content()
-        if isinstance(content, TableContent):
+        if isinstance(artifact, TableArtifact):
             suffix = "" if not table_paths else f"_{len(table_paths) + 1}"
             path = scope.directory / f"{scope.basename}{suffix}.csv"
-            path.write_bytes(content.to_csv())
+            path.write_bytes(artifact.to_csv())
             table_paths.append(path)
             paths.append(path)
-        elif isinstance(content, VisualizationContent):
-            visualization = content
+        elif isinstance(artifact, ChartArtifact):
+            chart = artifact
         else:
-            raise TypeError(
-                f"Evaluation output does not support {artifact.kind!r} artifacts yet."
-            )
+            raise TypeError(f"Evaluation output does not support {type(artifact).__name__}.")
 
-    if visualization is not None:
+    if chart is not None:
         spec_path = scope.directory / f"{scope.basename}.json"
         image_path = scope.directory / f"{scope.basename}.png"
-        spec_path.write_bytes(visualization.spec_json)
-        spec = visualization.to_spec()
+        spec_path.write_bytes(chart.spec_json)
+        spec = chart.to_spec()
         spec.update(width=1_200, height=700)
         image_path.write_bytes(vlc.vegalite_to_png(spec, scale=2))
         paths.extend((spec_path, image_path))

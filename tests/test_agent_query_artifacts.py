@@ -7,18 +7,18 @@ import pandas as pd
 import pytest
 from pydantic_ai import ModelRetry
 
-from src.agent.artifacts.base import (
-    ArtifactPolicy,
-    ArtifactRef,
-    RunArtifacts,
-)
-from src.agent.artifacts.table import SparkTableSource, TableContent
 from src.agent.capabilities.query import query_data
-from src.agent.capabilities.table_results import (
-    display_table_result,
-    inspect_table_result,
+from src.agent.capabilities.table_outputs import (
+    display_table_output,
+    inspect_table_output,
 )
-from src.agent.table_result import TableResult
+from src.agent.outputs.artifacts import ArtifactCollector, ArtifactRef, TableArtifact
+from src.agent.outputs.tables import (
+    LiveTableOutput,
+    TableOutput,
+    TableOutputRef,
+    TableOutputStore,
+)
 
 
 class StubSchema:
@@ -56,153 +56,87 @@ class StubSpark:
         pass
 
 
-def test_result_preview_uses_framework_agnostic_validation_error() -> None:
-    source = SparkTableSource(
-        cast(Any, StubSpark()),
-        cast(Any, StubResult()),
+def make_deps() -> SimpleNamespace:
+    return SimpleNamespace(
+        spark=StubSpark(),
+        table_outputs=TableOutputStore(),
+        artifacts=ArtifactCollector(),
+        table_artifact_max_rows=10,
     )
+
+
+def add_output(deps: SimpleNamespace) -> TableOutputRef:
+    return deps.table_outputs.add(
+        LiveTableOutput(cast(Any, StubSpark()), cast(Any, StubResult()))
+    )
+
+
+def test_output_preview_uses_framework_agnostic_validation_error() -> None:
+    output = LiveTableOutput(cast(Any, StubSpark()), cast(Any, StubResult()))
     with pytest.raises(ValueError, match="Unknown result columns: missing_column"):
-        asyncio.run(source.preview(column_names=["missing_column"]))
+        asyncio.run(output.preview(column_names=["missing_column"]))
 
 
-@pytest.mark.parametrize(
-    ("start_row", "end_row"),
-    [(0, None), (3, 2)],
-)
-def test_result_preview_rejects_invalid_row_ranges(
+@pytest.mark.parametrize(("start_row", "end_row"), [(0, None), (3, 2)])
+def test_output_preview_rejects_invalid_row_ranges(
     start_row: int,
     end_row: int | None,
 ) -> None:
-    source = SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
-
+    output = LiveTableOutput(cast(Any, StubSpark()), cast(Any, StubResult()))
     with pytest.raises(ValueError):
-        asyncio.run(source.preview(start_row=start_row, end_row=end_row))
+        asyncio.run(output.preview(start_row=start_row, end_row=end_row))
 
 
-def test_inspect_table_result_exposes_unknown_columns_as_model_retry() -> None:
-    artifacts = RunArtifacts()
-    ref = artifacts.create(
-        SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
-    )
-    ctx = SimpleNamespace(
-        deps=SimpleNamespace(
-            spark=StubSpark(),
-            artifacts=artifacts,
-        )
-    )
-
+def test_inspect_table_output_exposes_unknown_columns_as_model_retry() -> None:
+    deps = make_deps()
+    ref = add_output(deps)
     with pytest.raises(ModelRetry, match="Unknown result columns: missing_column"):
         asyncio.run(
-            inspect_table_result(
-                cast(Any, ctx),
+            inspect_table_output(
+                cast(Any, SimpleNamespace(deps=deps)),
                 ref,
                 column_names=["missing_column"],
             )
         )
 
 
-@pytest.mark.parametrize(
-    "tool",
-    [inspect_table_result, display_table_result],
-)
-def test_table_result_tools_expose_stale_references_as_model_retry(
+@pytest.mark.parametrize("tool", [inspect_table_output, display_table_output])
+def test_table_output_tools_expose_stale_references_as_model_retry(
     tool: Callable[..., Any],
 ) -> None:
-    ctx = SimpleNamespace(
-        deps=SimpleNamespace(
-            spark=StubSpark(),
-            artifacts=RunArtifacts(),
-        )
-    )
-
-    with pytest.raises(
-        ModelRetry,
-        match=r"(?:source for table artifact|Table artifact) 'stale'.*Rerun the tool",
-    ):
+    with pytest.raises(ModelRetry, match=r"Table output 'stale'.*Rerun the tool"):
         asyncio.run(
             tool(
-                cast(Any, ctx),
-                ArtifactRef(artifact_id="stale"),
+                cast(Any, SimpleNamespace(deps=make_deps())),
+                TableOutputRef(output_id="stale"),
             )
         )
 
 
-def test_query_data_returns_structured_result_preview() -> None:
-    artifacts = RunArtifacts(
-        policy=ArtifactPolicy(table_max_rows=10),
-    )
-    ctx = SimpleNamespace(
-        deps=SimpleNamespace(
-            spark=StubSpark(),
-            artifacts=artifacts,
-        )
-    )
-
+def test_query_data_returns_structured_output_preview() -> None:
+    deps = make_deps()
     result = asyncio.run(
-        query_data(
-            cast(Any, ctx),
-            "SELECT 1 AS value",
-        )
+        query_data(cast(Any, SimpleNamespace(deps=deps)), "SELECT 1 AS value")
     )
 
     assert result.preview_markdown == "## Row 1\n\nknown_column: 1"
-    source = artifacts.resolve_source(
-        result.artifact_ref,
-        SparkTableSource,
-    )
-    assert isinstance(source.dataframe, StubResult)
+    output = deps.table_outputs.resolve(result.output_ref)
+    assert isinstance(output.dataframe, StubResult)
 
 
-def test_display_table_result_publishes_the_same_logical_artifact() -> None:
-    artifacts = RunArtifacts(
-        policy=ArtifactPolicy(table_max_rows=10),
-    )
-    ref = artifacts.create(
-        SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
-    )
-    ctx = SimpleNamespace(
-        deps=SimpleNamespace(
-            spark=StubSpark(),
-            artifacts=artifacts,
-        )
-    )
-
+def test_display_table_output_creates_a_concrete_artifact() -> None:
+    deps = make_deps()
     result = asyncio.run(
-        display_table_result(
-            cast(Any, ctx),
-            ref,
+        display_table_output(
+            cast(Any, SimpleNamespace(deps=deps)),
+            add_output(deps),
         )
     )
 
     assert isinstance(result.metadata, ArtifactRef)
-    assert result.metadata == ref
-    artifact = artifacts.registry.resolve(result.metadata)
-    assert isinstance(artifact.content, TableContent)
-    assert artifact.content.row_count == 1
-
-
-def test_display_table_result_can_publish_materialized_content_without_a_source(
-    make_table_artifact,
-) -> None:
-    artifacts = RunArtifacts()
-    artifact = make_table_artifact([{"known_column": 1}])
-    artifacts.registry.add(artifact)
-    ctx = SimpleNamespace(
-        deps=SimpleNamespace(
-            spark=StubSpark(),
-            artifacts=artifacts,
-        )
-    )
-
-    result = asyncio.run(
-        display_table_result(
-            cast(Any, ctx),
-            artifact.ref,
-        )
-    )
-
-    assert result.metadata == artifact.ref
-    assert artifacts.published == (artifact,)
+    artifact = deps.artifacts.resolve(result.metadata)
+    assert isinstance(artifact, TableArtifact)
+    assert artifact.row_count == 1
 
 
 def test_query_data_rejects_mutating_sql_before_calling_spark() -> None:
@@ -210,44 +144,25 @@ def test_query_data_rejects_mutating_sql_before_calling_spark() -> None:
         def sql(self, _sql: str) -> StubResult:
             raise AssertionError("Spark should not receive mutating SQL")
 
-    ctx = SimpleNamespace(
-        deps=SimpleNamespace(
-            spark=SparkThatMustNotRun(),
-            artifacts=RunArtifacts(
-                policy=ArtifactPolicy(table_max_rows=10),
-            ),
-        )
-    )
-
+    deps = make_deps()
+    deps.spark = SparkThatMustNotRun()
     with pytest.raises(ModelRetry, match="ReadOnlyQueryRequired"):
         asyncio.run(
             query_data(
-                cast(Any, ctx),
+                cast(Any, SimpleNamespace(deps=deps)),
                 "DELETE FROM measurements",
             )
         )
 
 
-def test_inspect_table_result_returns_structured_result_preview() -> None:
-    artifacts = RunArtifacts()
-    ref = artifacts.create(
-        SparkTableSource(cast(Any, StubSpark()), cast(Any, StubResult()))
-    )
-    ctx = SimpleNamespace(
-        deps=SimpleNamespace(
-            spark=StubSpark(),
-            artifacts=artifacts,
-        )
-    )
-
+def test_inspect_table_output_returns_structured_output_preview() -> None:
+    deps = make_deps()
+    ref = add_output(deps)
     result = asyncio.run(
-        inspect_table_result(
-            cast(Any, ctx),
-            ref,
-        )
+        inspect_table_output(cast(Any, SimpleNamespace(deps=deps)), ref)
     )
 
-    assert result == TableResult(
-        artifact_ref=ref,
+    assert result == TableOutput(
+        output_ref=ref,
         preview_markdown="## Row 1\n\nknown_column: 1",
     )

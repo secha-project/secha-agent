@@ -6,17 +6,17 @@ import pandas as pd
 import pytest
 from pydantic_ai import ModelRetry
 
-from src.agent.artifacts.base import (
-    ArtifactRef,
-    RunArtifacts,
-)
-from src.agent.artifacts.table import SparkTableSource
-from src.agent.artifacts.visualization import VisualizationContent
 from src.agent.capabilities.visualization import (
     MAX_VISUALIZATION_ROWS,
     normalize_datetime_precision,
     visualization_toolset,
-    visualize_table_result,
+    visualize_table_output,
+)
+from src.agent.outputs.artifacts import ArtifactCollector, ArtifactRef, ChartArtifact
+from src.agent.outputs.tables import (
+    LiveTableOutput,
+    TableOutputRef,
+    TableOutputStore,
 )
 
 GGSQL_QUERY = """
@@ -60,7 +60,7 @@ class VisualizationSpark:
 def _context(
     *,
     rows: int = 2,
-) -> tuple[Any, VisualizationSpark, ArtifactRef]:
+) -> tuple[Any, VisualizationSpark, TableOutputRef]:
     spark = VisualizationSpark(
         pd.DataFrame(
             {
@@ -69,13 +69,18 @@ def _context(
             }
         )
     )
-    artifacts = RunArtifacts()
-    ref = artifacts.create(
-        SparkTableSource(spark=cast(Any, spark), dataframe=cast(Any, spark.result))
+    table_outputs = TableOutputStore()
+    ref = table_outputs.add(
+        LiveTableOutput(spark=cast(Any, spark), dataframe=cast(Any, spark.result))
     )
+    artifacts = ArtifactCollector()
     return (
         SimpleNamespace(
-            deps=SimpleNamespace(spark=spark, artifacts=artifacts),
+            deps=SimpleNamespace(
+                spark=spark,
+                artifacts=artifacts,
+                table_outputs=table_outputs,
+            ),
         ),
         spark,
         ref,
@@ -83,7 +88,7 @@ def _context(
 
 
 def test_visualization_tool_exposes_retry_contract_in_definition() -> None:
-    tool = visualization_toolset.tools["visualize_table_result"]
+    tool = visualization_toolset.tools["visualize_table_output"]
     description = " ".join((tool.description or "").split())
 
     assert tool.max_retries == 3
@@ -109,15 +114,14 @@ def test_visualization_publishes_registered_spec() -> None:
     ctx, spark, ref = _context()
 
     result = asyncio.run(
-        visualize_table_result(ctx, ref, GGSQL_QUERY, "Power by category")
+        visualize_table_output(ctx, ref, GGSQL_QUERY, "Power by category")
     )
 
     assert isinstance(result.metadata, ArtifactRef)
     assert result.content is None
     artifact = ctx.deps.artifacts.published[0]
-    assert ctx.deps.artifacts.registry.resolve(result.metadata) is artifact
-    content = artifact.require_content()
-    assert isinstance(content, VisualizationContent)
+    assert ctx.deps.artifacts.resolve(result.metadata) is artifact
+    assert isinstance(artifact, ChartArtifact)
     assert spark.result.limit_value == MAX_VISUALIZATION_ROWS + 1
     assert spark.queries == []
 
@@ -125,7 +129,7 @@ def test_visualization_publishes_registered_spec() -> None:
 def test_visualization_reports_row_truncation() -> None:
     ctx, _, ref = _context(rows=MAX_VISUALIZATION_ROWS + 1)
 
-    result = asyncio.run(visualize_table_result(ctx, ref, GGSQL_QUERY, "Limited chart"))
+    result = asyncio.run(visualize_table_output(ctx, ref, GGSQL_QUERY, "Limited chart"))
 
     assert "first 1,000 rows" in result.return_value
 
@@ -159,7 +163,7 @@ def test_visualization_validation_failures_are_model_retries(
     ctx, _, ref = _context()
 
     with pytest.raises(ModelRetry, match=message):
-        asyncio.run(visualize_table_result(ctx, ref, ggsql_text, "Title"))
+        asyncio.run(visualize_table_output(ctx, ref, ggsql_text, "Title"))
 
 
 def test_datetime_normalization_uses_microseconds_and_utc() -> None:
@@ -184,9 +188,9 @@ def test_visualization_rejects_stale_table_reference() -> None:
 
     with pytest.raises(ModelRetry, match="Rerun the tool"):
         asyncio.run(
-            visualize_table_result(
+            visualize_table_output(
                 ctx,
-                ArtifactRef(artifact_id="stale"),
+                TableOutputRef(output_id="stale"),
                 GGSQL_QUERY,
                 "Stale",
             )
@@ -200,14 +204,15 @@ def test_visualization_exposes_spark_failure_as_model_retry() -> None:
 
     spark = VisualizationSpark(pd.DataFrame())
     spark.result = BrokenResult(pd.DataFrame())
-    artifacts = RunArtifacts()
-    ref = artifacts.create(
-        SparkTableSource(spark=cast(Any, spark), dataframe=cast(Any, spark.result))
+    table_outputs = TableOutputStore()
+    ref = table_outputs.add(
+        LiveTableOutput(spark=cast(Any, spark), dataframe=cast(Any, spark.result))
     )
     ctx = SimpleNamespace(
         deps=SimpleNamespace(
             spark=spark,
-            artifacts=artifacts,
+            artifacts=ArtifactCollector(),
+            table_outputs=table_outputs,
         )
     )
 
@@ -215,4 +220,4 @@ def test_visualization_exposes_spark_failure_as_model_retry() -> None:
         ModelRetry,
         match="Visualization data loading failed.*backend unavailable",
     ):
-        asyncio.run(visualize_table_result(cast(Any, ctx), ref, GGSQL_QUERY, "Broken"))
+        asyncio.run(visualize_table_output(cast(Any, ctx), ref, GGSQL_QUERY, "Broken"))

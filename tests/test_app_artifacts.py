@@ -4,15 +4,8 @@ from typing import Any, cast
 import pandas as pd
 import pyarrow as pa
 
-from src.agent.artifacts.base import (
-    Artifact,
-    ArtifactPolicy,
-    ArtifactRef,
-    ArtifactRegistry,
-    RunArtifacts,
-)
-from src.agent.artifacts.table import SparkTableSource, TableContent
-from src.agent.artifacts.visualization import VisualizationContent
+from src.agent.outputs.artifacts import ArtifactCollector, ChartArtifact
+from src.agent.outputs.tables import LiveTableOutput
 from src.app.artifact_renderer import ArtifactRenderer
 
 
@@ -53,34 +46,28 @@ class TaggedSpark:
         pass
 
 
-def test_spark_table_source_uses_the_configured_limit() -> None:
+def test_live_table_output_uses_the_configured_artifact_limit() -> None:
     result = MaterializedResult()
-    artifacts = RunArtifacts(policy=ArtifactPolicy())
-    ref = artifacts.create(
-        SparkTableSource(
-            spark=cast(Any, TaggedSpark()),
-            dataframe=cast(Any, result),
-        )
+    output = LiveTableOutput(
+        spark=cast(Any, TaggedSpark()),
+        dataframe=cast(Any, result),
     )
-    content = asyncio.run(artifacts.materialize(ref))
-    assert isinstance(content, TableContent)
+    artifact = asyncio.run(output.to_artifact(10_000))
 
-    assert artifacts.policy.table_max_rows == 10_000
-    assert result.limit_value == artifacts.policy.table_max_rows + 1
-    assert content.row_count == 1
+    assert result.limit_value == 10_001
+    assert artifact.row_count == 1
 
 
 def test_artifact_renderer_renders_a_published_artifact(
     make_table_artifact: Any,
 ) -> None:
-    artifacts = RunArtifacts()
+    artifacts = ArtifactCollector()
     artifact = make_table_artifact([{"id": 1}])
-    artifacts.registry.add(artifact)
-    reference = asyncio.run(artifacts.publish(artifact.ref))
+    reference = artifacts.publish(artifact)
     container = TableContainer()
-    renderer = ArtifactRenderer(artifacts.registry)
+    renderer = ArtifactRenderer()
 
-    part = renderer.render_tool_result(reference, container)
+    part = renderer.render_tool_result(reference, artifacts, container)
 
     assert part is not None
     assert part.artifact_id == artifact.id
@@ -99,7 +86,7 @@ def test_historical_arrow_snapshot_is_rendered_as_native_pandas_dataframe(
     artifact = make_table_artifact(source)
     container = TableContainer()
 
-    ArtifactRenderer(ArtifactRegistry()).render(container, artifact)
+    ArtifactRenderer().render(container, artifact)
 
     assert isinstance(container.data, pd.DataFrame)
     assert container.data.shape == (1, 244)
@@ -118,7 +105,7 @@ def test_truncated_table_adds_csv_download(make_table_artifact: Any) -> None:
     )
     container = TableContainer()
 
-    ArtifactRenderer(ArtifactRegistry()).render(
+    ArtifactRenderer().render(
         container,
         artifact,
         key="download-truncated",
@@ -152,12 +139,10 @@ def test_visualization_renderer_binds_named_data() -> None:
             "y": {"field": "y", "type": "quantitative"},
         },
     }
-    content = VisualizationContent(spec=spec)
-    ref = ArtifactRef(artifact_id="viz-1")
-    artifact = Artifact(ref=ref, content=content)
+    artifact = ChartArtifact(id="viz-1", spec=spec)
     container = VisualizationContainer()
 
-    ArtifactRenderer(ArtifactRegistry()).render(
+    ArtifactRenderer().render(
         container,
         artifact,
     )

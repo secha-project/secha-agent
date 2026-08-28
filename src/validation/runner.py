@@ -11,10 +11,11 @@ from pydantic_ai.retries import RetryConfig
 from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from src.agent.agent import create_agent
-from src.agent.artifacts.base import ArtifactPolicy, RunArtifacts
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
+from src.agent.outputs.artifacts import ArtifactCollector
+from src.agent.outputs.tables import TableOutputStore
 from src.agent.semantic_runtime import load_semantic_runtime
 from src.agent.spark_runtime import get_spark_session
 from src.validation.config import BENCHMARKS_DIR, RESULTS_DIR, BenchmarkRunConfig
@@ -56,12 +57,12 @@ class AgentTask:
     usage_limits: UsageLimits
 
     def __call__(self, prompt: str) -> str:
-        artifacts = RunArtifacts(
-            policy=ArtifactPolicy(table_max_rows=None),
-        )
+        artifacts = ArtifactCollector()
         run_deps = replace(
             self.deps,
             artifacts=artifacts,
+            table_outputs=TableOutputStore(),
+            table_artifact_max_rows=None,
         )
         result = self.agent.run_sync(
             prompt,

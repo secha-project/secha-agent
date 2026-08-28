@@ -5,13 +5,13 @@ from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
 
 from ..deps import Deps
+from ..outputs.tables import TableOutput, create_table_output
 from ..prompt import render_prompt
 from ..spark_runtime import concise_spark_error, spark_error_type
 from ..sql_safety import ReadOnlySqlError, require_read_only_sql
-from ..table_result import TableResult, create_table_result
 
 NAME = "query"
-DESCRIPTION = "Run read-only SQL and produce saved table results."
+DESCRIPTION = "Run read-only SQL and produce saved table outputs."
 query_toolset = FunctionToolset[Deps]()
 
 
@@ -25,8 +25,8 @@ def build(selected: frozenset[str]) -> Capability[Deps]:
 
 
 @query_toolset.tool(retries=3, sequential=True)
-async def query_data(ctx: RunContext[Deps], sql: str) -> TableResult:
-    """Run read-only Spark SQL and save a table result with a small preview.
+async def query_data(ctx: RunContext[Deps], sql: str) -> TableOutput:
+    """Run read-only Spark SQL and save a table output with a small preview.
 
     Use this for row-level data, actual values, aggregates, and calculations not
     represented by a governed semantic measure. Resolve uncertain identifiers
@@ -38,10 +38,10 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> TableResult:
     Never duplicate or validate a governed result with hand-written SQL.
 
     Answer from the preview when it is sufficient. Otherwise pass the returned
-    reference to ``inspect_table_result``. This tool does not publish data in
+    reference to ``inspect_table_output``. This tool does not publish data in
     the UI: when the user asks to see or download rows, records, a table, sample
     data, or a sample time series, pass the reference to
-    ``display_table_result`` instead of reproducing the result in Markdown.
+    ``display_table_output`` instead of reproducing the result in Markdown.
 
     Args:
         sql: One complete read-only Spark SQL query. Data-changing statements
@@ -70,8 +70,9 @@ async def query_data(ctx: RunContext[Deps], sql: str) -> TableResult:
             f"{concise_spark_error(exc)}. "
         ) from exc
 
-    return await create_table_result(
-        deps,
+    return await create_table_output(
+        deps.table_outputs,
+        deps.spark,
         result,
         error_prefix="SQL execution failed while reading the preview",
     )

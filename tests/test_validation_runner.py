@@ -1,23 +1,16 @@
-import asyncio
 from types import SimpleNamespace
 from typing import Any, cast
 
-import pytest
-
 import src.validation.runner as runner_module
-from src.agent.artifacts.base import (
-    Artifact,
-    RunArtifacts,
-    UnknownArtifactError,
-)
 from src.agent.deps import Deps
+from src.agent.outputs.artifacts import Artifact, ArtifactCollector, TableArtifact
 from src.validation.runner import AgentTask
 
 
-def test_agent_task_uses_fresh_artifacts_for_each_run(
+def test_agent_task_uses_fresh_output_state_for_each_run(
     monkeypatch: Any,
 ) -> None:
-    template_artifacts = RunArtifacts()
+    template_artifacts = ArtifactCollector()
     deps = Deps(
         spark=cast(Any, object()),
         catalog=cast(Any, object()),
@@ -25,13 +18,14 @@ def test_agent_task_uses_fresh_artifacts_for_each_run(
         table_column_page_size=20,
         artifacts=template_artifacts,
     )
-    contexts: list[RunArtifacts] = []
-    references = []
+    contexts: list[ArtifactCollector] = []
+    table_output_stores = []
 
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         context = kwargs["deps"].artifacts
         contexts.append(context)
-        references.append(context.create(cast(Any, SimpleNamespace(kind="table"))))
+        table_output_stores.append(kwargs["deps"].table_outputs)
+        assert kwargs["deps"].table_artifact_max_rows is None
         return SimpleNamespace(output="answer")
 
     task = AgentTask(
@@ -47,10 +41,7 @@ def test_agent_task_uses_fresh_artifacts_for_each_run(
 
     assert contexts[0] is not contexts[1]
     assert template_artifacts not in contexts
-    assert contexts[0].policy.table_max_rows is None
-    assert references[0] != references[1]
-    with pytest.raises(UnknownArtifactError):
-        contexts[0].registry.resolve(references[1])
+    assert table_output_stores[0] is not table_output_stores[1]
 
 
 def test_agent_task_writes_only_the_artifacts_from_that_run(
@@ -67,9 +58,7 @@ def test_agent_task_writes_only_the_artifacts_from_that_run(
 
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         artifact = make_table_artifact([{"value": 1}])
-        context = kwargs["deps"].artifacts
-        context.registry.add(artifact)
-        asyncio.run(context.publish(artifact.ref))
+        kwargs["deps"].artifacts.publish(artifact)
         return SimpleNamespace(output="answer")
 
     monkeypatch.setattr(
@@ -88,4 +77,4 @@ def test_agent_task_writes_only_the_artifacts_from_that_run(
     assert task("question") == "answer"
     assert len(written) == 1
     assert len(written[0]) == 1
-    assert written[0][0].kind == "table"
+    assert isinstance(written[0][0], TableArtifact)

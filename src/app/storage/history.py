@@ -16,12 +16,11 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from pydantic_ai import ModelMessage, ModelMessagesTypeAdapter
 
-from src.agent.artifacts.base import (
+from src.agent.outputs.artifacts import (
     Artifact,
-    ArtifactRef,
+    ChartArtifact,
+    TableArtifact,
 )
-from src.agent.artifacts.table import TableContent
-from src.agent.artifacts.visualization import VisualizationContent
 
 from ..models import (
     DISPLAY_MESSAGES_ADAPTER,
@@ -503,20 +502,20 @@ class History:
         artifact: Artifact,
         created_at: str,
     ) -> None:
-        content = artifact.require_content()
-        if isinstance(content, TableContent):
-            payload = content.arrow_bytes
+        if isinstance(artifact, TableArtifact):
+            kind = "table"
+            payload = artifact.arrow_bytes
             metadata = {
-                "row_count": content.row_count,
-                "truncated": content.truncated,
+                "truncated": artifact.truncated,
             }
-        elif isinstance(content, VisualizationContent):
-            payload = content.spec_json
+            media_type = TableArtifact.MEDIA_TYPE
+        elif isinstance(artifact, ChartArtifact):
+            kind = "chart"
+            payload = artifact.spec_json
             metadata = {}
+            media_type = ChartArtifact.MEDIA_TYPE
         else:
-            raise TypeError(
-                f"SQLite storage does not support {artifact.kind!r} artifacts yet."
-            )
+            raise TypeError(f"SQLite storage does not support {type(artifact).__name__}.")
         metadata_json = json.dumps(metadata)
         cursor = connection.execute(
             """
@@ -530,8 +529,8 @@ class History:
             (
                 artifact.id,
                 conversation_id,
-                artifact.kind,
-                content.media_type,
+                kind,
+                media_type,
                 payload,
                 metadata_json,
                 created_at,
@@ -550,8 +549,8 @@ class History:
         ).fetchone()
         if existing is None or (
             existing["conversation_id"] != conversation_id
-            or existing["kind"] != artifact.kind
-            or existing["media_type"] != content.media_type
+            or existing["kind"] != kind
+            or existing["media_type"] != media_type
             or bytes(existing["payload"]) != payload
             or json.loads(existing["metadata_json"]) != metadata
         ):
@@ -579,29 +578,23 @@ class History:
             ).fetchone()
         if row is None:
             raise ArtifactNotFoundError(artifact_id)
-        if row["kind"] == "table" and row["media_type"] == TableContent.MEDIA_TYPE:
+        if row["kind"] == "table" and row["media_type"] == TableArtifact.MEDIA_TYPE:
             metadata = json.loads(row["metadata_json"])
-            ref = ArtifactRef(artifact_id=row["id"])
-            return Artifact(
-                ref=ref,
-                content=TableContent(
-                    arrow_bytes=bytes(row["payload"]),
-                    truncated=bool(metadata["truncated"]),
-                ),
+            return TableArtifact(
+                id=row["id"],
+                arrow_bytes=bytes(row["payload"]),
+                truncated=bool(metadata["truncated"]),
             )
         if (
-            row["kind"] == "visualization"
-            and row["media_type"] == VisualizationContent.MEDIA_TYPE
+            row["kind"] == "chart"
+            and row["media_type"] == ChartArtifact.MEDIA_TYPE
         ):
-            ref = ArtifactRef(artifact_id=row["id"])
             spec = json.loads(row["payload"])
             if not isinstance(spec, dict):
                 raise TypeError("Saved Vega-Lite content must be a JSON object.")
-            return Artifact(
-                ref=ref,
-                content=VisualizationContent(
-                    spec=spec,
-                ),
+            return ChartArtifact(
+                id=row["id"],
+                spec=spec,
             )
         raise TypeError(
             f"SQLite storage cannot load artifact kind {row['kind']!r} "

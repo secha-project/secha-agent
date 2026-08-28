@@ -51,4 +51,4 @@ CREATE TABLE IF NOT EXISTS artifacts (
 CREATE INDEX IF NOT EXISTS artifacts_conversation_idx
     ON artifacts (conversation_id, id);
 
-PRAGMA user_version = 5;
+PRAGMA user_version = 6;

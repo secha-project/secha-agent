@@ -6,11 +6,7 @@ import pyarrow as pa
 import pytest
 from pyarrow import ipc
 
-from src.agent.artifacts.base import (
-    Artifact,
-    ArtifactRef,
-)
-from src.agent.artifacts.table import TableContent
+from src.agent.outputs.artifacts import Artifact, TableArtifact
 
 
 @pytest.fixture
@@ -29,12 +25,10 @@ def make_table_artifact() -> Callable[..., Artifact]:
         sink = pa.BufferOutputStream()
         with ipc.new_stream(sink, visible.schema) as writer:
             writer.write_table(visible)
-        return Artifact(
-            ref=ArtifactRef(artifact_id=artifact_id or uuid4().hex),
-            content=TableContent(
-                arrow_bytes=sink.getvalue().to_pybytes(),
-                truncated=truncated,
-            ),
+        return TableArtifact(
+            id=artifact_id or uuid4().hex,
+            arrow_bytes=sink.getvalue().to_pybytes(),
+            truncated=truncated,
         )
 
     return make

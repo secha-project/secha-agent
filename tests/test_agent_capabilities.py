@@ -12,7 +12,7 @@ from src.agent.capabilities import (
     catalog,
     query,
     semantic_layer,
-    table_results,
+    table_outputs,
     visualization,
 )
 from src.agent.deps import Deps
@@ -25,15 +25,15 @@ CATALOG_INSTRUCTIONS = render_prompt(
 QUERY_TEMPLATE = "capabilities/query/instructions.md"
 QUERY_STANDALONE = render_prompt(
     QUERY_TEMPLATE,
-    frozenset({"query", "table_results"}),
+    frozenset({"query", "table_outputs"}),
 )
 QUERY_WITH_CATALOG = render_prompt(
     QUERY_TEMPLATE,
-    frozenset({"catalog", "query", "table_results"}),
+    frozenset({"catalog", "query", "table_outputs"}),
 )
 VISUALIZATION_INSTRUCTIONS = render_prompt(
     "capabilities/visualization/instructions.md",
-    frozenset({"query", "table_results", "visualization"}),
+    frozenset({"query", "table_outputs", "visualization"}),
 )
 
 
@@ -41,21 +41,21 @@ VISUALIZATION_INSTRUCTIONS = render_prompt(
     ("selected", "expected_routes"),
     [
         (frozenset({"catalog"}), ["Catalog"]),
-        (frozenset({"query", "table_results"}), ["Query"]),
+        (frozenset({"query", "table_outputs"}), ["Query"]),
         (
-            frozenset({"catalog", "query", "table_results"}),
+            frozenset({"catalog", "query", "table_outputs"}),
             ["Catalog", "Query"],
         ),
         (
-            frozenset({"semantic_layer", "table_results"}),
+            frozenset({"semantic_layer", "table_outputs"}),
             ["Semantic layer"],
         ),
         (
-            frozenset({"query", "table_results", "visualization"}),
+            frozenset({"query", "table_outputs", "visualization"}),
             ["Query", "Visualization"],
         ),
         (
-            frozenset({"catalog", "query", "table_results", "visualization"}),
+            frozenset({"catalog", "query", "table_outputs", "visualization"}),
             ["Catalog", "Query", "Visualization"],
         ),
         (
@@ -64,7 +64,7 @@ VISUALIZATION_INSTRUCTIONS = render_prompt(
                     "catalog",
                     "query",
                     "semantic_layer",
-                    "table_results",
+                    "table_outputs",
                     "visualization",
                 }
             ),
@@ -97,13 +97,13 @@ def test_base_prompt_routes_only_selected_capabilities_in_priority_order(
 
 @pytest.mark.parametrize(
     "capability_module",
-    [semantic_layer, catalog, query, table_results, visualization],
+    [semantic_layer, catalog, query, table_outputs, visualization],
 )
 def test_capabilities_have_descriptions(
     capability_module: Any,
 ) -> None:
     selected = frozenset(
-        {"catalog", "query", "semantic_layer", "table_results", "visualization"}
+        {"catalog", "query", "semantic_layer", "table_outputs", "visualization"}
     )
     capability = capability_module.build(selected)
 
@@ -130,13 +130,13 @@ def test_catalog_instructions_do_not_depend_on_query() -> None:
 
 
 def test_query_uses_standalone_instructions_without_catalog() -> None:
-    capability = query.build(frozenset({"query", "table_results"}))
+    capability = query.build(frozenset({"query", "table_outputs"}))
 
     assert _static_instructions(capability) == [QUERY_STANDALONE]
 
 
 def test_query_replaces_standalone_instructions_when_catalog_is_selected() -> None:
-    capability = query.build(frozenset({"catalog", "query", "table_results"}))
+    capability = query.build(frozenset({"catalog", "query", "table_outputs"}))
     instructions = _static_instructions(capability)
 
     assert instructions == [QUERY_WITH_CATALOG]
@@ -147,7 +147,7 @@ def test_query_replaces_standalone_instructions_when_catalog_is_selected() -> No
 def test_create_agent_deduplicates_capabilities() -> None:
     model = TestModel(call_tools=[], custom_output_text="done")
     configured_agent = create_agent(
-        ("catalog", "catalog", "query", "query", "table_results", "table_results")
+        ("catalog", "catalog", "query", "query", "table_outputs", "table_outputs")
     )
 
     with capture_run_messages() as messages:
@@ -168,8 +168,8 @@ def test_create_agent_deduplicates_capabilities() -> None:
         "find_columns",
         "describe_table",
         "query_data",
-        "inspect_table_result",
-        "display_table_result",
+        "inspect_table_output",
+        "display_table_output",
     ]
 
 
@@ -178,7 +178,7 @@ def test_create_agent_uses_canonical_capability_order() -> None:
     configured_agent = create_agent(
         (
             "visualization",
-            "table_results",
+            "table_outputs",
             "query",
             "catalog",
             "semantic_layer",
@@ -198,7 +198,7 @@ def test_create_agent_uses_canonical_capability_order() -> None:
         "## Semantic layer capability",
         "## Catalog capability",
         "## Query capability",
-        "## Table results capability",
+        "## Table outputs capability",
         "## Visualization capability",
     ]
     assert [request.instructions.index(heading) for heading in headings] == sorted(
@@ -216,9 +216,9 @@ def test_create_agent_uses_canonical_capability_order() -> None:
         "find_columns",
         "describe_table",
         "query_data",
-        "inspect_table_result",
-        "display_table_result",
-        "visualize_table_result",
+        "inspect_table_output",
+        "display_table_output",
+        "visualize_table_output",
     ]
 
 
@@ -229,24 +229,24 @@ def test_create_agent_rejects_unknown_capabilities() -> None:
 
 def test_visualization_uses_one_instruction_prompt_and_exposes_one_tool() -> None:
     capability = visualization.build(
-        frozenset({"query", "table_results", "visualization"}),
+        frozenset({"query", "table_outputs", "visualization"}),
     )
     assert _static_instructions(capability) == [VISUALIZATION_INSTRUCTIONS]
 
     model = TestModel(call_tools=[], custom_output_text="done")
-    create_agent(("query", "table_results", "visualization")).run_sync(
+    create_agent(("query", "table_outputs", "visualization")).run_sync(
         "question",
         deps=cast(Deps, cast(Any, object())),
         model=model,
     )
     request_parameters = model.last_model_request_parameters
     assert request_parameters is not None
-    assert request_parameters.function_tools[-1].name == "visualize_table_result"
+    assert request_parameters.function_tools[-1].name == "visualize_table_output"
 
 
 def test_semantic_results_can_be_visualized_without_query_or_catalog() -> None:
     model = TestModel(call_tools=[], custom_output_text="done")
-    create_agent(("semantic_layer", "table_results", "visualization")).run_sync(
+    create_agent(("semantic_layer", "table_outputs", "visualization")).run_sync(
         "question",
         deps=cast(Deps, cast(Any, object())),
         model=model,
@@ -259,21 +259,21 @@ def test_semantic_results_can_be_visualized_without_query_or_catalog() -> None:
         "describe_semantic_model",
         "query_semantic_model",
         "compare_semantic_periods",
-        "inspect_table_result",
-        "display_table_result",
-        "visualize_table_result",
+        "inspect_table_output",
+        "display_table_output",
+        "visualize_table_output",
     ]
 
 
 @pytest.mark.parametrize(
     ("capabilities", "message"),
     [
-        (("visualization",), "requires table_results"),
-        (("table_results", "visualization"), "requires semantic_layer or query"),
-        (("query", "visualization"), "requires table_results"),
+        (("visualization",), "requires table_outputs"),
+        (("table_outputs", "visualization"), "requires semantic_layer or query"),
+        (("query", "visualization"), "requires table_outputs"),
     ],
 )
-def test_visualization_requires_table_results_and_a_producer(
+def test_visualization_requires_table_outputs_and_a_producer(
     capabilities: tuple[str, ...],
     message: str,
 ) -> None:
@@ -286,13 +286,13 @@ def test_differently_configured_agents_do_not_contaminate_each_other() -> None:
     combined_model = TestModel(call_tools=[], custom_output_text="combined")
 
     with capture_run_messages() as standalone_messages:
-        create_agent(("query", "table_results")).run_sync(
+        create_agent(("query", "table_outputs")).run_sync(
             "question",
             deps=cast(Deps, cast(Any, object())),
             model=standalone_model,
         )
     with capture_run_messages() as combined_messages:
-        create_agent(("catalog", "query", "table_results")).run_sync(
+        create_agent(("catalog", "query", "table_outputs")).run_sync(
             "question",
             deps=cast(Deps, cast(Any, object())),
             model=combined_model,
@@ -314,7 +314,7 @@ def test_differently_configured_agents_do_not_contaminate_each_other() -> None:
 
 def test_full_capability_prompt_keeps_tool_mechanics_out_of_instructions() -> None:
     selected = frozenset(
-        {"catalog", "query", "semantic_layer", "table_results", "visualization"}
+        {"catalog", "query", "semantic_layer", "table_outputs", "visualization"}
     )
     prompt = "\n".join(
         [
@@ -325,7 +325,7 @@ def test_full_capability_prompt_keeps_tool_mechanics_out_of_instructions() -> No
                     "semantic_layer",
                     "catalog",
                     "query",
-                    "table_results",
+                    "table_outputs",
                     "visualization",
                 )
             ],

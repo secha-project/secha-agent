@@ -9,10 +9,11 @@ from pydantic_ai import Agent
 from pyspark.sql import SparkSession
 
 from src.agent.agent import create_agent
-from src.agent.artifacts.base import ArtifactRegistry, RunArtifacts
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
+from src.agent.outputs.artifacts import ArtifactCollector
+from src.agent.outputs.tables import TableOutputStore
 from src.agent.semantic_runtime import SemanticRuntime, load_semantic_runtime
 from src.agent.spark_runtime import get_spark_session
 
@@ -61,7 +62,7 @@ def load_resources() -> AppResources:
 
 def fresh_deps(
     resources: AppResources,
-    artifact_registry: ArtifactRegistry,
+    table_outputs: TableOutputStore,
 ) -> Deps:
     """Create per-run dependencies around process-level cached resources."""
     return Deps(
@@ -70,5 +71,6 @@ def fresh_deps(
         schema_name=resources.config.schema_name,
         table_column_page_size=resources.config.table_column_page_size,
         semantic=resources.semantic,
-        artifacts=RunArtifacts(registry=artifact_registry),
+        table_outputs=table_outputs,
+        artifacts=ArtifactCollector(),
     )
