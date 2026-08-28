@@ -1,0 +1,39 @@
+@startuml
+!$PERSON_LEGEND_TEXT = "Person"
+!$CONTAINER_LEGEND_TEXT = "Container"
+!$COMPONENT_LEGEND_TEXT = "Component"
+!$EXTERNAL_SYSTEM_LEGEND_TEXT = "External System"
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+SHOW_ELEMENT_TYPE("true", "false")
+
+title SECHA Agent - Web Application Component Diagram
+
+LAYOUT_TOP_DOWN()
+
+skinparam nodesep 45
+skinparam ranksep 55
+
+Person(analyst, "SECHA stakeholder", "Researcher or industry professional.")
+
+Container_Boundary(web_app, "Web application") {
+    Component(authentication, "Authentication", "Python, Streamlit, Starlette", "Registers and authenticates users and manages authenticated sessions.")
+    Component(chat_ui, "Chat UI", "Python, Streamlit", "Manages conversations, accepts prompts, and coordinates agent runs.")
+    Component(response_renderer, "Response renderer", "Python, Streamlit", "Renders streamed responses, tool activity, tables, and charts.")
+    Component(repository, "User and conversation store", "Python, sqlite3", "Stores and retrieves users, sessions, conversations, messages, and artifacts.")
+}
+
+Container(agent_core, "Agent core", "Python, Pydantic AI", "Selects and orchestrates catalog, semantic, SQL, table-output, and visualization capabilities.")
+ContainerDb(database, "Database", "SQLite", "Stores users, password hashes, auth sessions, conversations, model messages, and artifacts.")
+
+Rel_D(analyst, authentication, "Uses", "HTTPS / Streamlit session")
+Rel_R(authentication, chat_ui, "Grants authenticated access to")
+Rel_D(authentication, repository, "Stores and retrieves account and session data using")
+Rel_D(chat_ui, repository, "Loads and commits conversations using")
+Rel_R(chat_ui, agent_core, "Runs prompts and streams events using", "In-process Python")
+Rel_D(chat_ui, response_renderer, "Delegates response display to")
+Rel_D(repository, database, "Stores and retrieves application data using", "sqlite3")
+
+SHOW_FLOATING_LEGEND()
+Lay_Distance(agent_core, LEGEND(), 1)
+@enduml

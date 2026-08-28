@@ -1,0 +1,43 @@
+@startuml
+!$PERSON_LEGEND_TEXT = "Person"
+!$CONTAINER_LEGEND_TEXT = "Container"
+!$EXTERNAL_SYSTEM_LEGEND_TEXT = "External System"
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+SHOW_ELEMENT_TYPE("true", "false")
+
+title SECHA Agent - Container Diagram
+
+LAYOUT_TOP_DOWN()
+
+Person(analyst, "SECHA stakeholder", "Researcher or industry professional.")
+
+System_Boundary(secha, "SECHA Agent") {
+    Container(web_app, "Web application", "Python, Streamlit", "Authenticates users, provides the chat UI, streams agent events, renders artifacts, and manages conversations.")
+    Container(agent_core, "Agent core", "Python, Pydantic AI", "Selects and orchestrates catalog, semantic, SQL, table-output, and visualization capabilities.")
+    ContainerDb(database, "Database", "SQLite", "Stores users, password hashes, auth sessions, conversations, model messages, and artifacts.")
+}
+
+System_Ext(model_provider, "LLM provider", "Provides language model capabilities through OpenAI or TUNI's OpenAI-compatible inference API.")
+
+Boundary(data_platform, "SECHA data platform", "External System") {
+    System_Ext(unity_catalog, "Unity Catalog", "Provides catalog table and column metadata.")
+    System_Ext(spark_connect, "Spark Connect", "Executes governed semantic queries and read-only Spark SQL.")
+}
+
+System_Ext(telemetry, "OTLP backend", "Collects agent traces.")
+
+Rel_D(analyst, web_app, "Asks data analytics questions using", "HTTPS / Streamlit session")
+Rel_D(web_app, agent_core, "Runs prompts and streams events using", "In-process Python")
+Rel_D(web_app, database, "Stores and retrieves chat history using", "sqlite3")
+
+Rel_R(agent_core, model_provider, "Interprets queries and generates responses using", "OpenAI-compatible HTTPS API")
+Rel_D(agent_core, unity_catalog, "Reads governed metadata from", "Unity Catalog REST API / HTTPS")
+Rel_D(agent_core, spark_connect, "Executes SQL queries using", "Spark Connect")
+Rel_R(web_app, telemetry, "Exports traces to", "OTLP")
+
+Lay_L(agent_core, database)
+
+SHOW_FLOATING_LEGEND()
+Lay_Distance(model_provider, LEGEND(), 0)
+@enduml

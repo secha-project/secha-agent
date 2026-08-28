@@ -1,0 +1,55 @@
+@startuml
+!$PERSON_LEGEND_TEXT = "Person"
+!$CONTAINER_LEGEND_TEXT = "Container"
+!$COMPONENT_LEGEND_TEXT = "Component"
+!$EXTERNAL_SYSTEM_LEGEND_TEXT = "External System"
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+SHOW_ELEMENT_TYPE("true", "false")
+
+AddComponentTag("tool", $shape=RoundedBoxShape())
+!global $tagCustomLegend = ""
+
+title SECHA Agent - Agent Core Component Diagram
+
+LAYOUT_TOP_DOWN()
+
+skinparam nodesep 45
+skinparam ranksep 55
+
+Container(web_app, "Web application", "Python, Streamlit", "Provides the chat UI and streams agent events.")
+
+Container_Boundary(agent_core, "Agent core") {
+    Component(agent_service, "Agent service", "Python", "Starts configured agent runs, supplies runtime dependencies, and streams agent events.")
+    Component(ai_agent, "AI agent", "Pydantic AI", "Interprets prompts, selects capabilities, invokes tools, and produces responses.")
+
+    Component(metadata_tools, "Metadata discovery tools", "Pydantic AI toolset, Python", "Browses tables, finds columns, and describes governed metadata through the catalog client.", $tags="tool")
+    Component(query_tools, "Data query tools", "Pydantic AI toolsets, PySpark", "Executes semantic expressions and validated read-only SQL with timeouts.", $tags="tool")
+    Component(result_tools, "Result presentation tools", "Pydantic AI toolsets, Python", "Takes query outputs and produces table and Vega-Lite chart artifacts.", $tags="tool")
+}
+
+System_Ext(model_provider, "LLM provider", "Provides language model capabilities through OpenAI or TUNI's OpenAI-compatible inference API.")
+
+Boundary(data_platform, "SECHA data platform", "External System") {
+    System_Ext(unity_catalog, "Unity Catalog", "Provides schema, table and column metadata.")
+    System_Ext(spark_connect, "Spark Connect", "Executes governed semantic queries and read-only Spark SQL.")
+}
+
+Rel_D(web_app, agent_service, "Runs prompts and streams events using", "In-process Python")
+Rel_R(agent_service, ai_agent, "Runs with configured dependencies", "Pydantic AI")
+Rel_R(ai_agent, model_provider, "Generates responses", "OpenAI-compatible HTTPS API")
+
+Rel_D(ai_agent, metadata_tools, "Discovers available data")
+Rel_D(ai_agent, query_tools, "Runs governed queries")
+Rel_D(ai_agent, result_tools, "Inspects and presents results")
+
+Rel_D(metadata_tools, unity_catalog, "Reads catalog metadata using", "REST / HTTPS")
+Rel_D(query_tools, spark_connect, "Executes SQL queries using", "Spark Connect")
+
+Lay_R(metadata_tools, query_tools)
+Lay_R(query_tools, result_tools)
+Lay_R(unity_catalog, spark_connect)
+
+SHOW_FLOATING_LEGEND()
+Lay_Distance(model_provider, LEGEND(), 1)
+@enduml
