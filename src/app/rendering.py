@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from textwrap import wrap
 from typing import Any, Literal
 
 import pandas as pd
@@ -36,7 +37,7 @@ def render_artifact(
     *,
     key: str | None = None,
 ) -> None:
-    container = container.container(width=640)
+    container = container.columns([9, 1], gap=None)[0]
 
     if isinstance(artifact, TableArtifact):
         container.dataframe(artifact.to_pandas(), width="stretch", hide_index=True)
@@ -56,6 +57,14 @@ def render_artifact(
 
     if isinstance(artifact, ChartArtifact):
         spec = artifact.to_spec()
+        title = spec.pop("title", None)
+        if isinstance(title, str):
+            text = wrap(title, width=45) if len(title) > 45 else title
+            spec["title"] = {"text": text, "anchor": "middle"}
+        elif isinstance(title, dict):
+            spec["title"] = {**title, "anchor": "middle"}
+        elif title is not None:
+            spec["title"] = title
         data_reference = spec.pop("data", None)
         datasets = spec.pop("datasets", None)
         if (
@@ -118,7 +127,7 @@ def render_tool(
 ) -> ToolStatusView:
     status = container.status(
         f"Used {part.title}",
-        expanded=live or part.state != "complete",
+        expanded=False,
         state=part.state,
         type="compact",
     )
@@ -147,5 +156,5 @@ def finish_tool(
     view.status.update(
         label=f"Used {part.title}",
         state=state,
-        expanded=state == "error",
+        expanded=False,
     )
