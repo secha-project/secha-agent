@@ -45,6 +45,9 @@ class StreamingContainer:
     def container(self, **_kwargs: Any) -> "StreamingContainer":
         return self
 
+    def columns(self, *_args: Any, **_kwargs: Any) -> list["StreamingContainer"]:
+        return [self, self]
+
     def dataframe(self, _value: Any, **_kwargs: Any) -> None:
         pass
 
