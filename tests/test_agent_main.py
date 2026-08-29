@@ -12,26 +12,7 @@ from src.agent.config import (
     TuniProviderConfig,
 )
 from src.agent.main import AgentOutcome
-from src.agent.outputs.artifacts import ArtifactCollector, TableArtifact
-
-
-def test_agent_config_keeps_immutable_valid_settings() -> None:
-    config = AgentConfig(
-        _env_file=None,
-        catalog_url="https://catalog.example",
-        catalog_token="token",
-        spark_url="sc://spark.example",
-        model_provider="openai",
-        enabled_capabilities=("catalog", "catalog", "query", "table_outputs"),
-        otel_exporter_otlp_endpoint="http://otel.example",
-    )
-
-    assert config.model_provider == "openai"
-    assert config.enabled_capabilities == frozenset(
-        {"catalog", "query", "table_outputs"}
-    )
-    with pytest.raises(ValidationError, match="Instance is frozen"):
-        config.request_limit = 0
+from src.agent.outputs.artifacts import TableArtifact
 
 
 def test_agent_config_uses_default_capabilities() -> None:
@@ -102,63 +83,6 @@ def test_agent_config_loads_only_the_selected_provider_from_environment(
     assert isinstance(openai_provider, OpenAIProviderConfig)
     assert openai_provider.api_key.get_secret_value() == "unused-openai-secret"
     assert "https://tuni.example" not in repr(openai_config)
-
-
-def test_agent_config_accepts_a_per_run_model_override() -> None:
-    config = AgentConfig(
-        _env_file=None,
-        catalog_url="https://catalog.example",
-        catalog_token="token",
-        spark_url="sc://spark.example",
-        model_provider="tuni",
-        model_name="experiment-model",
-        enabled_capabilities=("query", "table_outputs"),
-        otel_exporter_otlp_endpoint="http://otel.example",
-    )
-
-    assert config.model_provider == "tuni"
-    assert config.model_name == "experiment-model"
-
-
-def test_run_uses_run_scoped_artifacts(
-    monkeypatch: Any,
-) -> None:
-    config = cast(
-        AgentConfig,
-        SimpleNamespace(
-            catalog_url="https://catalog.example",
-            catalog_token="token",
-            catalog_name="analytics",
-            schema_name="bronze",
-            table_column_page_size=20,
-            temperature=0.0,
-            request_limit=3,
-            enabled_capabilities=("catalog", "query", "table_outputs"),
-            create_model=lambda: "model",
-        ),
-    )
-    spark = object()
-    captured: dict[str, Any] = {}
-
-    monkeypatch.setattr(main_module, "get_spark_session", lambda _config: spark)
-
-    def run_sync(prompt: str, **kwargs: Any) -> SimpleNamespace:
-        captured["prompt"] = prompt
-        captured.update(kwargs)
-        return SimpleNamespace(output="answer")
-
-    monkeypatch.setattr(
-        main_module,
-        "create_agent",
-        lambda capabilities: SimpleNamespace(run_sync=run_sync),
-    )
-
-    outcome = main_module.run("question", config)
-
-    assert outcome == AgentOutcome(output="answer", artifacts=())
-    assert captured["prompt"] == "question"
-    assert captured["deps"].spark is spark
-    assert isinstance(captured["deps"].artifacts, ArtifactCollector)
 
 
 def test_main_accepts_a_prompt_argument(

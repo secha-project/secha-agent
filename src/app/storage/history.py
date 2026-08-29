@@ -31,7 +31,6 @@ from ..models import (
     User,
     UserDisplayMessage,
 )
-from .schema import initialize_database
 
 DEFAULT_DB_PATH = Path(".data/secha_chat.sqlite3")
 MIN_PASSWORD_LENGTH = 8
@@ -112,7 +111,13 @@ class History:
         return connection
 
     def initialize(self) -> None:
-        initialize_database(self.db_path, self._connect)
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        with self._connect() as connection:
+            connection.execute("PRAGMA journal_mode = WAL")
+            connection.executescript(
+                Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+            )
+        self.db_path.chmod(0o600)
 
     @staticmethod
     def _now() -> str:
@@ -471,30 +476,6 @@ class History:
                 )
         return self.load_conversation(user_id, conversation_id)
 
-    def save_artifact(
-        self,
-        user_id: str,
-        conversation_id: str,
-        artifact: Artifact,
-    ) -> Artifact:
-        with self._connect() as connection:
-            owner = connection.execute(
-                """
-                SELECT 1 FROM conversations
-                WHERE user_id = ? AND id = ?
-                """,
-                (user_id, conversation_id),
-            ).fetchone()
-            if owner is None:
-                raise ConversationNotFoundError(conversation_id)
-            self._insert_artifact(
-                connection,
-                conversation_id,
-                artifact,
-                self._now(),
-            )
-        return artifact
-
     @staticmethod
     def _insert_artifact(
         connection: sqlite3.Connection,
@@ -515,7 +496,9 @@ class History:
             metadata = {}
             media_type = ChartArtifact.MEDIA_TYPE
         else:
-            raise TypeError(f"SQLite storage does not support {type(artifact).__name__}.")
+            raise TypeError(
+                f"SQLite storage does not support {type(artifact).__name__}."
+            )
         metadata_json = json.dumps(metadata)
         cursor = connection.execute(
             """
@@ -585,10 +568,7 @@ class History:
                 arrow_bytes=bytes(row["payload"]),
                 truncated=bool(metadata["truncated"]),
             )
-        if (
-            row["kind"] == "chart"
-            and row["media_type"] == ChartArtifact.MEDIA_TYPE
-        ):
+        if row["kind"] == "chart" and row["media_type"] == ChartArtifact.MEDIA_TYPE:
             spec = json.loads(row["payload"])
             if not isinstance(spec, dict):
                 raise TypeError("Saved Vega-Lite content must be a JSON object.")

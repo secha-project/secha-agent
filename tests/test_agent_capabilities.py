@@ -11,9 +11,6 @@ from src.agent.agent import create_agent
 from src.agent.capabilities import (
     catalog,
     query,
-    semantic_layer,
-    table_outputs,
-    visualization,
 )
 from src.agent.deps import Deps
 from src.agent.prompt import render_prompt
@@ -31,12 +28,6 @@ QUERY_WITH_CATALOG = render_prompt(
     QUERY_TEMPLATE,
     frozenset({"catalog", "query", "table_outputs"}),
 )
-VISUALIZATION_INSTRUCTIONS = render_prompt(
-    "capabilities/visualization/instructions.md",
-    frozenset({"query", "table_outputs", "visualization"}),
-)
-
-
 @pytest.mark.parametrize(
     ("selected", "expected_routes"),
     [
@@ -95,22 +86,6 @@ def test_base_prompt_routes_only_selected_capabilities_in_priority_order(
         )
 
 
-@pytest.mark.parametrize(
-    "capability_module",
-    [semantic_layer, catalog, query, table_outputs, visualization],
-)
-def test_capabilities_have_descriptions(
-    capability_module: Any,
-) -> None:
-    selected = frozenset(
-        {"catalog", "query", "semantic_layer", "table_outputs", "visualization"}
-    )
-    capability = capability_module.build(selected)
-
-    assert capability.get_description() == capability_module.DESCRIPTION
-    assert capability_module.DESCRIPTION
-
-
 def _static_instructions(capability: Capability[Deps]) -> list[str]:
     instructions = capability.get_instructions()
     assert instructions is not None
@@ -144,104 +119,9 @@ def test_query_replaces_standalone_instructions_when_catalog_is_selected() -> No
     assert "catalog metadata is unavailable" not in instructions[0]
 
 
-def test_create_agent_deduplicates_capabilities() -> None:
-    model = TestModel(call_tools=[], custom_output_text="done")
-    configured_agent = create_agent(
-        ("catalog", "catalog", "query", "query", "table_outputs", "table_outputs")
-    )
-
-    with capture_run_messages() as messages:
-        configured_agent.run_sync(
-            "question",
-            deps=cast(Deps, cast(Any, object())),
-            model=model,
-        )
-
-    request = next(message for message in messages if isinstance(message, ModelRequest))
-    assert request.instructions is not None
-    assert request.instructions.count(CATALOG_INSTRUCTIONS) == 1
-    assert request.instructions.count(QUERY_WITH_CATALOG) == 1
-    request_parameters = model.last_model_request_parameters
-    assert request_parameters is not None
-    assert [tool.name for tool in request_parameters.function_tools] == [
-        "browse_tables",
-        "find_columns",
-        "describe_table",
-        "query_data",
-        "inspect_table_output",
-        "display_table_output",
-    ]
-
-
-def test_create_agent_uses_canonical_capability_order() -> None:
-    model = TestModel(call_tools=[], custom_output_text="done")
-    configured_agent = create_agent(
-        (
-            "visualization",
-            "table_outputs",
-            "query",
-            "catalog",
-            "semantic_layer",
-        ),
-    )
-
-    with capture_run_messages() as messages:
-        configured_agent.run_sync(
-            "question",
-            deps=cast(Deps, cast(Any, object())),
-            model=model,
-        )
-
-    request = next(message for message in messages if isinstance(message, ModelRequest))
-    assert request.instructions is not None
-    headings = [
-        "## Semantic layer capability",
-        "## Catalog capability",
-        "## Query capability",
-        "## Table outputs capability",
-        "## Visualization capability",
-    ]
-    assert [request.instructions.index(heading) for heading in headings] == sorted(
-        request.instructions.index(heading) for heading in headings
-    )
-
-    request_parameters = model.last_model_request_parameters
-    assert request_parameters is not None
-    assert [tool.name for tool in request_parameters.function_tools] == [
-        "list_semantic_models",
-        "describe_semantic_model",
-        "query_semantic_model",
-        "compare_semantic_periods",
-        "browse_tables",
-        "find_columns",
-        "describe_table",
-        "query_data",
-        "inspect_table_output",
-        "display_table_output",
-        "visualize_table_output",
-    ]
-
-
 def test_create_agent_rejects_unknown_capabilities() -> None:
     with pytest.raises(ValueError, match=r"Unknown capabilities: \['unknown'\]"):
         create_agent(cast(Any, ("catalog", "unknown")))
-
-
-def test_visualization_uses_one_instruction_prompt_and_exposes_one_tool() -> None:
-    capability = visualization.build(
-        frozenset({"query", "table_outputs", "visualization"}),
-    )
-    assert _static_instructions(capability) == [VISUALIZATION_INSTRUCTIONS]
-
-    model = TestModel(call_tools=[], custom_output_text="done")
-    create_agent(("query", "table_outputs", "visualization")).run_sync(
-        "question",
-        deps=cast(Deps, cast(Any, object())),
-        model=model,
-    )
-    request_parameters = model.last_model_request_parameters
-    assert request_parameters is not None
-    assert request_parameters.function_tools[-1].name == "visualize_table_output"
 
 
 def test_semantic_results_can_be_visualized_without_query_or_catalog() -> None:

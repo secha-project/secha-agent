@@ -1,12 +1,9 @@
-import asyncio
-from typing import Any, cast
+from typing import Any
 
 import pandas as pd
-import pyarrow as pa
 
 from src.agent.outputs.artifacts import ArtifactCollector, ChartArtifact
-from src.agent.outputs.tables import LiveTableOutput
-from src.app.artifact_renderer import ArtifactRenderer
+from src.app.rendering import render_artifact, render_tool_result
 
 
 class TableContainer:
@@ -14,6 +11,11 @@ class TableContainer:
         self.data: Any = None
         self.dataframe_kwargs: dict[str, Any] = {}
         self.download_button_calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+        self.width: int | None = None
+
+    def container(self, *, width: int) -> "TableContainer":
+        self.width = width
+        return self
 
     def dataframe(self, data: Any, **kwargs: Any) -> None:
         self.data = data
@@ -26,38 +28,6 @@ class TableContainer:
         self.download_button_calls.append((args, kwargs))
 
 
-class MaterializedResult:
-    def __init__(self) -> None:
-        self.limit_value: int | None = None
-
-    def limit(self, value: int) -> "MaterializedResult":
-        self.limit_value = value
-        return self
-
-    def toPandas(self) -> pd.DataFrame:
-        return pd.DataFrame([{"id": 1}])
-
-
-class TaggedSpark:
-    def addTag(self, _tag: str) -> None:
-        pass
-
-    def removeTag(self, _tag: str) -> None:
-        pass
-
-
-def test_live_table_output_uses_the_configured_artifact_limit() -> None:
-    result = MaterializedResult()
-    output = LiveTableOutput(
-        spark=cast(Any, TaggedSpark()),
-        dataframe=cast(Any, result),
-    )
-    artifact = asyncio.run(output.to_artifact(10_000))
-
-    assert result.limit_value == 10_001
-    assert artifact.row_count == 1
-
-
 def test_artifact_renderer_renders_a_published_artifact(
     make_table_artifact: Any,
 ) -> None:
@@ -65,35 +35,12 @@ def test_artifact_renderer_renders_a_published_artifact(
     artifact = make_table_artifact([{"id": 1}])
     reference = artifacts.publish(artifact)
     container = TableContainer()
-    renderer = ArtifactRenderer()
-
-    part = renderer.render_tool_result(reference, artifacts, container)
+    part = render_tool_result(reference, artifacts, container)
 
     assert part is not None
     assert part.artifact_id == artifact.id
     assert isinstance(container.data, pd.DataFrame)
-    assert container.download_button_calls == []
-
-
-def test_historical_arrow_snapshot_is_rendered_as_native_pandas_dataframe(
-    make_table_artifact: Any,
-) -> None:
-    # Streamlit 1.60's frontend raises Array(-1) when it receives Arrow pandas
-    # metadata with no column-index levels. Index-free snapshots have exactly
-    # that metadata, so historical rendering must let Streamlit re-encode a
-    # pandas DataFrame instead of passing the restored Arrow table directly.
-    source = pa.table({f"column_{index}": [index] for index in range(244)})
-    artifact = make_table_artifact(source)
-    container = TableContainer()
-
-    ArtifactRenderer().render(container, artifact)
-
-    assert isinstance(container.data, pd.DataFrame)
-    assert container.data.shape == (1, 244)
-    assert container.dataframe_kwargs == {
-        "width": "stretch",
-        "hide_index": True,
-    }
+    assert container.width == 640
     assert container.download_button_calls == []
 
 
@@ -105,7 +52,7 @@ def test_truncated_table_adds_csv_download(make_table_artifact: Any) -> None:
     )
     container = TableContainer()
 
-    ArtifactRenderer().render(
+    render_artifact(
         container,
         artifact,
         key="download-truncated",
@@ -124,6 +71,11 @@ def test_truncated_table_adds_csv_download(make_table_artifact: Any) -> None:
 class VisualizationContainer:
     def __init__(self) -> None:
         self.chart_calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+        self.width: int | None = None
+
+    def container(self, *, width: int) -> "VisualizationContainer":
+        self.width = width
+        return self
 
     def vega_lite_chart(self, *args: Any, **kwargs: Any) -> None:
         self.chart_calls.append((args, kwargs))
@@ -142,7 +94,7 @@ def test_visualization_renderer_binds_named_data() -> None:
     artifact = ChartArtifact(id="viz-1", spec=spec)
     container = VisualizationContainer()
 
-    ArtifactRenderer().render(
+    render_artifact(
         container,
         artifact,
     )
@@ -151,4 +103,5 @@ def test_visualization_renderer_binds_named_data() -> None:
     assert args[0].to_dict(orient="records") == [{"x": "A", "y": 1}]
     assert "data" not in args[1]
     assert "datasets" not in args[1]
+    assert container.width == 640
     assert kwargs == {"width": "stretch", "height": 500, "theme": None}

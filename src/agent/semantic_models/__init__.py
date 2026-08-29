@@ -1,5 +1,3 @@
-"""Registry for code-defined Boring Semantic Layer models."""
-
 from collections.abc import Mapping
 
 from boring_semantic_layer import SemanticModel

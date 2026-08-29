@@ -74,14 +74,6 @@ def activate_conversation(
     return True
 
 
-def activate_conversation_callback(
-    resources: AppResources,
-    user_id: str,
-    conversation_id: str,
-) -> None:
-    activate_conversation(resources, user_id, conversation_id)
-
-
 def start_new_conversation() -> None:
     st.session_state.current_conversation_id = None
     st.session_state.display_messages = []

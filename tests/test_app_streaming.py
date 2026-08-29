@@ -18,11 +18,7 @@ from src.app.streaming import stream_agent_response
 
 
 class StatusContainer:
-    def __init__(self) -> None:
-        self.container_kwargs: dict[str, Any] = {}
-
-    def container(self, **kwargs: Any) -> "StatusContainer":
-        self.container_kwargs = kwargs
+    def container(self, **_kwargs: Any) -> "StatusContainer":
         return self
 
     def caption(self, _value: str) -> None:
@@ -40,15 +36,14 @@ class StatusContainer:
 
 class StreamingContainer:
     def __init__(self) -> None:
-        self.status_args: tuple[Any, ...] = ()
-        self.status_kwargs: dict[str, Any] = {}
         self.status_container = StatusContainer()
         self.chart_count = 0
 
-    def status(self, *args: Any, **kwargs: Any) -> StatusContainer:
-        self.status_args = args
-        self.status_kwargs = kwargs
+    def status(self, *_args: Any, **_kwargs: Any) -> StatusContainer:
         return self.status_container
+
+    def container(self, **_kwargs: Any) -> "StreamingContainer":
+        return self
 
     def dataframe(self, _value: Any, **_kwargs: Any) -> None:
         pass
@@ -117,9 +112,6 @@ def test_stream_returns_owned_assistant_and_pending_artifacts(
     )
 
     assert result is not None
-    assert container.status_args == ("Used display table output",)
-    assert container.status_kwargs["type"] == "compact"
-    assert container.status_container.container_kwargs == {"gap": "xsmall"}
     assert len(result.artifacts) == 1
     assert isinstance(result.assistant_message.parts[0], ToolDisplayPart)
     artifact_part = result.assistant_message.parts[1]

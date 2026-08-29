@@ -1,5 +1,3 @@
-"""Agent capabilities and their tools."""
-
 from collections.abc import Iterable
 from typing import Annotated
 

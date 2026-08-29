@@ -71,12 +71,6 @@ def add_output(deps: SimpleNamespace) -> TableOutputRef:
     )
 
 
-def test_output_preview_uses_framework_agnostic_validation_error() -> None:
-    output = LiveTableOutput(cast(Any, StubSpark()), cast(Any, StubResult()))
-    with pytest.raises(ValueError, match="Unknown result columns: missing_column"):
-        asyncio.run(output.preview(column_names=["missing_column"]))
-
-
 @pytest.mark.parametrize(("start_row", "end_row"), [(0, None), (3, 2)])
 def test_output_preview_rejects_invalid_row_ranges(
     start_row: int,

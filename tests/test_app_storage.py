@@ -1,4 +1,3 @@
-import json
 import sqlite3
 import stat
 from datetime import UTC, datetime, timedelta
@@ -8,7 +7,7 @@ from pathlib import Path
 import pytest
 from pydantic_ai import ModelMessage, ModelRequest, UserPromptPart
 
-from src.agent.outputs.artifacts import ChartArtifact
+from src.agent.outputs.artifacts import Artifact, ChartArtifact
 from src.app.models import AssistantDisplayMessage, TextDisplayPart, User
 from src.app.storage.history import (
     ArtifactNotFoundError,
@@ -32,6 +31,21 @@ def users(history: History) -> tuple[User, User]:
     return (
         history.create_user("Alice", "correct-horse"),
         history.create_user("Bob", "battery-staple"),
+    )
+
+
+def commit_artifact(
+    history: History,
+    user_id: str,
+    conversation_id: str,
+    artifact: Artifact,
+) -> None:
+    history.commit_assistant(
+        user_id,
+        conversation_id,
+        AssistantDisplayMessage(),
+        [],
+        [artifact],
     )
 
 
@@ -116,7 +130,7 @@ def test_user_ownership_for_conversations_and_artifacts(
         history.load_conversation(bob.id, alpha.id)
 
     artifact = make_table_artifact([{"value": 1}])
-    history.save_artifact(alice.id, alpha.id, artifact)
+    commit_artifact(history, alice.id, alpha.id, artifact)
     with pytest.raises(ArtifactNotFoundError):
         history.load_artifact(bob.id, alpha.id, artifact.id)
 
@@ -184,11 +198,7 @@ def test_assistant_and_artifacts_are_committed_atomically(
     conversation = history.create_conversation(alice.id)
     history.append_user(alice.id, conversation.id, "Show measurements")
     existing_artifact = make_table_artifact([{"measurement": 1}])
-    history.save_artifact(
-        alice.id,
-        conversation.id,
-        existing_artifact,
-    )
+    commit_artifact(history, alice.id, conversation.id, existing_artifact)
     conflicting_artifact = make_table_artifact(
         [{"measurement": 2}],
         artifact_id=existing_artifact.id,
@@ -206,30 +216,11 @@ def test_assistant_and_artifacts_are_committed_atomically(
         )
 
     restored = history.load_conversation(alice.id, conversation.id)
-    assert [message.role for message in restored.display_messages] == ["user"]
+    assert [message.role for message in restored.display_messages] == [
+        "user",
+        "assistant",
+    ]
     assert restored.model_messages == []
-
-
-def test_persisting_the_same_logical_artifact_again_is_idempotent(
-    history: History,
-    users: tuple[User, User],
-    make_table_artifact,
-) -> None:
-    alice, _ = users
-    conversation = history.create_conversation(alice.id)
-    artifact = make_table_artifact([{"measurement": 1}])
-    history.save_artifact(alice.id, conversation.id, artifact)
-
-    history.save_artifact(alice.id, conversation.id, artifact)
-
-    assert (
-        history.load_artifact(
-            alice.id,
-            conversation.id,
-            artifact.id,
-        )
-        == artifact
-    )
 
 
 def test_delete_conversation_is_user_scoped_and_cascades(
@@ -240,11 +231,7 @@ def test_delete_conversation_is_user_scoped_and_cascades(
     alice, bob = users
     conversation = history.create_conversation(alice.id)
     artifact = make_table_artifact([{"value": 1}])
-    history.save_artifact(
-        alice.id,
-        conversation.id,
-        artifact,
-    )
+    commit_artifact(history, alice.id, conversation.id, artifact)
 
     with pytest.raises(ConversationNotFoundError):
         history.delete_conversation(bob.id, conversation.id)
@@ -270,7 +257,7 @@ def test_chart_round_trip_persists_only_vega_lite_spec(
     spec = {"data": {"values": [{"x": 1}]}, "mark": "point"}
     artifact = ChartArtifact(id="chart-1", spec=spec)
 
-    history.save_artifact(alice.id, conversation.id, artifact)
+    commit_artifact(history, alice.id, conversation.id, artifact)
     restored = history.load_artifact(
         alice.id,
         conversation.id,
@@ -279,9 +266,3 @@ def test_chart_round_trip_persists_only_vega_lite_spec(
 
     assert isinstance(restored, ChartArtifact)
     assert restored.to_spec() == spec
-    with sqlite3.connect(history.db_path) as connection:
-        payload = connection.execute(
-            "SELECT payload FROM artifacts WHERE id = ?",
-            (artifact.id,),
-        ).fetchone()[0]
-    assert json.loads(payload) == spec

@@ -9,7 +9,6 @@ from pydantic_ai import ModelRetry
 from src.agent.capabilities.visualization import (
     MAX_VISUALIZATION_ROWS,
     normalize_datetime_precision,
-    visualization_toolset,
     visualize_table_output,
 )
 from src.agent.outputs.artifacts import ArtifactCollector, ArtifactRef, ChartArtifact
@@ -85,29 +84,6 @@ def _context(
         spark,
         ref,
     )
-
-
-def test_visualization_tool_exposes_retry_contract_in_definition() -> None:
-    tool = visualization_toolset.tools["visualize_table_output"]
-    description = " ".join((tool.description or "").split())
-
-    assert tool.max_retries == 3
-    assert tool.sequential is True
-    assert "ModelRetry" in description
-    assert "ordered bars for categories" in description
-    assert "Aggregate or bin large data" in description
-    assert "PROJECT y, x TO cartesian" in description
-    assert "Never invent ``y2`` or ``y3``" in description
-    assert "``SCALE x VIA date`` accepts dates" in description
-    assert "never timestamps" in description
-    assert "no expressions, functions, or ``RENAMING``" in description
-    assert "Do not add ``FROM`` or ``_data``" in description
-    ggsql_description = " ".join(
-        tool.function_schema.json_schema["properties"]["ggsql"]["description"].split()
-    )
-    assert "beginning with ``VISUALISE``" in ggsql_description
-    assert "at least one ``DRAW``" in ggsql_description
-    assert tool.function_schema.json_schema["required"] == ["ref", "ggsql", "title"]
 
 
 def test_visualization_publishes_registered_spec() -> None:

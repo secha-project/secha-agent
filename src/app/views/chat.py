@@ -6,13 +6,49 @@ import streamlit as st
 
 from src.agent.outputs.tables import TableOutputStore
 
-from ..artifact_renderer import ArtifactRenderer
-from ..models import User
+from ..models import DisplayMessage, User
+from ..rendering import render_artifact, render_tool
 from ..resources import AppResources
 from ..state import create_conversation, ensure_active_conversation
+from ..storage.history import ArtifactNotFoundError
 from ..streaming import stream_agent_response
-from .messages import render_message
 from .sidebar import render_sidebar
+
+
+def render_message(
+    message: DisplayMessage,
+    *,
+    resources: AppResources,
+    user_id: str,
+    conversation_id: str,
+) -> None:
+    # Session-state objects can survive a hot reload and retain their previous
+    # Python class identity. Discriminator fields remain stable across reloads.
+    if message.role == "user":
+        st.chat_message("user").markdown(message.content)
+        return
+
+    container = st.chat_message("assistant")
+    for part in message.parts:
+        if part.kind == "text":
+            container.markdown(part.content)
+        elif part.kind == "tool":
+            render_tool(container, part)
+        elif part.kind == "artifact":
+            try:
+                artifact = resources.history.load_artifact(
+                    user_id,
+                    conversation_id,
+                    part.artifact_id,
+                )
+            except ArtifactNotFoundError:
+                container.error("This saved artifact is unavailable.")
+            else:
+                render_artifact(
+                    container,
+                    artifact,
+                    key=f"download-history-{part.artifact_id}",
+                )
 
 
 def _table_outputs(conversation_id: str | None) -> TableOutputStore | None:
@@ -52,12 +88,10 @@ def _render_prompt_input(
 
     if table_outputs is None:
         raise RuntimeError("The active conversation has no table output store.")
-    artifact_renderer = ArtifactRenderer()
     for message in st.session_state.display_messages:
         render_message(
             message,
             resources=resources,
-            artifact_renderer=artifact_renderer,
             user_id=user.id,
             conversation_id=conversation_id,
         )
@@ -87,15 +121,12 @@ def render_chat(resources: AppResources, user: User) -> None:
         table_outputs = _table_outputs(conversation_id)
     if table_outputs is None:
         raise RuntimeError("The submitted prompt has no table output store.")
-    artifact_renderer = ArtifactRenderer()
-
     saved = resources.history.append_user(user.id, conversation_id, prompt)
     st.session_state.display_messages = saved.display_messages
     st.session_state.model_messages = saved.model_messages
     render_message(
         saved.display_messages[-1],
         resources=resources,
-        artifact_renderer=artifact_renderer,
         user_id=user.id,
         conversation_id=conversation_id,
     )

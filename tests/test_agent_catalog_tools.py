@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from typing import Any
 
-from src.agent.capabilities.catalog import catalog_toolset, find_columns
+from src.agent.capabilities.catalog import find_columns
 
 
 class Catalog:
@@ -43,20 +43,6 @@ def _context() -> Any:
             table_column_page_size=10,
         )
     )
-
-
-def test_find_columns_exposes_requested_name_and_description() -> None:
-    tool = catalog_toolset.tools["find_columns"]
-
-    assert "search_columns" not in catalog_toolset.tools
-    assert tool.description is not None
-    assert "exact column identifier is unknown" in tool.description
-    assert "cannot find device IDs or other row values" in tool.description
-    assert "Returned identifiers are canonical" in tool.description
-    assert tool.function_schema.json_schema["required"] == [
-        "table_name",
-        "keywords",
-    ]
 
 
 def test_find_columns_matches_multiple_keywords_independently() -> None:

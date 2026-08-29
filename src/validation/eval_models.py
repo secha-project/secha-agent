@@ -24,20 +24,13 @@ class TableOutput(BaseModel):
     ordered: bool
 
 
-class ExplanationOutput(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    explanation: str
-
-
 class VisualizationOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     spec_path: str
     image_path: str
 
 
-ExpectedItem = (
-    TextOutput | NumberOutput | TableOutput | ExplanationOutput | VisualizationOutput
-)
+ExpectedItem = TextOutput | NumberOutput | TableOutput | VisualizationOutput
 ExpectedOutput = Annotated[list[ExpectedItem], Field(min_length=1)]
 BenchmarkOutput = str | ExpectedOutput
 

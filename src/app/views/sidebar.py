@@ -7,7 +7,7 @@ from ..resources import AppResources
 from ..routes.auth import AUTH_LOGOUT_ENDPOINT
 from ..state import (
     SIDEBAR_HISTORY_REVISION_KEY,
-    activate_conversation_callback,
+    activate_conversation,
     auth_cookie_token,
     clear_authenticated_session,
     delete_conversation,
@@ -57,7 +57,7 @@ def render_sidebar(resources: AppResources, user: User) -> None:
                             == st.session_state.current_conversation_id
                             else "secondary"
                         ),
-                        on_click=activate_conversation_callback,
+                        on_click=activate_conversation,
                         args=(resources, user.id, conversation.id),
                         width="stretch",
                     )

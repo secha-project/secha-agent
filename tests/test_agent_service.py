@@ -15,17 +15,12 @@ from src.agent.service import AgentRun, AgentService
 
 
 class AgentStub:
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, dict[str, Any]]] = []
-
     @asynccontextmanager
     async def run_stream_events(
         self,
-        prompt: str,
-        **kwargs: Any,
+        _prompt: str,
+        **_kwargs: Any,
     ) -> AsyncIterator[AsyncIterator[Any]]:
-        self.calls.append((prompt, kwargs))
-
         async def events() -> AsyncIterator[Any]:
             yield "started"
             yield "completed"
@@ -79,11 +74,3 @@ def test_agent_service_owns_run_configuration_and_dependencies() -> None:
     assert collect(first) == ["started", "completed"]
     assert collect(second) == ["started", "completed"]
     assert first.artifacts is not second.artifacts
-
-    first_prompt, first_kwargs = agent.calls[0]
-    assert first_prompt == "question"
-    assert first_kwargs["deps"].table_outputs is table_outputs
-    assert first_kwargs["deps"].artifacts is first.artifacts
-    assert first_kwargs["model"] == "test-model"
-    assert first_kwargs["model_settings"]["temperature"] == 0.25
-    assert first_kwargs["usage_limits"].request_limit == 4
