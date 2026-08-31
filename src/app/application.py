@@ -5,10 +5,11 @@ from pathlib import Path
 import streamlit as st
 
 from src.app.resources import load_resources
-from src.app.state import current_user
+from src.app.state import APP_VIEW_KEY, current_user
 from src.app.storage.history import load_history
 from src.app.views.authentication import render_authentication
 from src.app.views.chat import render_chat
+from src.app.views.metric_views import render_metric_views
 
 st.set_page_config(
     page_title="SECHA",
@@ -21,4 +22,8 @@ user = current_user(history)
 if user is None:
     render_authentication(history)
 else:
-    render_chat(load_resources(), user)
+    resources = load_resources()
+    if st.session_state.get(APP_VIEW_KEY) == "metric_views":
+        render_metric_views(resources, user)
+    else:
+        render_chat(resources, user)

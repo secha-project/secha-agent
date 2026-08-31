@@ -11,6 +11,7 @@ from .storage.history import ConversationNotFoundError, History
 
 AUTHENTICATED_USER_KEY = "authenticated_user_id"
 SIDEBAR_HISTORY_REVISION_KEY = "sidebar_history_revision"
+APP_VIEW_KEY = "app_view"
 AUTH_SESSION_KEYS = (
     AUTHENTICATED_USER_KEY,
     "current_conversation_id",
@@ -18,6 +19,7 @@ AUTH_SESSION_KEYS = (
     "model_messages",
     "table_outputs",
     SIDEBAR_HISTORY_REVISION_KEY,
+    APP_VIEW_KEY,
 )
 
 
@@ -66,6 +68,7 @@ def activate_conversation(
     except ConversationNotFoundError:
         return False
 
+    st.session_state[APP_VIEW_KEY] = "chat"
     st.session_state.current_conversation_id = conversation.id
     st.session_state.display_messages = conversation.display_messages
     st.session_state.model_messages = conversation.model_messages
@@ -75,12 +78,23 @@ def activate_conversation(
 
 
 def start_new_conversation() -> None:
+    st.session_state[APP_VIEW_KEY] = "chat"
     st.session_state.current_conversation_id = None
     st.session_state.display_messages = []
     st.session_state.model_messages = []
     st.session_state.table_outputs = None
     if "chat" in st.query_params:
         del st.query_params["chat"]
+
+
+def show_metric_views() -> None:
+    st.session_state[APP_VIEW_KEY] = "metric_views"
+    st.session_state["metric-view-mode"] = "list"
+    st.session_state.pop("metric-view-draft", None)
+    st.session_state.pop("metric-view-new-dimensions", None)
+    st.session_state.pop("metric-view-new-measures", None)
+    st.session_state.pop("metric-view-error", None)
+    st.session_state.pop("metric-view-tabs", None)
 
 
 def create_conversation(resources: AppResources, user_id: str) -> None:

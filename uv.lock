@@ -1949,16 +1949,16 @@ wheels = [
 
 [[package]]
 name = "pyspark"
-version = "4.1.1"
+version = "4.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "py4j" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/19/bf/58ee13add151469c25825b7125bbf62c3bdcec05eec4d458fcb5c5516066/pyspark-4.1.1.tar.gz", hash = "sha256:77f78984aa84fbe865c717dd37b49913b4e5c97d76ef6824f932f1aefa6621ec", size = 455359625, upload-time = "2026-01-09T09:38:38.28Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c3/33/c987434f5d50aa802779a004ca0fd45ee4350caab50554ad7283d5a22b50/pyspark-4.2.0.tar.gz", hash = "sha256:5ad689d53570ee1674193fd4f9bda065f0db3be9363a27d2a3406cc457b70b61", size = 450129423, upload-time = "2026-07-14T22:16:46Z" }
 
 [[package]]
 name = "pyspark-client"
-version = "4.1.1"
+version = "4.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "googleapis-common-protos" },
@@ -1970,7 +1970,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/41/b0/fde39357666529049f2f71235d7126c7b2d5b4c5e20c072dccf845e9a09d/pyspark_client-4.1.1.tar.gz", hash = "sha256:23bd428d1f96c7196ae8ba29facca7eb56f66b3c380294385101ec8f1872a44a", size = 1600762, upload-time = "2026-01-09T09:38:50.679Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/1b/b7fc2cb3cb34a9d71790bd556ac5802c2d93e861c6af850f6e97e3e92b7c/pyspark_client-4.2.0.tar.gz", hash = "sha256:4008fe5e537bf0e57e7243d03abfaac089b7c87316bd07024784d8ea726f5d41", size = 1675557, upload-time = "2026-07-14T22:41:58.134Z" }
 
 [[package]]
 name = "pytest"
@@ -2411,8 +2411,8 @@ requires-dist = [
     { name = "pydantic-ai", specifier = ">=2.12.0" },
     { name = "pydantic-evals", extras = ["logfire"], specifier = ">=2.13.0" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },
-    { name = "pyspark", specifier = "==4.1.1" },
-    { name = "pyspark-client", specifier = "==4.1.1" },
+    { name = "pyspark", specifier = "==4.2.0" },
+    { name = "pyspark-client", specifier = "==4.2.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "starlette", specifier = ">=0.40.0,<2" },

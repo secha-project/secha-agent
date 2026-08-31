@@ -50,8 +50,13 @@ async def run_spark_with_timeout[T](
         ) from exc
 
 
-def get_spark_session(config: SparkSessionConfig) -> SparkSession:
-    spark: SparkSession = (
+def get_spark_session(
+    config: SparkSessionConfig,
+    *,
+    catalog_token: str | None = None,
+    reuse_existing: bool = True,
+) -> SparkSession:
+    builder = (
         SparkSession.builder.config(
             f"spark.sql.catalog.{config.catalog_name}",
             "io.unitycatalog.spark.UCSingleCatalog",
@@ -62,13 +67,13 @@ def get_spark_session(config: SparkSessionConfig) -> SparkSession:
         )
         .config(
             f"spark.sql.catalog.{config.catalog_name}.token",
-            config.catalog_token,
+            config.catalog_token if catalog_token is None else catalog_token,
         )
         .config("spark.sql.defaultCatalog", config.catalog_name)
         .config("spark.sql.session.timeZone", "UTC")
         .remote(config.spark_url)
-        .getOrCreate()
     )
+    spark: SparkSession = builder.getOrCreate() if reuse_existing else builder.create()
     spark.catalog.setCurrentDatabase(config.schema_name)
 
     return spark

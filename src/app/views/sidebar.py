@@ -6,11 +6,13 @@ from ..models import User
 from ..resources import AppResources
 from ..routes.auth import AUTH_LOGOUT_ENDPOINT
 from ..state import (
+    APP_VIEW_KEY,
     SIDEBAR_HISTORY_REVISION_KEY,
     activate_conversation,
     auth_cookie_token,
     clear_authenticated_session,
     delete_conversation,
+    show_metric_views,
     start_new_conversation,
 )
 from .authentication import render_auth_request
@@ -34,6 +36,17 @@ def render_sidebar(resources: AppResources, user: User) -> None:
                 on_click=start_new_conversation,
                 width="stretch",
             )
+            st.button(
+                "Metric Views",
+                icon=":material/analytics:",
+                type=(
+                    "primary"
+                    if st.session_state.get(APP_VIEW_KEY) == "metric_views"
+                    else "secondary"
+                ),
+                on_click=show_metric_views,
+                width="stretch",
+            )
         history_revision = st.session_state.get(SIDEBAR_HISTORY_REVISION_KEY, 0)
         with st.container(
             key=f"sidebar-history-{history_revision}",
@@ -53,7 +66,8 @@ def render_sidebar(resources: AppResources, user: User) -> None:
                         key=f"conversation-{conversation.id}",
                         type=(
                             "primary"
-                            if conversation.id
+                            if st.session_state.get(APP_VIEW_KEY, "chat") == "chat"
+                            and conversation.id
                             == st.session_state.current_conversation_id
                             else "secondary"
                         ),

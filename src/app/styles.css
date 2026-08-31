@@ -134,3 +134,40 @@ div[class*="st-key-delete-conversation-"] button p {
         opacity: 1 !important;
     }
 }
+
+div[class*="st-key-metric-field-row-"] {
+    position: relative;
+}
+div[class*="st-key-metric-field-row-"] [data-testid="stExpander"] summary {
+    padding-right: 3rem;
+}
+div[class*="st-key-delete-metric-field-"] {
+    position: absolute;
+    right: 0.45rem;
+    top: 0.35rem;
+    z-index: 1;
+}
+div[class*="st-key-delete-metric-field-"] button,
+div[class*="st-key-dismiss-metric-view-error"] button {
+    border-radius: 0.35rem;
+    height: 1.9rem;
+    min-height: 1.9rem;
+    padding: 0;
+    width: 1.9rem;
+}
+div[class*="st-key-delete-metric-field-"] button p,
+div[class*="st-key-dismiss-metric-view-error"] button p {
+    display: none;
+}
+div[class*="st-key-metric-view-error-alert"] {
+    position: relative;
+}
+div[class*="st-key-metric-view-error-alert"] [data-testid="stAlert"] {
+    padding-right: 3.5rem;
+}
+div[class*="st-key-dismiss-metric-view-error"] {
+    position: absolute;
+    right: 0.75rem;
+    top: 0.75rem;
+    z-index: 1;
+}
