@@ -83,12 +83,12 @@ def start_new_conversation() -> None:
     st.session_state.display_messages = []
     st.session_state.model_messages = []
     st.session_state.table_outputs = None
-    if "chat" in st.query_params:
-        del st.query_params["chat"]
+    st.query_params.pop("chat", None)
 
 
 def show_metric_views() -> None:
     st.session_state[APP_VIEW_KEY] = "metric_views"
+    st.query_params.pop("chat", None)
     st.session_state["metric-view-mode"] = "list"
     st.session_state.pop("metric-view-draft", None)
     st.session_state.pop("metric-view-new-dimensions", None)
@@ -162,12 +162,6 @@ def ensure_active_conversation(
             )
             if state_is_loaded or activate_conversation(resources, user_id, current_id):
                 return current_id
-
-    conversations = resources.history.list_conversations(user_id)
-    if conversations:
-        fallback_id = conversations[0].id
-        if activate_conversation(resources, user_id, fallback_id):
-            return fallback_id
 
     start_new_conversation()
     return None

@@ -10,7 +10,6 @@ from .catalog import UnityCatalogClient
 from .config import AgentConfig
 from .deps import Deps
 from .outputs.artifacts import Artifact
-from .semantic_runtime import load_semantic_runtime
 from .spark_runtime import get_spark_session
 
 
@@ -24,11 +23,6 @@ def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
     if config is None:
         config = AgentConfig()  # type: ignore[call-arg]
     spark = get_spark_session(config)
-    semantic = (
-        load_semantic_runtime(spark)
-        if "semantic_layer" in config.enabled_capabilities
-        else None
-    )
     deps = Deps(
         spark=spark,
         catalog=UnityCatalogClient(
@@ -38,7 +32,7 @@ def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
-        semantic=semantic,
+        semantic_layer_enabled="semantic_layer" in config.enabled_capabilities,
     )
     agent = create_agent(config.enabled_capabilities)
     result = agent.run_sync(

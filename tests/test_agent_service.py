@@ -36,6 +36,7 @@ def agent_service(agent: AgentStub) -> AgentService:
             table_column_page_size=20,
             temperature=0.25,
             request_limit=4,
+            enabled_capabilities=("query", "table_outputs"),
             create_model=lambda: "test-model",
         ),
     )
@@ -44,7 +45,6 @@ def agent_service(agent: AgentStub) -> AgentService:
         agent=cast(Agent[Deps, str], agent),
         spark=cast(SparkSession, object()),
         catalog=cast(UnityCatalogClient, object()),
-        semantic=None,
     )
 
 

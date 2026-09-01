@@ -62,6 +62,7 @@ def make_deps() -> SimpleNamespace:
         table_outputs=TableOutputStore(),
         artifacts=ArtifactCollector(),
         table_artifact_max_rows=10,
+        semantic_layer_enabled=False,
     )
 
 

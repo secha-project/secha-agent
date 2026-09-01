@@ -1,6 +1,6 @@
 ## Query capability
 
-Use the query capability for row-level data, actual values, aggregates, or calculations{% if "semantic_layer" in capabilities %} not represented by a governed semantic measure{% endif %}. SQL must be read-only Spark SQL.
+Use the query capability for row-level data, actual values, aggregates, or calculations{% if "semantic_layer" in capabilities %} not represented by a governed metric-view measure{% endif %}. SQL must be read-only Spark SQL.{% if "semantic_layer" in capabilities %} Query metric-view dimensions directly and measures through `MEASURE(measure_name)`.{% endif %}
 
 {% if "catalog" in capabilities %}
 Resolve uncertain table, column, and device identifiers with catalog metadata before querying; query directly when identifiers are already canonical.

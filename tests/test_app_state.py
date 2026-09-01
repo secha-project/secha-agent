@@ -103,6 +103,32 @@ def test_active_conversation_reuses_its_table_outputs(
     assert state.table_outputs.resolve(ref) is outputs.resolve(ref)
 
 
+def test_fresh_session_starts_a_new_chat_instead_of_opening_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = SessionState()
+    fake_streamlit = SimpleNamespace(session_state=state, query_params={})
+    monkeypatch.setattr(state_module, "st", fake_streamlit)
+    resources = SimpleNamespace(
+        history=SimpleNamespace(
+            list_conversations=lambda _user_id: pytest.fail(
+                "history should not be selected on landing"
+            )
+        )
+    )
+
+    assert (
+        state_module.ensure_active_conversation(
+            cast(Any, resources),
+            "user-1",
+        )
+        is None
+    )
+    assert state.current_conversation_id is None
+    assert state.display_messages == []
+    assert state.model_messages == []
+
+
 def test_reloading_a_conversation_discards_live_references_without_replay(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

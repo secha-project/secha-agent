@@ -30,7 +30,7 @@ def test_agent_config_uses_default_capabilities() -> None:
 def test_agent_config_rejects_invalid_cross_field_state() -> None:
     with pytest.raises(
         ValidationError,
-        match="semantic_layer capability requires table_outputs",
+        match="semantic_layer capability requires catalog, query, and table_outputs",
     ):
         AgentConfig(
             _env_file=None,

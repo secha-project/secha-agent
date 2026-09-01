@@ -14,6 +14,19 @@ METRIC_VIEWS_DIR = Path(__file__).resolve().parents[2] / "metric_views"
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
+class _MetricViewDumper(yaml.SafeDumper):
+    pass
+
+
+def _represent_string(dumper: yaml.SafeDumper, value: str) -> yaml.ScalarNode:
+    return dumper.represent_scalar(
+        "tag:yaml.org,2002:str", value, style="|" if "\n" in value else None
+    )
+
+
+_MetricViewDumper.add_representer(str, _represent_string)
+
+
 class MetricField(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -31,8 +44,9 @@ class MetricViewDefinition(BaseModel):
     measures: list[MetricField] = Field(default_factory=list)
 
     def to_yaml(self) -> str:
-        return yaml.safe_dump(
+        return yaml.dump(
             self.model_dump(exclude_none=True),
+            Dumper=_MetricViewDumper,
             sort_keys=False,
             allow_unicode=True,
         )
@@ -87,7 +101,7 @@ def build_create_metric_view_sql(
         ]
         column_ddl = " (\n  " + ",\n  ".join(columns) + "\n)"
 
-    clauses = [f"CREATE OR REPLACE VIEW {identifier}{column_ddl}"]
+    clauses = [f"CREATE VIEW {identifier}{column_ddl}"]
     if comment:
         clauses.append(f"COMMENT {_sql_string(comment)}")
     if properties:
@@ -99,9 +113,9 @@ def build_create_metric_view_sql(
     clauses.extend(("WITH METRICS", "LANGUAGE YAML"))
 
     yaml_definition = definition.to_yaml()
-    tag = "metric_view"
+    tag = ""
     while f"${tag}$" in yaml_definition:
-        tag += "_definition"
+        tag = "metricview" if not tag else tag + "definition"
     clauses.append(f"AS ${tag}$\n{yaml_definition}${tag}$")
     return "\n".join(clauses)
 
@@ -145,7 +159,11 @@ class MetricViewService:
 
     def list_metric_views(self) -> list[dict]:
         return [
-            table
+            {
+                **table,
+                "full_name": table.get("full_name")
+                or f"{self.catalog.name}.{self.schema_name}.{table['name']}",
+            }
             for table in self.catalog.list_tables(self.schema_name)
             if str(table.get("table_type", "")).upper() == "METRIC_VIEW"
         ]

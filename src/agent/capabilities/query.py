@@ -28,14 +28,10 @@ def build(selected: frozenset[str]) -> Capability[Deps]:
 async def query_data(ctx: RunContext[Deps], sql: str) -> TableOutput:
     """Run read-only Spark SQL and save a table output with a small preview.
 
-    Use this for row-level data, actual values, aggregates, and calculations not
-    represented by a governed semantic measure. Resolve uncertain identifiers
-    with catalog tools first; do not use schema-search tools for row values.
-
-    For a possible governed metric, KPI, aggregate, or calculation, check
-    semantic models and describe plausible matches first. Use raw SQL only when
-    no model represents the calculation or row-level analysis is required.
-    Never duplicate or validate a governed result with hand-written SQL.
+    Use this for row-level data, actual values, aggregates, and calculations.
+    Resolve uncertain identifiers with catalog tools first; do not use
+    schema-search tools for row values. Follow the active capability policy when
+    choosing between governed objects and source-table calculations.
 
     Answer from the preview when it is sufficient. Otherwise pass the returned
     reference to ``inspect_table_output``. This tool does not publish data in

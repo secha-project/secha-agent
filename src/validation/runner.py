@@ -16,7 +16,6 @@ from src.agent.config import AgentConfig
 from src.agent.deps import Deps
 from src.agent.outputs.artifacts import ArtifactCollector
 from src.agent.outputs.tables import TableOutputStore
-from src.agent.semantic_runtime import load_semantic_runtime
 from src.agent.spark_runtime import get_spark_session
 from src.validation.config import BENCHMARKS_DIR, RESULTS_DIR, BenchmarkRunConfig
 from src.validation.eval_models import (
@@ -87,11 +86,6 @@ def configure_observability(config: AgentConfig) -> None:
 
 def create_dependencies(config: AgentConfig) -> Deps:
     spark = get_spark_session(config)
-    semantic = (
-        load_semantic_runtime(spark)
-        if "semantic_layer" in config.enabled_capabilities
-        else None
-    )
     return Deps(
         spark=spark,
         catalog=UnityCatalogClient(
@@ -101,7 +95,7 @@ def create_dependencies(config: AgentConfig) -> Deps:
         ),
         schema_name=config.schema_name,
         table_column_page_size=config.table_column_page_size,
-        semantic=semantic,
+        semantic_layer_enabled="semantic_layer" in config.enabled_capabilities,
     )
 
 

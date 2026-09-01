@@ -1,4 +1,5 @@
 import json
+from typing import Literal
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
@@ -10,6 +11,11 @@ class ColumnMetadata(BaseModel):
     name: str
     data_type: str
     comment: str | None
+    metric_role: Literal["dimension", "measure"] | None = None
+
+
+def is_metric_view(table: dict) -> bool:
+    return str(table.get("table_type", "")).upper() == "METRIC_VIEW"
 
 
 class UnityCatalogClient:
@@ -61,6 +67,17 @@ def parse_columns(table: dict) -> list[ColumnMetadata]:
             name=column["name"],
             data_type=column.get("type_text") or column.get("type_name") or "unknown",
             comment=column.get("comment"),
+            metric_role=_metric_role(column) if is_metric_view(table) else None,
         )
         for position, column in enumerate(table.get("columns") or [], start=1)
     ]
+
+
+def _metric_role(column: dict) -> Literal["dimension", "measure"] | None:
+    try:
+        type_json = column.get("type_json") or "{}"
+        field = json.loads(type_json) if isinstance(type_json, str) else type_json
+        role = str(field.get("metadata", {}).get("metric_view.type", "")).lower()
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return role if role in {"dimension", "measure"} else None

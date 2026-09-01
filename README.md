@@ -35,16 +35,6 @@ The agent, built with Pydantic AI, can answer data analytics questions by intera
 - `inspect_table_output`
 - `display_table_output`
 
-The Boring Semantic Layer capability adds governed semantic-model
-discovery, metric queries, and period comparisons. It uses an Ibis PySpark
-backend bound to the same authenticated Spark Connect session, and its results
-enter the same table artifact pipeline as raw Spark SQL.
-
-Define models in `src/agent/semantic_models`. Its model factory receives the
-Ibis backend bound to the application Spark session, which remains the sole
-execution and authorization boundary. Resolve physical tables through that
-backend and return base or composed BSL models from the factory.
-
 Configure the catalog, Spark Connect, model provider, and OpenTelemetry values
 in `.env`. Keep credentials for every provider in this file; provider and
 capability selection belong to the app or benchmark configuration:

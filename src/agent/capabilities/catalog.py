@@ -9,7 +9,7 @@ from pydantic_ai import ModelRetry, RunContext
 from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
 
-from ..catalog import ColumnMetadata, parse_columns
+from ..catalog import ColumnMetadata, is_metric_view, parse_columns
 from ..deps import Deps
 from ..prompt import render_prompt
 
@@ -17,6 +17,7 @@ from ..prompt import render_prompt
 class TableSummary(BaseModel):
     name: str
     description: str | None
+    table_type: str
 
 
 class BrowseTablesResult(BaseModel):
@@ -38,6 +39,7 @@ class SearchColumnsResult(BaseModel):
 
 class DescribeTableResult(BaseModel):
     table_name: str
+    table_type: str
     description: str | None
     total_columns: int
     columns: list[ColumnMetadata]
@@ -88,6 +90,15 @@ def _full_table_name(
     return f"{catalog_name}.{resolved_table_name}"
 
 
+def _require_visible(table: dict, semantic_layer_enabled: bool) -> dict:
+    if is_metric_view(table) and not semantic_layer_enabled:
+        raise ModelRetry(
+            "That object is not available with the current capability profile. "
+            "Use browse_tables to discover available tables."
+        )
+    return table
+
+
 @catalog_toolset.tool
 def browse_tables(ctx: RunContext[Deps]) -> BrowseTablesResult:
     """List tables in the configured schema with canonical names and short descriptions.
@@ -100,13 +111,18 @@ def browse_tables(ctx: RunContext[Deps]) -> BrowseTablesResult:
     """
     deps = ctx.deps
     schema_name = deps.schema_name.split(".")[-1]
-    tables = deps.catalog.list_tables(schema_name)
+    tables = [
+        table
+        for table in deps.catalog.list_tables(schema_name)
+        if deps.semantic_layer_enabled or not is_metric_view(table)
+    ]
     return BrowseTablesResult(
         schema_name=f"{deps.catalog.name}.{schema_name}",
         tables=[
             TableSummary(
                 name=f"{deps.catalog.name}.{schema_name}.{table['name']}",
                 description=_truncate_description(table.get("comment")),
+                table_type=str(table.get("table_type") or "UNKNOWN").upper(),
             )
             for table in tables
         ],
@@ -145,7 +161,10 @@ def find_columns(
         deps.schema_name,
     )
     try:
-        table = deps.catalog.get_table(resolved_table_name)
+        table = _require_visible(
+            deps.catalog.get_table(resolved_table_name),
+            deps.semantic_layer_enabled,
+        )
     except HTTPError as exc:
         if exc.code != 404:
             raise
@@ -226,7 +245,10 @@ def describe_table(
         deps.schema_name,
     )
     try:
-        table = deps.catalog.get_table(resolved_table_name)
+        table = _require_visible(
+            deps.catalog.get_table(resolved_table_name),
+            deps.semantic_layer_enabled,
+        )
     except HTTPError as exc:
         if exc.code != 404:
             raise
@@ -257,6 +279,7 @@ def describe_table(
 
     return DescribeTableResult(
         table_name=resolved_table_name,
+        table_type=str(table.get("table_type") or "UNKNOWN").upper(),
         description=table.get("comment"),
         total_columns=len(columns),
         columns=selected,

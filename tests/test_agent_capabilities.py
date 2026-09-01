@@ -28,64 +28,6 @@ QUERY_WITH_CATALOG = render_prompt(
     QUERY_TEMPLATE,
     frozenset({"catalog", "query", "table_outputs"}),
 )
-@pytest.mark.parametrize(
-    ("selected", "expected_routes"),
-    [
-        (frozenset({"catalog"}), ["Catalog"]),
-        (frozenset({"query", "table_outputs"}), ["Query"]),
-        (
-            frozenset({"catalog", "query", "table_outputs"}),
-            ["Catalog", "Query"],
-        ),
-        (
-            frozenset({"semantic_layer", "table_outputs"}),
-            ["Semantic layer"],
-        ),
-        (
-            frozenset({"query", "table_outputs", "visualization"}),
-            ["Query", "Visualization"],
-        ),
-        (
-            frozenset({"catalog", "query", "table_outputs", "visualization"}),
-            ["Catalog", "Query", "Visualization"],
-        ),
-        (
-            frozenset(
-                {
-                    "catalog",
-                    "query",
-                    "semantic_layer",
-                    "table_outputs",
-                    "visualization",
-                }
-            ),
-            ["Semantic layer", "Catalog", "Query", "Visualization"],
-        ),
-    ],
-)
-def test_base_prompt_routes_only_selected_capabilities_in_priority_order(
-    selected: frozenset[str],
-    expected_routes: list[str],
-) -> None:
-    prompt = render_prompt("base.md", selected)
-    route_lines = [
-        line
-        for line in prompt.splitlines()
-        if line.lstrip("0123456789. ").startswith("**")
-    ]
-
-    assert [line.split("**")[1].removesuffix(":") for line in route_lines] == (
-        expected_routes
-    )
-    assert [int(line.split(".", 1)[0]) for line in route_lines] == list(
-        range(1, len(expected_routes) + 1)
-    )
-    for capability_name in ("Semantic layer", "Catalog", "Query", "Visualization"):
-        assert (f"**{capability_name}:**" in prompt) == (
-            capability_name in expected_routes
-        )
-
-
 def _static_instructions(capability: Capability[Deps]) -> list[str]:
     instructions = capability.get_instructions()
     assert instructions is not None
@@ -124,9 +66,11 @@ def test_create_agent_rejects_unknown_capabilities() -> None:
         create_agent(cast(Any, ("catalog", "unknown")))
 
 
-def test_semantic_results_can_be_visualized_without_query_or_catalog() -> None:
+def test_semantic_policy_uses_catalog_and_query_tools() -> None:
     model = TestModel(call_tools=[], custom_output_text="done")
-    create_agent(("semantic_layer", "table_outputs", "visualization")).run_sync(
+    create_agent(
+        ("semantic_layer", "catalog", "query", "table_outputs", "visualization")
+    ).run_sync(
         "question",
         deps=cast(Deps, cast(Any, object())),
         model=model,
@@ -135,10 +79,10 @@ def test_semantic_results_can_be_visualized_without_query_or_catalog() -> None:
     request_parameters = model.last_model_request_parameters
     assert request_parameters is not None
     assert [tool.name for tool in request_parameters.function_tools] == [
-        "list_semantic_models",
-        "describe_semantic_model",
-        "query_semantic_model",
-        "compare_semantic_periods",
+        "browse_tables",
+        "find_columns",
+        "describe_table",
+        "query_data",
         "inspect_table_output",
         "display_table_output",
         "visualize_table_output",
@@ -149,7 +93,7 @@ def test_semantic_results_can_be_visualized_without_query_or_catalog() -> None:
     ("capabilities", "message"),
     [
         (("visualization",), "requires table_outputs"),
-        (("table_outputs", "visualization"), "requires semantic_layer or query"),
+        (("table_outputs", "visualization"), "requires query"),
         (("query", "visualization"), "requires table_outputs"),
     ],
 )
@@ -216,3 +160,5 @@ def test_full_capability_prompt_keeps_tool_mechanics_out_of_instructions() -> No
     assert "VISUALISE" not in prompt
     assert "Call `browse_tables`" not in prompt
     assert "Call `list_semantic_models`" not in prompt
+    assert "put every dimension projected by `SELECT` in `GROUP BY`" in prompt
+    assert "Filter-only dimensions need not be grouped" in prompt

@@ -1,9 +1,7 @@
 ## Semantic layer capability
 
-Use the semantic layer for governed business or domain metrics, declared measures, and combinations of declared measures and dimensions. Use only model, measure, and dimension names returned by its discovery tools.
+Use catalog metadata to discover native metric views for governed business or domain metrics. A metric view has `table_type` `METRIC_VIEW`; its fields are classified as dimensions or measures. Reference dimensions directly and measures only through `MEASURE(measure_name)` in Spark SQL.
 
-{% if "query" in capabilities %}
-Fall back to raw SQL only when the requested calculation is not represented in a semantic model or row-level analysis is required. Never silently replace an available governed measure with a hand-written approximation.
-{% else %}
-If the request is not represented by a semantic model or requires row-level analysis, explain that raw SQL is unavailable rather than approximating a governed measure.
-{% endif %}
+`MEASURE(name)` is an aggregate. Selected dimensions define the result grain: put every dimension projected by `SELECT` in `GROUP BY`. Filter-only dimensions need not be grouped. For a time series, select and group by its time dimension. Any number of measures can share that grain.
+
+Prefer an available governed measure over reconstructing it from a source table. Fall back to raw SQL calculations only when no metric view represents the request or row-level analysis is required.

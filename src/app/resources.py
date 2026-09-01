@@ -9,7 +9,6 @@ import streamlit as st
 from src.agent.agent import create_agent
 from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
-from src.agent.semantic_runtime import load_semantic_runtime
 from src.agent.service import AgentService
 from src.agent.spark_runtime import get_spark_session
 
@@ -42,9 +41,10 @@ def load_resources() -> AppResources:
     )
     logfire.instrument_pydantic_ai()
     spark = get_spark_session(config)
+    admin_token = app_config.catalog_token_admin.get_secret_value()
     admin_spark = get_spark_session(
         config,
-        catalog_token=app_config.catalog_token_admin.get_secret_value(),
+        catalog_token=admin_token,
         reuse_existing=False,
     )
 
@@ -53,22 +53,20 @@ def load_resources() -> AppResources:
         config.catalog_token,
         config.catalog_name,
     )
-    semantic = (
-        load_semantic_runtime(spark)
-        if "semantic_layer" in config.enabled_capabilities
-        else None
+    admin_catalog = UnityCatalogClient(
+        config.catalog_url,
+        admin_token,
+        config.catalog_name,
     )
-
     _loaded_resources = AppResources(
         agent=AgentService(
             config=config,
             agent=create_agent(config.enabled_capabilities),
             spark=spark,
             catalog=catalog,
-            semantic=semantic,
         ),
         history=load_history(),
-        metric_views=MetricViewService(admin_spark, catalog, config.schema_name),
+        metric_views=MetricViewService(admin_spark, admin_catalog, config.schema_name),
     )
     return _loaded_resources
 

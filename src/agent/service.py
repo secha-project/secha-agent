@@ -18,7 +18,6 @@ from .config import AgentConfig
 from .deps import Deps
 from .outputs.artifacts import ArtifactCollector
 from .outputs.tables import TableOutputStore
-from .semantic_runtime import SemanticRuntime
 
 AgentEvent = AgentStreamEvent | AgentRunResultEvent[str]
 
@@ -37,7 +36,6 @@ class AgentService:
     agent: Agent[Deps, str]
     spark: SparkSession
     catalog: UnityCatalogClient
-    semantic: SemanticRuntime | None
 
     def start_run(
         self,
@@ -52,7 +50,9 @@ class AgentService:
             catalog=self.catalog,
             schema_name=self.config.schema_name,
             table_column_page_size=self.config.table_column_page_size,
-            semantic=self.semantic,
+            semantic_layer_enabled=(
+                "semantic_layer" in self.config.enabled_capabilities
+            ),
             table_outputs=table_outputs,
             artifacts=artifacts,
         )
