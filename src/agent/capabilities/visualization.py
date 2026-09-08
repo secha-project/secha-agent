@@ -116,8 +116,40 @@ def _validate_ggsql(ggsql_text: str) -> str:
     return visual
 
 
+def _use_utc_scales(spec: dict[str, Any]) -> None:
+    """Keep ggsql's UTC data, scale bounds, and ticks in the same timezone."""
+    for encoding in spec.get("encoding", {}).values():
+        if not isinstance(encoding, dict) or encoding.get("type") != "temporal":
+            continue
+        scale = encoding.setdefault("scale", {})
+        if isinstance(scale, dict):
+            scale["type"] = "utc"
+        for component, key in (
+            (scale, "domain"),
+            (encoding.get("axis"), "values"),
+            (encoding.get("legend"), "values"),
+        ):
+            if isinstance(component, dict) and isinstance(component.get(key), list):
+                # ggsql emits ISO datetime bounds without the Z used in its data.
+                component[key] = [
+                    value + "Z"
+                    if isinstance(value, str)
+                    and re.fullmatch(
+                        r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?", value
+                    )
+                    else value
+                    for value in component[key]
+                ]
+    for key in ("layer", "concat", "hconcat", "vconcat"):
+        for child in spec.get(key, []):
+            _use_utc_scales(child)
+    if isinstance(spec.get("spec"), dict):
+        _use_utc_scales(spec["spec"])
+
+
 def _standalone_spec(chart: Any) -> dict[str, Any]:
     spec = chart.to_dict()
+    _use_utc_scales(spec)
     if spec.get("height") == "container":
         spec["height"] = 420
     return spec

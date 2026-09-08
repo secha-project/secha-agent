@@ -1,4 +1,8 @@
 import asyncio
+import json
+import os
+import subprocess
+import sys
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -157,6 +161,37 @@ def test_datetime_normalization_uses_microseconds_and_utc() -> None:
     assert str(normalized["aware"].dtype) == "datetime64[us]"
     assert normalized.loc[0, "aware"] == pd.Timestamp("2025-01-01T00:00:00.123456")
     assert normalized.loc[0, "value"] == 1
+
+
+@pytest.mark.parametrize("day", ["2025-03-02", "2025-07-02", "2025-03-30"])
+def test_datetime_chart_renders_identically_in_utc_and_helsinki(day: str) -> None:
+    ctx, spark, ref = _context()
+    spark.result.frame = pd.DataFrame(
+        {"time": pd.date_range(day, periods=24, freq="h"), "value": range(24)}
+    )
+    asyncio.run(
+        visualize_table_output(
+            ctx, ref, "VISUALISE time AS x, value AS y DRAW line", "UTC times"
+        )
+    )
+    spec = ctx.deps.artifacts.published[0].to_spec()
+    spec["width"] = 600
+    render = (
+        "import json, sys, vl_convert; "
+        "print(vl_convert.vegalite_to_svg(json.load(sys.stdin)))"
+    )
+    svgs = [
+        subprocess.run(
+            [sys.executable, "-c", render],
+            input=json.dumps(spec),
+            text=True,
+            capture_output=True,
+            check=True,
+            env={**os.environ, "TZ": timezone},
+        ).stdout
+        for timezone in ("UTC", "Europe/Helsinki")
+    ]
+    assert svgs[0] == svgs[1]
 
 
 def test_visualization_rejects_stale_table_reference() -> None:
