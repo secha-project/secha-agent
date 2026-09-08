@@ -5,6 +5,7 @@ from typing import Any, Literal
 
 from pydantic import Field, SecretStr
 from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.profiles.qwen import qwen_model_profile
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,7 +20,7 @@ DEFAULT_ENABLED_CAPABILITIES = frozenset(
 class TuniProviderConfig(BaseSettings):
     url: str
     api_key: SecretStr
-    model_name: str = "granite4-32b"
+    model_name: str = "Qwen3.8-27B-AIC"
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
@@ -48,7 +49,7 @@ class AgentConfig(BaseSettings):
     spark_url: str
     schema_name: str = "bronze"
     table_column_page_size: int = Field(default=20, ge=1)
-    model_provider: Literal["tuni", "openai"] = "openai"
+    model_provider: Literal["tuni", "openai"] = "tuni"
     model_name: str | None = None
     temperature: float = Field(default=0.0, ge=0.0)
     request_limit: int = Field(default=50, ge=1)
@@ -72,8 +73,13 @@ class AgentConfig(BaseSettings):
     def create_model(self) -> OpenAIChatModel:
         provider_config = self.load_provider()
         api_key = provider_config.api_key.get_secret_value()
+        model_name = self.model_name or provider_config.model_name
+        profile = None
 
         if isinstance(provider_config, TuniProviderConfig):
+            if model_name.lower().startswith("qwen"):
+                # TUNI aliases need Qwen's streamed leading-whitespace handling.
+                profile = qwen_model_profile(model_name.lower())
             provider = OpenAIProvider(
                 base_url=provider_config.url,
                 api_key=api_key,
@@ -82,8 +88,9 @@ class AgentConfig(BaseSettings):
             provider = OpenAIProvider(api_key=api_key)
 
         return OpenAIChatModel(
-            self.model_name or provider_config.model_name,
+            model_name,
             provider=provider,
+            profile=profile,
         )
 
     def experiment_metadata(self) -> dict[str, Any]:

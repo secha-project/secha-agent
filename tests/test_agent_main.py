@@ -69,6 +69,14 @@ def test_agent_config_loads_only_the_selected_provider_from_environment(
     assert "secret" not in repr(provider)
     assert "unused-openai-secret" not in repr(config)
 
+    qwen_model = config.model_copy(
+        update={"model_name": "Qwen3.8-27B-AIC"}
+    ).create_model()
+    assert qwen_model.model_name == "Qwen3.8-27B-AIC"
+    assert str(qwen_model.client.base_url) == "https://tuni.example"
+    assert qwen_model.profile["ignore_streamed_leading_whitespace"] is True
+    assert not config.create_model().profile.get("ignore_streamed_leading_whitespace")
+
     openai_config = AgentConfig(
         _env_file=None,
         catalog_url="https://catalog.example",
