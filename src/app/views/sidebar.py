@@ -13,6 +13,7 @@ from ..state import (
     clear_authenticated_session,
     delete_conversation,
     show_metric_views,
+    show_users,
     start_new_conversation,
 )
 from .authentication import render_auth_request
@@ -47,6 +48,16 @@ def render_sidebar(resources: AppResources, user: User) -> None:
                 on_click=show_metric_views,
                 width="stretch",
             )
+            if user.is_admin:
+                st.button(
+                    "Users",
+                    icon=":material/manage_accounts:",
+                    type="primary"
+                    if st.session_state.get(APP_VIEW_KEY) == "users"
+                    else "secondary",
+                    on_click=show_users,
+                    width="stretch",
+                )
         history_revision = st.session_state.get(SIDEBAR_HISTORY_REVISION_KEY, 0)
         with st.container(
             key=f"sidebar-history-{history_revision}",
@@ -68,7 +79,7 @@ def render_sidebar(resources: AppResources, user: User) -> None:
                             "primary"
                             if st.session_state.get(APP_VIEW_KEY, "chat") == "chat"
                             and conversation.id
-                            == st.session_state.current_conversation_id
+                            == st.session_state.get("current_conversation_id")
                             else "secondary"
                         ),
                         on_click=activate_conversation,

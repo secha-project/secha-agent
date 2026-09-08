@@ -20,9 +20,37 @@ lets Streamlit find it without a path argument. It mounts the Streamlit UI from
 `src/app/routes/auth.py` on the same listener.
 
 The app uses OpenAI as its model provider and stores chat history locally by
-default. Users must create an account in the app. Login sessions are kept for
+default. Accounts are provisioned by an administrator. Login sessions are kept for
 seven days in an HTTP-only browser cookie. If the app is served over HTTPS,
 set `SECHA_AUTH_SECURE_COOKIE=true` so the cookie is only sent over HTTPS.
+
+### Account administration
+
+Public signup is disabled by default; the existing signup flow is retained.
+To enable it later, start the server with `SECHA_ALLOW_SIGNUP=true` in its
+environment (for example, `SECHA_ALLOW_SIGNUP=true uv run streamlit run`).
+
+On the server, from the project directory, grant your account admin access:
+
+```bash
+uv run python -m src.app.admin YOUR_USERNAME
+```
+
+If that username does not exist, the command prompts for a password without
+echoing it. Existing accounts keep their passwords. Use `--db PATH` or
+`SECHA_CHAT_HISTORY_DB` when the app uses a custom database; the command must
+target the same database as the running app.
+
+Sign in and open **Users** in the sidebar to create accounts. Assign a unique
+temporary password and share it privately with the recipient. They must choose
+a different password before accessing the app. Changing the password revokes
+their previous login sessions. Admin-created accounts are regular users;
+granting admin access requires the local command above.
+
+Existing accounts and conversations are preserved, and existing users remain
+regular users until explicitly promoted. Disabling signup does not revoke
+accounts that were already created. The database gains the account flags
+automatically on startup; restart the server after upgrading.
 
 ## Agent
 

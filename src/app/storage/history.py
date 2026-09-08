@@ -63,6 +63,10 @@ class UsernameAlreadyExistsError(ValueError):
     pass
 
 
+def public_signup_enabled() -> bool:
+    return os.environ.get("SECHA_ALLOW_SIGNUP", "false").strip().casefold() == "true"
+
+
 def normalize_username(username: str) -> str:
     return username.strip().casefold()
 
@@ -117,13 +121,84 @@ class History:
             connection.executescript(
                 Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
             )
+            connection.execute("BEGIN IMMEDIATE")
+            columns = {
+                row["name"] for row in connection.execute("PRAGMA table_info(users)")
+            }
+            for column in ("is_admin", "must_change_password"):
+                if column not in columns:
+                    connection.execute(
+                        f"ALTER TABLE users ADD COLUMN {column} INTEGER NOT NULL DEFAULT 0"
+                    )
         self.db_path.chmod(0o600)
 
     @staticmethod
     def _now() -> str:
         return datetime.now(UTC).isoformat()
 
-    def create_user(self, username: str, password: str) -> User:
+    def register_user(self, username: str, password: str) -> User:
+        if not public_signup_enabled():
+            raise PermissionError(
+                "Public signup is disabled. Contact your administrator."
+            )
+        return self.create_user(username, password)
+
+    def require_admin(self, token: str) -> User:
+        user = self.get_user_by_auth_session(token)
+        if user is None or not user.is_admin or user.must_change_password:
+            raise PermissionError("Administrator access is required.")
+        return user
+
+    def create_managed_user(self, token: str, username: str, password: str) -> User:
+        self.require_admin(token)
+        return self.create_user(username, password, must_change_password=True)
+
+    def list_users(self, token: str) -> list[User]:
+        self.require_admin(token)
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, username, created_at, is_admin, must_change_password "
+                "FROM users ORDER BY normalized_username"
+            ).fetchall()
+        return [User(**dict(row)) for row in rows]
+
+    def change_password(
+        self, token: str, current_password: str, new_password: str
+    ) -> User:
+        user = self.get_user_by_auth_session(token)
+        if (
+            user is None
+            or self.authenticate_user(user.username, current_password) is None
+        ):
+            raise PermissionError("Your current password or session is invalid.")
+        validate_password(new_password)
+        if current_password == new_password:
+            raise ValueError(
+                "Choose a different password from your temporary password."
+            )
+        with self._connect() as connection:
+            changed = connection.execute(
+                "UPDATE users SET password_hash = ?, must_change_password = 0 "
+                "WHERE id = ? AND EXISTS (SELECT 1 FROM auth_sessions "
+                "WHERE user_id = users.id AND token_hash = ? AND expires_at > ?)",
+                (
+                    PASSWORD_HASHER.hash(new_password),
+                    user.id,
+                    self._auth_session_token_hash(token),
+                    self._now(),
+                ),
+            )
+            if changed.rowcount != 1:
+                raise PermissionError("Your session has expired. Please log in again.")
+            connection.execute(
+                "DELETE FROM auth_sessions WHERE user_id = ?", (user.id,)
+            )
+        return user.model_copy(update={"must_change_password": False})
+
+    def create_user(
+        self, username: str, password: str, *, must_change_password: bool = False
+    ) -> User:
+        """Trusted local provisioning; UI callers must use the guarded methods above."""
         cleaned_username = validate_username(username)
         validate_password(password)
         user_id = uuid4().hex
@@ -133,9 +208,9 @@ class History:
                 connection.execute(
                     """
                     INSERT INTO users (
-                        id, username, normalized_username, password_hash, created_at
+                        id, username, normalized_username, password_hash, created_at, must_change_password
                     )
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     """,
                     (
                         user_id,
@@ -143,13 +218,19 @@ class History:
                         normalize_username(cleaned_username),
                         PASSWORD_HASHER.hash(password),
                         created_at,
+                        int(must_change_password),
                     ),
                 )
         except sqlite3.IntegrityError as exc:
             raise UsernameAlreadyExistsError(
                 "That username is already registered."
             ) from exc
-        return User(id=user_id, username=cleaned_username, created_at=created_at)
+        return User(
+            id=user_id,
+            username=cleaned_username,
+            created_at=created_at,
+            must_change_password=must_change_password,
+        )
 
     def authenticate_user(self, username: str, password: str) -> User | None:
         normalized_username = normalize_username(username)
@@ -158,7 +239,7 @@ class History:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT id, username, password_hash, created_at
+                SELECT id, username, password_hash, created_at, is_admin, must_change_password
                 FROM users
                 WHERE normalized_username = ?
                 """,
@@ -179,13 +260,15 @@ class History:
             id=row["id"],
             username=row["username"],
             created_at=row["created_at"],
+            is_admin=bool(row["is_admin"]),
+            must_change_password=bool(row["must_change_password"]),
         )
 
     def get_user(self, user_id: str) -> User | None:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT id, username, created_at
+                SELECT id, username, created_at, is_admin, must_change_password
                 FROM users
                 WHERE id = ?
                 """,
@@ -239,7 +322,8 @@ class History:
             )
             row = connection.execute(
                 """
-                SELECT users.id, users.username, users.created_at
+                SELECT users.id, users.username, users.created_at,
+                    users.is_admin, users.must_change_password
                 FROM auth_sessions
                 JOIN users ON users.id = auth_sessions.user_id
                 WHERE auth_sessions.token_hash = ?

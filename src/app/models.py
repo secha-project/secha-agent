@@ -56,6 +56,8 @@ class ConversationSummary(BaseModel):
 
 
 class User(BaseModel):
+    is_admin: bool = False
+    must_change_password: bool = False
     id: str
     username: str
     created_at: str

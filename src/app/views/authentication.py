@@ -6,15 +6,21 @@ import streamlit as st
 
 from ..models import User
 from ..routes.auth import (
+    AUTH_LOGOUT_ENDPOINT,
     AUTH_REQUEST_HEADER,
     AUTH_SESSION_ENDPOINT,
 )
-from ..state import set_authenticated_user
+from ..state import (
+    auth_cookie_token,
+    clear_authenticated_session,
+    set_authenticated_user,
+)
 from ..storage.history import (
     History,
     InvalidUsernameError,
     UsernameAlreadyExistsError,
     WeakPasswordError,
+    public_signup_enabled,
 )
 
 
@@ -61,15 +67,17 @@ def complete_login(history: History, user: User) -> None:
 def render_authentication(history: History) -> None:
     st.title("SECHA")
     st.caption("Sign in to continue to your analytics assistant.")
-    mode = st.segmented_control(
-        "Account action",
-        ["Log in", "Sign up"],
-        default="Log in",
-        required=True,
-        key="auth-mode",
-        label_visibility="collapsed",
-        width="stretch",
-    )
+    mode = "Log in"
+    if public_signup_enabled():
+        mode = st.segmented_control(
+            "Account action",
+            ["Log in", "Sign up"],
+            default="Log in",
+            required=True,
+            key="auth-mode",
+            label_visibility="collapsed",
+            width="stretch",
+        )
 
     with st.container(border=True):
         if mode == "Sign up":
@@ -108,8 +116,9 @@ def render_authentication(history: History) -> None:
                 st.error("Passwords do not match.")
                 return
             try:
-                user = history.create_user(username, password)
+                user = history.register_user(username, password)
             except (
+                PermissionError,
                 InvalidUsernameError,
                 WeakPasswordError,
                 UsernameAlreadyExistsError,
@@ -146,3 +155,38 @@ def render_authentication(history: History) -> None:
             st.error("Invalid username or password.")
             return
         complete_login(history, user)
+
+
+def render_password_change(history: History, user: User) -> None:
+    st.title("Choose your password")
+    st.caption(
+        f"Welcome, {user.username}. Replace your temporary password to continue."
+    )
+    with st.form("change-password", clear_on_submit=True):
+        current = st.text_input("Temporary password", type="password", max_chars=128)
+        password = st.text_input(
+            "New password",
+            type="password",
+            max_chars=128,
+            help="Use at least 8 characters.",
+        )
+        confirmation = st.text_input(
+            "Confirm new password", type="password", max_chars=128
+        )
+        submitted = st.form_submit_button("Save password", type="primary")
+    if submitted:
+        if password != confirmation:
+            st.error("Passwords do not match.")
+        else:
+            try:
+                updated = history.change_password(
+                    auth_cookie_token() or "", current, password
+                )
+            except (ValueError, PermissionError) as exc:
+                st.error(str(exc))
+            else:
+                complete_login(history, updated)
+    if st.button("Sign out"):
+        history.revoke_auth_session(auth_cookie_token() or "")
+        clear_authenticated_session()
+        render_auth_request(AUTH_LOGOUT_ENDPOINT)

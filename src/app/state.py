@@ -39,18 +39,11 @@ def clear_authenticated_session() -> None:
 
 
 def current_user(history: History) -> User | None:
-    user_id = st.session_state.get(AUTHENTICATED_USER_KEY)
-    if isinstance(user_id, str):
-        user = history.get_user(user_id)
-        if user is None:
-            clear_authenticated_session()
-        return user
-
     token = auth_cookie_token()
-    if token is None:
-        return None
-    user = history.get_user_by_auth_session(token)
-    if user is not None:
+    user = history.get_user_by_auth_session(token) if token is not None else None
+    if user is None:
+        clear_authenticated_session()
+    else:
         set_authenticated_user(user)
     return user
 
@@ -83,6 +76,11 @@ def start_new_conversation() -> None:
     st.session_state.display_messages = []
     st.session_state.model_messages = []
     st.session_state.table_outputs = None
+    st.query_params.pop("chat", None)
+
+
+def show_users() -> None:
+    st.session_state[APP_VIEW_KEY] = "users"
     st.query_params.pop("chat", None)
 
 
