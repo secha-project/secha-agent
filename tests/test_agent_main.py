@@ -9,6 +9,7 @@ from src.agent.config import (
     DEFAULT_ENABLED_CAPABILITIES,
     AgentConfig,
     OpenAIProviderConfig,
+    PricingReference,
     TuniProviderConfig,
 )
 from src.agent.main import AgentOutcome
@@ -76,6 +77,19 @@ def test_agent_config_loads_only_the_selected_provider_from_environment(
     assert str(qwen_model.client.base_url) == "https://tuni.example"
     assert qwen_model.profile["ignore_streamed_leading_whitespace"] is True
     assert not config.create_model().profile.get("ignore_streamed_leading_whitespace")
+
+    priced_config = config.model_copy(
+        update={
+            "pricing": PricingReference(
+                provider="openai",
+                model_name="gpt-5-mini",
+            )
+        }
+    )
+    assert priced_config.experiment_metadata()["pricing"] == {
+        "provider": "openai",
+        "model_name": "gpt-5-mini",
+    }
 
     openai_config = AgentConfig(
         _env_file=None,

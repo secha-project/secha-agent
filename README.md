@@ -105,6 +105,19 @@ That example config file evaluates the agent in the small dataset in `src/valida
 uv run python -m src.validation.run_benchmark --config openai-mini
 ```
 
+Interrupted runs can be resumed in place from their results directory. To rerun
+selected tasks after changing their wording or expected artifacts, add `--redo`.
+This copies the checkpoint and artifacts to a new timestamped run directory,
+leaves the original run untouched, replaces all repetitions of the named tasks,
+and generates a fresh report:
+
+```bash
+uv run python -m src.validation.run_benchmark \
+  --config openai-mini \
+  --resume benchmark-results/power-quality-monitoring/openai-mini_YYYY-MM-DD_HH-MM \
+  --redo task_6 task_8
+```
+
 ## Telemetry
 
 All responses, tool use and requests can be tracked with OpenTelemetry locally, set up the telemetry backend with:

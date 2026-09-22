@@ -7,8 +7,10 @@ requires-python = ">=3.12"
 dependencies = [
     "argon2-cffi>=25.1.0",
     "ggsql>=0.3.2",
+    "genai-prices>=0.0.60",
     "jinja2>=3.1.6,<4",
     "logfire>=4.37.0",
+    "numpy>=2.0.0",
     "pandas>=2.2.0",
     "pydantic>=2.13.4",
     "pydantic-ai>=2.12.0",

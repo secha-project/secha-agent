@@ -8,38 +8,40 @@ from pydantic_evals.evaluators import EvaluationReason
 
 from src.validation.eval_models import VisualizationOutput
 from src.validation.evaluators.visualization import (
+    ValidateVisualizationIncluded,
     ValidateVisualizationQuality,
     VisualizationEvaluation,
+    _load_png,
 )
 
+PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"test image payload"
 
-def test_visualization_evaluation_rejects_scores_outside_rubric() -> None:
+
+def test_visualization_evaluation_rejects_non_boolean_scores() -> None:
     with pytest.raises(ValidationError):
         VisualizationEvaluation(
-            visualization_type=3,
-            data_encoding=2,
-            data_transformation=2,
-            aesthetics=2,
-            is_blank=0,
-            rationale="Invalid visualization type score.",
+            data_correct=cast(Any, 1),
+            encoding_correct=True,
+            type_correct=True,
+            aesthetics_correct=True,
+            rationale="Invalid data correctness score.",
         )
 
 
 def test_visualization_quality_uses_structured_multimodal_judgment(tmp_path) -> None:
     generated_path = tmp_path / "generated.png"
     reference_path = tmp_path / "reference.png"
-    generated_path.write_bytes(b"generated image")
-    reference_path.write_bytes(b"reference image")
+    generated_path.write_bytes(PNG_BYTES)
+    reference_path.write_bytes(PNG_BYTES)
 
     evaluator = ValidateVisualizationQuality(
         artifact_base_path=tmp_path,
         model=TestModel(
             custom_output_args={
-                "visualization_type": 2,
-                "data_encoding": 1,
-                "data_transformation": 0,
-                "aesthetics": 2,
-                "is_blank": 1,
+                "data_correct": False,
+                "encoding_correct": False,
+                "type_correct": True,
+                "aesthetics_correct": True,
                 "rationale": "The encoding differs and the generated plot is blank.",
             }
         ),
@@ -59,12 +61,11 @@ def test_visualization_quality_uses_structured_multimodal_judgment(tmp_path) -> 
         evaluator.evaluate_sync(cast(Any, ctx)),
     )
 
-    assert output["visualization_type"].value == 1.0
-    assert output["data_encoding"].value == 0.5
-    assert output["data_transformation"].value == 0.0
-    assert output["aesthetics"].value == 1.0
-    assert output["visualization_not_blank"].value is False
-    assert output["data_encoding"].reason == (
+    assert output["data_correct"].value is False
+    assert output["encoding_correct"].value is False
+    assert output["type_correct"].value is True
+    assert output["aesthetics_correct"].value is True
+    assert output["encoding_correct"].reason == (
         "The encoding differs and the generated plot is blank."
     )
 
@@ -86,4 +87,64 @@ def test_visualization_quality_skips_judge_when_generated_image_is_missing(
         attributes={},
     )
 
-    assert evaluator.evaluate_sync(cast(Any, ctx)) == {}
+    output = cast(
+        dict[str, EvaluationReason],
+        evaluator.evaluate_sync(cast(Any, ctx)),
+    )
+
+    assert set(output) == {
+        "data_correct",
+        "encoding_correct",
+        "type_correct",
+        "aesthetics_correct",
+    }
+    assert all(result.value is False for result in output.values())
+
+
+def test_visualization_included_requires_a_nonempty_image_file(tmp_path) -> None:
+    invalid_path = tmp_path / "generated.png"
+    invalid_path.write_bytes(b"")
+    expected_output = [VisualizationOutput(image_path="reference.png")]
+    evaluator = ValidateVisualizationIncluded()
+
+    invalid_ctx = SimpleNamespace(
+        expected_output=expected_output,
+        attributes={"visualization_image_path": str(invalid_path)},
+    )
+    assert evaluator.evaluate_sync(cast(Any, invalid_ctx)) == {
+        "graph_included": False
+    }
+
+    invalid_path.write_bytes(PNG_BYTES)
+    assert evaluator.evaluate_sync(cast(Any, invalid_ctx)) == {
+        "graph_included": True
+    }
+
+
+def test_load_png_uses_known_media_type_and_high_detail(tmp_path) -> None:
+    image_path = tmp_path / "plot.png"
+    image_path.write_bytes(PNG_BYTES)
+
+    image = _load_png(image_path, description="Test image")
+
+    assert image.media_type == "image/png"
+    assert image.data == PNG_BYTES
+    assert image.vendor_metadata == {"detail": "high"}
+
+
+def test_visualization_quality_rejects_invalid_ground_truth_image(tmp_path) -> None:
+    generated_path = tmp_path / "generated.png"
+    reference_path = tmp_path / "reference.png"
+    generated_path.write_bytes(PNG_BYTES)
+    reference_path.write_bytes(b"")
+    evaluator = ValidateVisualizationQuality(
+        artifact_base_path=tmp_path,
+        model=TestModel(),
+    )
+    ctx = SimpleNamespace(
+        expected_output=[VisualizationOutput(image_path=reference_path.name)],
+        attributes={"visualization_image_path": str(generated_path)},
+    )
+
+    with pytest.raises(ValueError, match="Ground-truth visualization image"):
+        evaluator.evaluate_sync(cast(Any, ctx))

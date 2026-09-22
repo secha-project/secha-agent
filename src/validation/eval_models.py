@@ -26,8 +26,8 @@ class TableOutput(BaseModel):
 
 class VisualizationOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    spec_path: str
     image_path: str
+    spec_path: str | None = None
 
 
 ExpectedItem = TextOutput | NumberOutput | TableOutput | VisualizationOutput

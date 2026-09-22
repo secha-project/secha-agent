@@ -5,8 +5,10 @@ from pathlib import Path
 import vl_convert as vlc
 from pydantic_evals import set_eval_attribute
 from pydantic_evals.lifecycle import CaseLifecycle
+from pydantic_evals.reporting import ReportCase, ReportCaseFailure
 
 from src.agent.outputs.artifacts import Artifact, ChartArtifact, TableArtifact
+from src.validation.checkpoint import EvaluationCheckpoint
 from src.validation.eval_models import BenchmarkCase, BenchmarkOutput, CaseMetadata
 
 
@@ -75,15 +77,19 @@ class EvaluationLifecycle(CaseLifecycle[str, BenchmarkOutput, CaseMetadata]):
         case: BenchmarkCase,
         *,
         artifacts_dir: Path,
+        checkpoint: EvaluationCheckpoint,
+        source_case_name: str | None = None,
         repetition_index: int | None = None,
     ) -> None:
         super().__init__(case)
         self.artifacts_dir = artifacts_dir
+        self.checkpoint = checkpoint
+        self.source_case_name = source_case_name
         self.repetition_index = repetition_index
         self.artifact_scope_token: Token[EvaluationArtifactScope | None] | None = None
 
     async def setup(self) -> None:
-        task_name = self.case.name
+        task_name = self.source_case_name or self.case.name
         if task_name is None:
             raise ValueError("Evaluation cases must have names to store artifacts.")
 
@@ -104,28 +110,45 @@ class EvaluationLifecycle(CaseLifecycle[str, BenchmarkOutput, CaseMetadata]):
             )
         )
 
-    async def teardown(self, result: object) -> None:
-        if self.artifact_scope_token is not None:
-            _evaluation_artifact_scope.reset(self.artifact_scope_token)
-            self.artifact_scope_token = None
+    async def teardown(
+        self,
+        result: (
+            ReportCase[str, BenchmarkOutput, CaseMetadata]
+            | ReportCaseFailure[str, BenchmarkOutput, CaseMetadata]
+            | None
+        ),
+    ) -> None:
+        try:
+            if result is not None:
+                result.source_case_name = self.source_case_name
+                await self.checkpoint.record(result)
+        finally:
+            if self.artifact_scope_token is not None:
+                _evaluation_artifact_scope.reset(self.artifact_scope_token)
+                self.artifact_scope_token = None
 
 
 class LifecycleFactory:
-    """Create case lifecycles and number repeated case artifacts."""
+    """Create case lifecycles with stable artifact and checkpoint identities."""
 
-    def __init__(self, artifacts_dir: Path, repetitions: int) -> None:
+    def __init__(
+        self,
+        artifacts_dir: Path,
+        checkpoint: EvaluationCheckpoint,
+        attempts: dict[str, tuple[str, int]] | None = None,
+    ) -> None:
         self.artifacts_dir = artifacts_dir
-        self.number_repetitions = repetitions > 1
-        self.repetition_counts: dict[str | None, int] = {}
+        self.checkpoint = checkpoint
+        self.attempts = attempts or {}
 
     def __call__(self, case: BenchmarkCase) -> EvaluationLifecycle:
-        repetition_index = None
-        if self.number_repetitions:
-            repetition_index = self.repetition_counts.get(case.name, 0) + 1
-            self.repetition_counts[case.name] = repetition_index
+        attempt = self.attempts.get(case.name or "")
+        source_case_name, repetition_index = attempt or (None, None)
 
         return EvaluationLifecycle(
             case,
             artifacts_dir=self.artifacts_dir,
+            checkpoint=self.checkpoint,
+            source_case_name=source_case_name,
             repetition_index=repetition_index,
         )

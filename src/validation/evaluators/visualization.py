@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from pydantic_ai import Agent, BinaryContent, ModelSettings
 from pydantic_ai.models import KnownModelName, Model
 from pydantic_evals.evaluators import (
@@ -19,19 +19,16 @@ _RUBRIC = (
 )
 _DEFAULT_JUDGE_MODEL = "openai:gpt-5.4-mini"
 
-RubricScore = Annotated[int, Field(ge=0, le=2)]
-
 
 class VisualizationEvaluation(BaseModel):
     """Structured assessment returned by the visualization judge."""
 
     model_config = ConfigDict(extra="forbid")
 
-    visualization_type: RubricScore
-    data_encoding: RubricScore
-    data_transformation: RubricScore
-    aesthetics: RubricScore
-    is_blank: Literal[0, 1]
+    data_correct: StrictBool
+    encoding_correct: StrictBool
+    type_correct: StrictBool
+    aesthetics_correct: StrictBool
     rationale: Annotated[str, Field(min_length=1)]
 
 
@@ -43,9 +40,37 @@ def _visualization_outputs(
     return [item for item in expected_output if isinstance(item, VisualizationOutput)]
 
 
+def _load_png(path: Path, *, description: str) -> BinaryContent:
+    """Load a PNG produced by the visualization artifact pipeline."""
+    if not path.is_file():
+        raise FileNotFoundError(f"{description} does not exist: {path}")
+
+    data = path.read_bytes()
+    if not data:
+        raise ValueError(f"{description} is empty: {path}")
+
+    return BinaryContent(
+        data=data,
+        media_type="image/png",
+        vendor_metadata={"detail": "high"},
+    )
+
+
+def _failed_quality(reason: str) -> EvaluatorOutput:
+    return {
+        name: EvaluationReason(value=False, reason=reason)
+        for name in (
+            "data_correct",
+            "encoding_correct",
+            "type_correct",
+            "aesthetics_correct",
+        )
+    }
+
+
 @dataclass
 class ValidateVisualizationIncluded(Evaluator[str, BenchmarkOutput, CaseMetadata]):
-    """Check that the agent produced visualization spec and image artifacts."""
+    """Check that the agent produced a valid visualization image."""
 
     def evaluate(
         self,
@@ -54,14 +79,15 @@ class ValidateVisualizationIncluded(Evaluator[str, BenchmarkOutput, CaseMetadata
         if not _visualization_outputs(ctx.expected_output):
             return {}
 
-        spec_path = ctx.attributes.get("visualization_spec_path")
         image_path = ctx.attributes.get("visualization_image_path")
-        return bool(
-            isinstance(spec_path, (str, Path))
-            and isinstance(image_path, (str, Path))
-            and Path(spec_path).is_file()
-            and Path(image_path).is_file()
-        )
+        if not isinstance(image_path, (str, Path)):
+            return {"graph_included": False}
+
+        try:
+            _load_png(Path(image_path), description="Generated visualization image")
+        except (OSError, ValueError):
+            return {"graph_included": False}
+        return {"graph_included": True}
 
 
 @dataclass
@@ -81,17 +107,26 @@ class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]
 
         generated_path_value = ctx.attributes.get("visualization_image_path")
         if not isinstance(generated_path_value, (str, Path)):
-            return {}
+            return _failed_quality("No generated visualization image was produced.")
 
         generated_path = Path(generated_path_value)
-        if not generated_path.is_file():
-            return {}
+        try:
+            generated_image = _load_png(
+                generated_path,
+                description="Generated visualization image",
+            )
+        except (OSError, ValueError) as exc:
+            return _failed_quality(str(exc))
 
         # A run currently produces one visualization, so compare it with the
         # first reference visualization declared by the benchmark case.
         reference_path = Path(expected_visualizations[0].image_path)
         if not reference_path.is_absolute():
             reference_path = self.artifact_base_path / reference_path
+        reference_image = _load_png(
+            reference_path,
+            description="Ground-truth visualization image",
+        )
 
         judge = Agent(
             self.model,
@@ -102,36 +137,29 @@ class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]
         result = await judge.run(
             [
                 "Generated plot (first image):",
-                BinaryContent.from_path(generated_path),
+                generated_image,
                 "Ground-truth plot (second image):",
-                BinaryContent.from_path(reference_path),
+                reference_image,
             ]
         )
         assessment = result.output
 
-        # Pydantic Evals treats floats as scores and expects them in [0, 1].
-        # Retain the rubric's integer scale in the structured judge output and
-        # normalize only at the evaluator boundary.
         rationale = assessment.rationale
         return {
-            "visualization_type": EvaluationReason(
-                value=assessment.visualization_type / 2,
+            "data_correct": EvaluationReason(
+                value=assessment.data_correct,
                 reason=rationale,
             ),
-            "data_encoding": EvaluationReason(
-                value=assessment.data_encoding / 2,
+            "encoding_correct": EvaluationReason(
+                value=assessment.encoding_correct,
                 reason=rationale,
             ),
-            "data_transformation": EvaluationReason(
-                value=assessment.data_transformation / 2,
+            "type_correct": EvaluationReason(
+                value=assessment.type_correct,
                 reason=rationale,
             ),
-            "aesthetics": EvaluationReason(
-                value=assessment.aesthetics / 2,
-                reason=rationale,
-            ),
-            "visualization_not_blank": EvaluationReason(
-                value=assessment.is_blank == 0,
+            "aesthetics_correct": EvaluationReason(
+                value=assessment.aesthetics_correct,
                 reason=rationale,
             ),
         }

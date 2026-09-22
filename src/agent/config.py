@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import Field, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.profiles.qwen import qwen_model_profile
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -15,6 +15,15 @@ ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 DEFAULT_ENABLED_CAPABILITIES = frozenset(
     {"catalog", "query", "semantic_layer", "table_outputs", "visualization"}
 )
+
+
+class PricingReference(BaseModel):
+    """A standard model price to use when estimating custom-provider costs."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    model_name: str = Field(min_length=1)
+    provider: str | None = Field(default=None, min_length=1)
 
 
 class TuniProviderConfig(BaseSettings):
@@ -51,6 +60,7 @@ class AgentConfig(BaseSettings):
     table_column_page_size: int = Field(default=20, ge=1)
     model_provider: Literal["tuni", "openai"] = "tuni"
     model_name: str | None = None
+    pricing: PricingReference | None = None
     temperature: float = Field(default=0.0, ge=0.0)
     request_limit: int = Field(default=50, ge=1)
     enabled_capabilities: EnabledCapabilities = DEFAULT_ENABLED_CAPABILITIES
@@ -105,6 +115,7 @@ class AgentConfig(BaseSettings):
         return {
             "model_provider": self.model_provider,
             "provider_settings": provider_settings,
+            "pricing": self.pricing.model_dump(mode="json") if self.pricing else None,
             "temperature": self.temperature,
             "request_limit": self.request_limit,
             "enabled_capabilities": sorted(self.enabled_capabilities),
