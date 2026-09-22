@@ -47,16 +47,35 @@ class DescribeTableResult(BaseModel):
 
 
 NAME = "catalog"
+# This prompt will only be sent when using deferred loading of capabilities.
 DESCRIPTION = "Discover tables, columns, and schema metadata."
-catalog_toolset = FunctionToolset[Deps]()
 
 
 def build(selected: frozenset[str]) -> Capability[Deps]:
+    toolset = FunctionToolset[Deps]()
+    toolset.add_function(
+        browse_tables,
+        description=render_prompt(
+            f"capabilities/{NAME}/tools/browse_tables.md", selected
+        ),
+    )
+    toolset.add_function(
+        find_columns,
+        description=render_prompt(
+            f"capabilities/{NAME}/tools/find_columns.md", selected
+        ),
+    )
+    toolset.add_function(
+        describe_table,
+        description=render_prompt(
+            f"capabilities/{NAME}/tools/describe_table.md", selected
+        ),
+    )
     return Capability(
         id=NAME,
         description=DESCRIPTION,
         instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
-        toolsets=[catalog_toolset],
+        toolsets=[toolset],
     )
 
 
@@ -99,16 +118,7 @@ def _require_visible(table: dict, semantic_layer_enabled: bool) -> dict:
     return table
 
 
-@catalog_toolset.tool
 def browse_tables(ctx: RunContext[Deps]) -> BrowseTablesResult:
-    """List tables in the configured schema with canonical names and short descriptions.
-
-    Use this first when a table name is unknown, ambiguous, or possibly
-    misspelled, including when locating a metadata table that may map a human
-    device name to its stored identifier. This tool does not return columns or
-    search row values; after selecting a table, use ``find_columns`` or
-    ``describe_table`` to inspect its schema.
-    """
     deps = ctx.deps
     schema_name = deps.schema_name.split(".")[-1]
     tables = [
@@ -129,18 +139,12 @@ def browse_tables(ctx: RunContext[Deps]) -> BrowseTablesResult:
     )
 
 
-@catalog_toolset.tool
 def find_columns(
     ctx: RunContext[Deps],
     table_name: str,
     keywords: str,
 ) -> SearchColumnsResult:
     """Find columns in one known table using human-language metadata keywords.
-
-    Use this when the exact column identifier is unknown or the user describes
-    a field in natural language. This searches column names and comments only;
-    it cannot find device IDs or other row values. Use ``query_data`` to search
-    or filter actual data. Returned identifiers are canonical.
 
     Args:
         table_name: A bare, schema-qualified, or fully qualified table name.
@@ -215,7 +219,6 @@ def find_columns(
     )
 
 
-@catalog_toolset.tool
 def describe_table(
     ctx: RunContext[Deps],
     table_name: str,
@@ -224,12 +227,6 @@ def describe_table(
     column_names: list[str] | None = None,
 ) -> DescribeTableResult:
     """Show the description and selected column metadata for one known table.
-
-    Use this only after the canonical table identifier is known. By default it
-    returns the first configured page of columns. Page through wide schemas
-    with ``start_column`` and ``end_column``, or request known exact identifiers
-    with ``column_names``; exact names take precedence over the range. Use
-    ``find_columns`` instead for human-language concepts or unknown names.
 
     Args:
         table_name: A bare, schema-qualified, or fully qualified table name.

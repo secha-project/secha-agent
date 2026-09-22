@@ -4,6 +4,7 @@ from ..deps import Deps
 from ..prompt import render_prompt
 
 NAME = "semantic_layer"
+# This prompt will only be sent when using deferred loading of capabilities.
 DESCRIPTION = "Discover and prefer governed native metric views."
 
 
