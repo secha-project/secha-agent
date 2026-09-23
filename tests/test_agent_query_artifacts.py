@@ -1,11 +1,17 @@
 import asyncio
+import os
+import time
 from collections.abc import Callable
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, cast
 
 import pandas as pd
+import pyarrow as pa
 import pytest
 from pydantic_ai import ModelRetry
+from pyspark.sql.conversion import ArrowTableToRowsConversion
+from pyspark.sql.types import StructType, TimestampNTZType, TimestampType
 
 from src.agent.capabilities.query import query_data
 from src.agent.capabilities.table_outputs import (
@@ -38,8 +44,8 @@ class StubResult:
     def select(self, *_columns: str) -> "StubResult":
         return self
 
-    def collect(self) -> list[tuple[int]]:
-        return [(1,)]
+    def toArrow(self) -> pa.Table:
+        return pa.table({"known_column": [1]})
 
     def toPandas(self) -> pd.DataFrame:
         return pd.DataFrame([{"known_column": 1}])
@@ -117,6 +123,56 @@ def test_query_data_returns_structured_output_preview() -> None:
     assert result.preview_markdown == "## Row 1\n\nknown_column: 1"
     output = deps.table_outputs.resolve(result.output_ref)
     assert isinstance(output.dataframe, StubResult)
+
+
+@pytest.mark.parametrize("host_timezone", ["UTC", "Europe/Helsinki"])
+@pytest.mark.parametrize("month", [3, 7])
+def test_preview_preserves_utc_and_naive_timestamps(
+    host_timezone: str, month: int
+) -> None:
+    instant = datetime(2025, month, 2, tzinfo=UTC)
+    naive = instant.replace(tzinfo=None)
+
+    class TimestampResult(StubResult):
+        schema = (
+            StructType().add("ts", TimestampType()).add("local_ts", TimestampNTZType())
+        )
+
+        def count(self) -> int:
+            return 3
+
+        def toArrow(self) -> pa.Table:
+            return pa.table(
+                {
+                    "ts": pa.array(
+                        [instant, instant, None], type=pa.timestamp("us", tz="UTC")
+                    ),
+                    "local_ts": pa.array([naive, naive, None], type=pa.timestamp("us")),
+                }
+            )
+
+        def collect(self):
+            # Exercise Spark's actual host-local conversion if previews regress
+            # to collect(), without needing a running Spark server.
+            return ArrowTableToRowsConversion.convert(self.toArrow(), self.schema)
+
+    previous_timezone = os.environ.get("TZ")
+    try:
+        os.environ["TZ"] = host_timezone
+        time.tzset()
+        output = LiveTableOutput(cast(Any, StubSpark()), cast(Any, TimestampResult()))
+        preview = asyncio.run(output.preview(start_row=2, end_row=3))
+    finally:
+        if previous_timezone is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = previous_timezone
+        time.tzset()
+
+    assert preview.rows == ((instant, naive), (None, None))
+    assert preview.total_rows == 3
+    assert f"ts: 2025-{month:02d}-02 00:00:00+00:00" in preview.to_markdown()
+    assert f"local_ts: 2025-{month:02d}-02 00:00:00\n" in preview.to_markdown()
 
 
 def test_display_table_output_creates_a_concrete_artifact() -> None:

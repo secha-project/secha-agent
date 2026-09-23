@@ -161,12 +161,15 @@ class LiveTableOutput:
             collected = (
                 self.dataframe.select(*selection.columns)
                 .limit(selection.end_row)
-                .collect()
+                .toArrow()
             )
-            rows = tuple(
-                tuple(row)
-                for row in collected[selection.start_row - 1 : selection.end_row]
+            # collect() converts timestamps to the Python host's timezone and
+            # drops the offset. Arrow preserves UTC timestamps (and leaves
+            # TIMESTAMP_NTZ values naive), so previews agree with the SQL filters.
+            visible = collected.slice(
+                selection.start_row - 1, selection.requested_row_count
             )
+            rows = tuple(zip(*(column.to_pylist() for column in visible.columns)))
             return selection.build(
                 rows,
                 total_rows=total_rows,
