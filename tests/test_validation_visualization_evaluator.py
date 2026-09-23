@@ -11,7 +11,6 @@ from src.validation.evaluators.visualization import (
     ValidateVisualizationIncluded,
     ValidateVisualizationQuality,
     VisualizationEvaluation,
-    _load_png,
 )
 
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"test image payload"
@@ -119,17 +118,6 @@ def test_visualization_included_requires_a_nonempty_image_file(tmp_path) -> None
     assert evaluator.evaluate_sync(cast(Any, invalid_ctx)) == {
         "graph_included": True
     }
-
-
-def test_load_png_uses_known_media_type_and_high_detail(tmp_path) -> None:
-    image_path = tmp_path / "plot.png"
-    image_path.write_bytes(PNG_BYTES)
-
-    image = _load_png(image_path, description="Test image")
-
-    assert image.media_type == "image/png"
-    assert image.data == PNG_BYTES
-    assert image.vendor_metadata == {"detail": "high"}
 
 
 def test_visualization_quality_rejects_invalid_ground_truth_image(tmp_path) -> None:

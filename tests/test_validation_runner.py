@@ -20,13 +20,20 @@ def test_agent_task_uses_fresh_output_state_for_each_run(
     )
     contexts: list[ArtifactCollector] = []
     table_output_stores = []
+    recorded_metrics: list[tuple[str, int]] = []
 
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         context = kwargs["deps"].artifacts
         contexts.append(context)
         table_output_stores.append(kwargs["deps"].table_outputs)
         assert kwargs["deps"].table_artifact_max_rows is None
-        return SimpleNamespace(output="answer")
+        return SimpleNamespace(output="answer", usage=SimpleNamespace(tool_calls=2))
+
+    monkeypatch.setattr(
+        runner_module,
+        "increment_eval_metric",
+        lambda name, value: recorded_metrics.append((name, value)),
+    )
 
     task = AgentTask(
         agent=cast(Any, SimpleNamespace(run_sync=run_sync)),
@@ -42,6 +49,7 @@ def test_agent_task_uses_fresh_output_state_for_each_run(
     assert contexts[0] is not contexts[1]
     assert template_artifacts not in contexts
     assert table_output_stores[0] is not table_output_stores[1]
+    assert recorded_metrics == [("tool_calls", 2), ("tool_calls", 2)]
 
 
 def test_agent_task_writes_only_the_artifacts_from_that_run(
@@ -59,7 +67,7 @@ def test_agent_task_writes_only_the_artifacts_from_that_run(
     def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         artifact = make_table_artifact([{"value": 1}])
         kwargs["deps"].artifacts.publish(artifact)
-        return SimpleNamespace(output="answer")
+        return SimpleNamespace(output="answer", usage=SimpleNamespace(tool_calls=0))
 
     monkeypatch.setattr(
         runner_module,

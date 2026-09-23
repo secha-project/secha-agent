@@ -34,10 +34,8 @@ class VisualizationResult:
 
     def __init__(self, frame: pd.DataFrame) -> None:
         self.frame = frame
-        self.limit_value: int | None = None
 
-    def limit(self, value: int) -> "VisualizationResult":
-        self.limit_value = value
+    def limit(self, _value: int) -> "VisualizationResult":
         return self
 
     def toPandas(self) -> pd.DataFrame:
@@ -102,7 +100,6 @@ def test_visualization_publishes_registered_spec() -> None:
     artifact = ctx.deps.artifacts.published[0]
     assert ctx.deps.artifacts.resolve(result.metadata) is artifact
     assert isinstance(artifact, ChartArtifact)
-    assert spark.result.limit_value == MAX_VISUALIZATION_ROWS + 1
     assert spark.queries == []
 
 

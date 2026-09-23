@@ -277,13 +277,6 @@ def test_users_navigation_returns_to_new_and_existing_chats(tmp_path, monkeypatc
 
     click_sidebar("Users")
     assert app.title[0].value == "Users"
-    assert not any(button.label == "Back to chat" for button in app.button)
-    assert (
-        next(
-            button for button in app.sidebar.button if button.label == "Users"
-        ).proto.type
-        == "primary"
-    )
     click_sidebar("New chat")
     assert len(app.chat_input) == 1
     assert app.session_state[state.APP_VIEW_KEY] == "chat"

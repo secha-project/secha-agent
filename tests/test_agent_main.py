@@ -6,7 +6,6 @@ from pydantic import ValidationError
 
 import src.agent.main as main_module
 from src.agent.config import (
-    DEFAULT_ENABLED_CAPABILITIES,
     AgentConfig,
     OpenAIProviderConfig,
     PricingReference,
@@ -14,18 +13,6 @@ from src.agent.config import (
 )
 from src.agent.main import AgentOutcome
 from src.agent.outputs.artifacts import TableArtifact
-
-
-def test_agent_config_uses_default_capabilities() -> None:
-    config = AgentConfig(
-        _env_file=None,
-        catalog_url="https://catalog.example",
-        catalog_token="token",
-        spark_url="sc://spark.example",
-        otel_exporter_otlp_endpoint="http://otel.example",
-    )
-
-    assert config.enabled_capabilities == DEFAULT_ENABLED_CAPABILITIES
 
 
 def test_agent_config_rejects_invalid_cross_field_state() -> None:

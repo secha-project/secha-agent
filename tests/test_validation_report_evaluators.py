@@ -7,7 +7,8 @@ from pydantic_evals.evaluators import ReportEvaluatorContext
 import src.validation.evaluators.report as report_module
 from src.validation.eval_models import BenchmarkOutput, CaseMetadata
 from src.validation.evaluators.report import (
-    DEFAULT_REPORT_EVALUATORS,
+    AverageAccuracyEvaluator,
+    AveragePassAtKEvaluator,
     AveragePassPowerKEvaluator,
     PerCategoryPassMetricsEvaluator,
     PerCategoryTokenUsageAndCostEvaluator,
@@ -122,11 +123,6 @@ def test_pass_power_k_report_evaluators() -> None:
     ]
 
 
-def test_pass_power_k_evaluators_run_by_default() -> None:
-    assert PerTaskPassPowerKEvaluator in DEFAULT_REPORT_EVALUATORS
-    assert AveragePassPowerKEvaluator in DEFAULT_REPORT_EVALUATORS
-
-
 def test_statistical_summary_and_stratified_pass_at_one() -> None:
     passing_assertion = SimpleNamespace(value=True)
     failing_assertion = SimpleNamespace(value=False)
@@ -181,11 +177,6 @@ def test_statistical_summary_and_stratified_pass_at_one() -> None:
     assert stratified.value == pytest.approx(0.75)
 
 
-def test_statistical_evaluators_run_by_default() -> None:
-    assert PerTaskStatisticalSummaryEvaluator in DEFAULT_REPORT_EVALUATORS
-    assert StratifiedAveragePassAtOneEvaluator in DEFAULT_REPORT_EVALUATORS
-
-
 def test_per_category_pass_metrics() -> None:
     passing_assertion = SimpleNamespace(value=True)
     failing_assertion = SimpleNamespace(value=False)
@@ -231,7 +222,60 @@ def test_per_category_pass_metrics() -> None:
         ["group-1", 2, 2, 1.0, pytest.approx(0.5)],
         ["group-2", 1, 1, 0.0, 0.0],
     ]
-    assert PerCategoryPassMetricsEvaluator in DEFAULT_REPORT_EVALUATORS
+    assert AveragePassAtKEvaluator().evaluate(ctx).rows == [
+        [1, 3, pytest.approx(0.375)],
+        [2, 2, 1.0],
+    ]
+    assert AveragePassPowerKEvaluator().evaluate(ctx).rows == [
+        [1, 3, pytest.approx(0.375)],
+        [2, 2, pytest.approx(0.5)],
+    ]
+
+
+def test_overall_pass_metrics_average_category_means() -> None:
+    def case(case_id: str, category: str, passed: bool) -> SimpleNamespace:
+        return SimpleNamespace(
+            name=case_id,
+            source_case_name=case_id,
+            metadata=SimpleNamespace(
+                case_id=case_id,
+                category=SimpleNamespace(value=category),
+            ),
+            evaluator_failures=[],
+            assertions={"correct": SimpleNamespace(value=passed)},
+        )
+
+    report = SimpleNamespace(
+        cases=[
+            case("a", "group-1", True),
+            case("a", "group-1", True),
+            case("b", "group-1", True),
+            case("b", "group-1", True),
+            case("c", "group-2", True),
+            case("c", "group-2", False),
+        ],
+        failures=[],
+    )
+    ctx = cast(
+        ReportEvaluatorContext[str, BenchmarkOutput, CaseMetadata],
+        SimpleNamespace(report=report),
+    )
+
+    category = PerCategoryPassMetricsEvaluator().evaluate(ctx)
+    overall_at_k = AveragePassAtKEvaluator().evaluate(ctx)
+    overall_power_k = AveragePassPowerKEvaluator().evaluate(ctx)
+    accuracy = AverageAccuracyEvaluator().evaluate(ctx)
+
+    assert category.rows == [
+        ["group-1", 1, 2, 1.0, 1.0],
+        ["group-1", 2, 2, 1.0, 1.0],
+        ["group-2", 1, 1, 0.5, 0.5],
+        ["group-2", 2, 1, 1.0, 0.0],
+    ]
+    assert overall_at_k.rows == [[1, 3, 0.75], [2, 3, 1.0]]
+    assert overall_power_k.rows == [[1, 3, 0.75], [2, 3, 0.5]]
+    assert accuracy.value == 0.75
+    assert StratifiedAveragePassAtOneEvaluator().evaluate(ctx).value == accuracy.value
 
 
 def test_token_usage_and_cost_summary_uses_configured_pricing(
@@ -255,6 +299,7 @@ def test_token_usage_and_cost_summary_uses_configured_pricing(
                 metadata=SimpleNamespace(category=SimpleNamespace(value="group-1")),
                 metrics={
                     "requests": 2,
+                    "tool_calls": 3,
                     "input_tokens": 100,
                     "output_tokens": 20,
                     "cache_read_tokens": 10,
@@ -265,6 +310,7 @@ def test_token_usage_and_cost_summary_uses_configured_pricing(
                 metadata=SimpleNamespace(category=SimpleNamespace(value="group-2")),
                 metrics={
                     "requests": 1,
+                    "tool_calls": 1,
                     "input_tokens": 50,
                     "output_tokens": 10,
                     "reasoning_tokens": 5,
@@ -290,18 +336,19 @@ def test_token_usage_and_cost_summary_uses_configured_pricing(
     summary = TokenUsageAndCostEvaluator().evaluate(ctx)
     category_summary = PerCategoryTokenUsageAndCostEvaluator().evaluate(ctx)
 
-    assert summary.rows[:6] == [
+    assert summary.rows[:7] == [
         ["Requests", 3, "requests"],
+        ["Tool calls", 4, "calls"],
         ["Input tokens", 150, "tokens"],
         ["Output tokens", 30, "tokens"],
         ["Total tokens", 180, "tokens"],
         ["Cache Read Tokens", 10, "tokens"],
         ["Reasoning Tokens", 5, "tokens"],
     ]
-    assert summary.rows[6][0] == "Estimated cost"
-    assert summary.rows[6][1] == pytest.approx(0.018)
-    assert summary.rows[6][2] == "USD"
-    assert summary.rows[7:] == [
+    assert summary.rows[7][0] == "Estimated cost"
+    assert summary.rows[7][1] == pytest.approx(0.018)
+    assert summary.rows[7][2] == "USD"
+    assert summary.rows[8:] == [
         ["Pricing source", "openai:gpt-5-mini", None],
         ["Attempts with usage", 2, "attempts"],
     ]
@@ -310,6 +357,7 @@ def test_token_usage_and_cost_summary_uses_configured_pricing(
             "group-1",
             1,
             2,
+            3,
             100,
             20,
             120,
@@ -318,6 +366,7 @@ def test_token_usage_and_cost_summary_uses_configured_pricing(
         ],
         [
             "group-2",
+            1,
             1,
             1,
             50,
@@ -332,8 +381,3 @@ def test_token_usage_and_cost_summary_uses_configured_pricing(
     assert [call["usage"].input_tokens for call in captured] == [100, 50, 100, 50]
     assert [call["usage"].output_tokens for call in captured] == [20, 10, 20, 10]
     assert [call["usage"].cache_read_tokens for call in captured] == [10, 0, 10, 0]
-
-
-def test_token_usage_and_cost_evaluator_runs_by_default() -> None:
-    assert TokenUsageAndCostEvaluator in DEFAULT_REPORT_EVALUATORS
-    assert PerCategoryTokenUsageAndCostEvaluator in DEFAULT_REPORT_EVALUATORS

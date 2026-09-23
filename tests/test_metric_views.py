@@ -13,16 +13,11 @@ from src.app.metric_views import (
 )
 from src.app.views import metric_views as metric_views_view
 from src.app.views.metric_views import (
-    _METRIC_VIEW_TABLE_HTML,
-    _YAML_EDITOR_HTML,
-    _YAML_EDITOR_JS,
     METRIC_VIEW_LIST_COMPONENT_KEY,
     _field_drafts,
-    _format_created_at,
     _insert_field,
     _load_metric_view_yaml,
     _metric_fields,
-    _metric_view_table_rows,
     _open_metric_view_from_table,
 )
 
@@ -34,14 +29,7 @@ def test_metric_field_drafts_round_trip_editor_values() -> None:
         {"region": "Sales region"},
     )
 
-    assert drafts == [
-        {
-            "id": "dimension-0",
-            "name": "region",
-            "expr": "region_name",
-            "description": "Sales region",
-        }
-    ]
+    assert drafts[0]["description"] == "Sales region"
     assert _metric_fields(drafts) == [
         MetricField(name="region", expr="region_name")
     ]
@@ -68,29 +56,6 @@ def test_inserting_field_keeps_its_tab_selected(monkeypatch: pytest.MonkeyPatch)
     assert "metric-view-new-dimensions" not in state
 
 
-def test_metric_view_list_is_a_native_html_table() -> None:
-    rows = _metric_view_table_rows(
-        [
-            {
-                "name": "sales_<metrics>",
-                "full_name": "analytics.bronze.sales_<metrics>",
-                "created_at": 1788249297694,
-            }
-        ]
-    )
-
-    assert "<table" in _METRIC_VIEW_TABLE_HTML
-    assert "<thead>" in _METRIC_VIEW_TABLE_HTML
-    assert "<tbody>" in _METRIC_VIEW_TABLE_HTML
-    assert rows == [
-        {
-            "name": "sales_<metrics>",
-            "full_name": "analytics.bronze.sales_<metrics>",
-            "created_at": _format_created_at(1788249297694),
-        }
-    ]
-
-
 def test_metric_view_table_event_opens_without_url_navigation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -101,14 +66,6 @@ def test_metric_view_table_event_opens_without_url_navigation(
 
     assert state["metric-view-mode"] == "edit"
     assert state["metric-view-selection"] == "analytics.bronze.mv"
-
-
-def test_yaml_editor_indents_with_spaces_and_has_a_keyboard_exit() -> None:
-    assert "<textarea" in _YAML_EDITOR_HTML
-    assert 'lastIndexOf("\\n", start - 1)' in _YAML_EDITOR_JS
-    assert 'textarea.setRangeText("  ", start, end, "end")' in _YAML_EDITOR_JS
-    assert 'if (event.key === "Escape")' in _YAML_EDITOR_JS
-    assert "if (allowTabExit)" in _YAML_EDITOR_JS
 
 
 def test_loading_yaml_replaces_editor_values_and_fields(

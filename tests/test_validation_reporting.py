@@ -131,6 +131,7 @@ def test_structured_results_builds_overall_category_task_hierarchy() -> None:
                     "Category": "data discovery",
                     "Attempts With Usage": 4,
                     "Requests": 5,
+                    "Tool Calls": 7,
                     "Input Tokens": 100,
                     "Output Tokens": 20,
                     "Total Tokens": 120,
@@ -198,6 +199,7 @@ def test_structured_results_builds_overall_category_task_hierarchy() -> None:
                     "attempts": 4,
                     "attempts_with_usage": 4,
                     "requests": 5,
+                    "tool_calls": 7,
                     "input_tokens": 100,
                     "output_tokens": 20,
                     "total_tokens": 120,
@@ -228,6 +230,7 @@ def test_structured_results_builds_overall_category_task_hierarchy() -> None:
                                 "metrics": {
                                     "input_tokens": 25,
                                     "output_tokens": 5,
+                                    "tool_calls": 0,
                                 },
                                 "assertions": {"correct": {"value": True}},
                                 "evaluator_failures": [],
