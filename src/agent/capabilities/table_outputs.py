@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from pydantic_ai import ModelRetry, RunContext, ToolReturn
 from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
@@ -14,26 +16,36 @@ NAME = "table_outputs"
 DESCRIPTION = "Inspect or publish table outputs produced by data capabilities."
 
 
-def build(selected: frozenset[str]) -> Capability[Deps]:
+def build(
+    selected: frozenset[str],
+    *,
+    prompt_overrides: Mapping[str, str] | None = None,
+) -> Capability[Deps]:
     toolset = FunctionToolset[Deps]()
     toolset.add_function(
         inspect_table_output,
         description=render_prompt(
-            f"capabilities/{NAME}/tools/inspect_table_output.md", selected
+            f"capabilities/{NAME}/tools/inspect_table_output.md",
+            selected,
+            overrides=prompt_overrides,
         ),
         sequential=True,
     )
     toolset.add_function(
         display_table_output,
         description=render_prompt(
-            f"capabilities/{NAME}/tools/display_table_output.md", selected
+            f"capabilities/{NAME}/tools/display_table_output.md",
+            selected,
+            overrides=prompt_overrides,
         ),
         sequential=True,
     )
     return Capability(
         id=NAME,
         description=DESCRIPTION,
-        instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
+        instructions=render_prompt(
+            f"capabilities/{NAME}/instructions.md", selected, overrides=prompt_overrides
+        ),
         toolsets=[toolset],
     )
 

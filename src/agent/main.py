@@ -39,7 +39,11 @@ def run(prompt: str, config: AgentConfig | None = None) -> AgentOutcome:
         prompt,
         deps=deps,
         model=config.create_model(),
-        model_settings=ModelSettings(temperature=config.temperature),
+        model_settings=(
+            ModelSettings(temperature=config.temperature)
+            if config.temperature is not None
+            else ModelSettings()
+        ),
         usage_limits=UsageLimits(request_limit=config.request_limit),
     )
     return AgentOutcome(

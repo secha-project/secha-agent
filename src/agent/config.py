@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
-from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.models.openai import OpenAIChatModel, OpenAIResponsesModel
 from pydantic_ai.profiles.qwen import qwen_model_profile
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,7 +18,7 @@ DEFAULT_ENABLED_CAPABILITIES = frozenset(
 
 
 class PricingReference(BaseModel):
-    """A standard model price to use when estimating custom-provider costs."""
+    """A model reference for estimating custom-provider costs."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -51,6 +51,19 @@ class OpenAIProviderConfig(BaseSettings):
     )
 
 
+class ZaiProviderConfig(BaseSettings):
+    api_key: SecretStr
+    model_name: str = "glm-5.3"
+    url: str = "https://api.z.ai/api/paas/v4/"
+
+    model_config = SettingsConfigDict(
+        env_file=ENV_FILE,
+        env_prefix="ZAI_",
+        frozen=True,
+        extra="ignore",
+    )
+
+
 class AgentConfig(BaseSettings):
     catalog_url: str
     catalog_token: str
@@ -58,10 +71,10 @@ class AgentConfig(BaseSettings):
     spark_url: str
     schema_name: str = "bronze"
     table_column_page_size: int = Field(default=20, ge=1)
-    model_provider: Literal["tuni", "openai"] = "tuni"
+    model_provider: Literal["tuni", "openai", "zai"] = "tuni"
     model_name: str | None = None
     pricing: PricingReference | None = None
-    temperature: float = Field(default=0.0, ge=0.0)
+    temperature: float | None = Field(default=0.0, ge=0.0)
     request_limit: int = Field(default=50, ge=1)
     enabled_capabilities: EnabledCapabilities = DEFAULT_ENABLED_CAPABILITIES
     otel_exporter_otlp_endpoint: str
@@ -75,18 +88,20 @@ class AgentConfig(BaseSettings):
         extra="ignore",
     )
 
-    def load_provider(self) -> TuniProviderConfig | OpenAIProviderConfig:
+    def load_provider(self) -> TuniProviderConfig | OpenAIProviderConfig | ZaiProviderConfig:
         if self.model_provider == "tuni":
             return TuniProviderConfig()
-        return OpenAIProviderConfig()
+        if self.model_provider == "openai":
+            return OpenAIProviderConfig()
+        return ZaiProviderConfig()
 
-    def create_model(self) -> OpenAIChatModel:
+    def create_model(self) -> OpenAIChatModel | OpenAIResponsesModel:
         provider_config = self.load_provider()
         api_key = provider_config.api_key.get_secret_value()
         model_name = self.model_name or provider_config.model_name
         profile = None
 
-        if isinstance(provider_config, TuniProviderConfig):
+        if isinstance(provider_config, (TuniProviderConfig, ZaiProviderConfig)):
             if model_name.lower().startswith("qwen"):
                 # TUNI aliases need Qwen's streamed leading-whitespace handling.
                 profile = qwen_model_profile(model_name.lower())
@@ -97,7 +112,13 @@ class AgentConfig(BaseSettings):
         else:
             provider = OpenAIProvider(api_key=api_key)
 
-        return OpenAIChatModel(
+        model_class = (
+            OpenAIResponsesModel
+            if isinstance(provider_config, OpenAIProviderConfig)
+            and model_name.startswith("gpt-6-")
+            else OpenAIChatModel
+        )
+        return model_class(
             model_name,
             provider=provider,
             profile=profile,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from typing import Literal
 from urllib.error import HTTPError
 
@@ -51,30 +52,42 @@ NAME = "catalog"
 DESCRIPTION = "Discover tables, columns, and schema metadata."
 
 
-def build(selected: frozenset[str]) -> Capability[Deps]:
+def build(
+    selected: frozenset[str],
+    *,
+    prompt_overrides: Mapping[str, str] | None = None,
+) -> Capability[Deps]:
     toolset = FunctionToolset[Deps]()
     toolset.add_function(
         browse_tables,
         description=render_prompt(
-            f"capabilities/{NAME}/tools/browse_tables.md", selected
+            f"capabilities/{NAME}/tools/browse_tables.md",
+            selected,
+            overrides=prompt_overrides,
         ),
     )
     toolset.add_function(
         find_columns,
         description=render_prompt(
-            f"capabilities/{NAME}/tools/find_columns.md", selected
+            f"capabilities/{NAME}/tools/find_columns.md",
+            selected,
+            overrides=prompt_overrides,
         ),
     )
     toolset.add_function(
         describe_table,
         description=render_prompt(
-            f"capabilities/{NAME}/tools/describe_table.md", selected
+            f"capabilities/{NAME}/tools/describe_table.md",
+            selected,
+            overrides=prompt_overrides,
         ),
     )
     return Capability(
         id=NAME,
         description=DESCRIPTION,
-        instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
+        instructions=render_prompt(
+            f"capabilities/{NAME}/instructions.md", selected, overrides=prompt_overrides
+        ),
         toolsets=[toolset],
     )
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from pydantic_ai import ModelRetry, RunContext
 from pydantic_ai.capabilities import Capability
 from pydantic_ai.toolsets import FunctionToolset
@@ -15,18 +17,28 @@ NAME = "query"
 DESCRIPTION = "Run read-only SQL and produce saved table outputs."
 
 
-def build(selected: frozenset[str]) -> Capability[Deps]:
+def build(
+    selected: frozenset[str],
+    *,
+    prompt_overrides: Mapping[str, str] | None = None,
+) -> Capability[Deps]:
     toolset = FunctionToolset[Deps]()
     toolset.add_function(
         query_data,
-        description=render_prompt(f"capabilities/{NAME}/tools/query_data.md", selected),
+        description=render_prompt(
+            f"capabilities/{NAME}/tools/query_data.md",
+            selected,
+            overrides=prompt_overrides,
+        ),
         retries=3,
         sequential=True,
     )
     return Capability(
         id=NAME,
         description=DESCRIPTION,
-        instructions=render_prompt(f"capabilities/{NAME}/instructions.md", selected),
+        instructions=render_prompt(
+            f"capabilities/{NAME}/instructions.md", selected, overrides=prompt_overrides
+        ),
         toolsets=[toolset],
     )
 

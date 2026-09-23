@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from typing import Any
 
 import pandas as pd
@@ -31,12 +32,18 @@ NAME = "visualization"
 DESCRIPTION = "Create charts from saved table outputs."
 
 
-def build(selected: frozenset[str]) -> Capability[Deps]:
+def build(
+    selected: frozenset[str],
+    *,
+    prompt_overrides: Mapping[str, str] | None = None,
+) -> Capability[Deps]:
     toolset = FunctionToolset[Deps]()
     toolset.add_function(
         visualize_table_output,
         description=render_prompt(
-            f"capabilities/{NAME}/tools/visualize_table_output.md", selected
+            f"capabilities/{NAME}/tools/visualize_table_output.md",
+            selected,
+            overrides=prompt_overrides,
         ),
         retries=3,
         sequential=True,
@@ -47,6 +54,7 @@ def build(selected: frozenset[str]) -> Capability[Deps]:
         instructions=render_prompt(
             f"capabilities/{NAME}/instructions.md",
             selected,
+            overrides=prompt_overrides,
         ),
         toolsets=[toolset],
     )
