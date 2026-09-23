@@ -85,7 +85,7 @@ async def inspect_table_output(
             "Table-output inspection failed "
             f"({spark_error_type(exc)}): {concise_spark_error(exc)}."
         ) from exc
-    return TableOutput(output_ref=ref, preview_markdown=preview.to_markdown())
+    return TableOutput(output_ref=ref, preview_csv=preview.to_csv())
 
 
 async def display_table_output(

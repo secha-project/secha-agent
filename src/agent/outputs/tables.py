@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
+from io import StringIO
 from uuid import uuid4
 
 import pandas as pd
@@ -43,14 +45,13 @@ class TablePreview:
     range_was_requested: bool
     columns_were_requested: bool
 
-    def to_markdown(self) -> str:
-        sections = []
-        for row_number, row in enumerate(self.rows, start=self.start_row):
-            fields = "\n".join(
-                f"{column}: {value}" for column, value in zip(self.columns, row)
-            )
-            sections.append(f"## Row {row_number}\n\n{fields}")
-        rendered_rows = "\n\n".join(sections)
+    def to_csv(self) -> str:
+        output = StringIO(newline="")
+        writer = csv.writer(output)
+        writer.writerow(self.columns)
+        # Keep the existing value representation, including None and timestamps.
+        writer.writerows(tuple(str(value) for value in row) for row in self.rows)
+        rendered_rows = output.getvalue().removesuffix("\r\n")
 
         overflow_messages = []
         if self.total_rows > self.requested_row_count:
@@ -222,7 +223,7 @@ class TableOutputStore:
 
 class TableOutput(BaseModel):
     output_ref: TableOutputRef
-    preview_markdown: str
+    preview_csv: str
 
 
 async def create_table_output(
@@ -242,4 +243,4 @@ async def create_table_output(
         ) from exc
 
     ref = store.add(output)
-    return TableOutput(output_ref=ref, preview_markdown=preview.to_markdown())
+    return TableOutput(output_ref=ref, preview_csv=preview.to_csv())

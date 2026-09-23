@@ -120,7 +120,7 @@ def test_query_data_returns_structured_output_preview() -> None:
         query_data(cast(Any, SimpleNamespace(deps=deps)), "SELECT 1 AS value")
     )
 
-    assert result.preview_markdown == "## Row 1\n\nknown_column: 1"
+    assert result.preview_csv == "known_column\r\n1"
     output = deps.table_outputs.resolve(result.output_ref)
     assert isinstance(output.dataframe, StubResult)
 
@@ -171,8 +171,12 @@ def test_preview_preserves_utc_and_naive_timestamps(
 
     assert preview.rows == ((instant, naive), (None, None))
     assert preview.total_rows == 3
-    assert f"ts: 2025-{month:02d}-02 00:00:00+00:00" in preview.to_markdown()
-    assert f"local_ts: 2025-{month:02d}-02 00:00:00\n" in preview.to_markdown()
+    assert preview.to_csv() == (
+        "ts,local_ts\r\n"
+        f"2025-{month:02d}-02 00:00:00+00:00,2025-{month:02d}-02 00:00:00\r\n"
+        "None,None\n\n"
+        "[showing only the requested 2 rows out of the 3 available]"
+    )
 
 
 def test_display_table_output_creates_a_concrete_artifact() -> None:
@@ -215,5 +219,5 @@ def test_inspect_table_output_returns_structured_output_preview() -> None:
 
     assert result == TableOutput(
         output_ref=ref,
-        preview_markdown="## Row 1\n\nknown_column: 1",
+        preview_csv="known_column\r\n1",
     )
