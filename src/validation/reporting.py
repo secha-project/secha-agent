@@ -89,6 +89,9 @@ def _attempt_record(
             "span_id",
         }
     }
+    if not failed:
+        # pydantic-evals omits metrics incremented by zero.
+        record.setdefault("metrics", {}).setdefault("tool_calls", 0)
     return {
         "name": case.get("name"),
         "case_id": case_id,
@@ -199,6 +202,7 @@ def _structured_results(
             {
                 "attempts_with_usage": record["Attempts With Usage"],
                 "requests": record["Requests"],
+                "tool_calls": record["Tool Calls"],
                 "input_tokens": record["Input Tokens"],
                 "output_tokens": record["Output Tokens"],
                 "total_tokens": record["Total Tokens"],

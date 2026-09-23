@@ -5,12 +5,12 @@ Score each criterion as either true or false. A generated plot does not need to 
 - **type_correct: (e.g. bar, line, scatter, etc.)**
   - true if the visualization type is the same as the ground truth, or is a different type that is equally appropriate for the data and preserves the ground truth's interpretation
   - false otherwise
-- **encoding_correct: (e.g. what data is used for x, y, color, etc.)**
-  - true if the generated plot correctly encodes the same data as the ground truth. Equivalent variations, such as flipped x and y axes or different color assignments, are acceptable when they preserve all necessary information and do not change the interpretation
-  - false otherwise, including when a missing or incorrect encoding changes the information or interpretation
-- **data_correct: (e.g. normalization, aggregation, grouping, etc.)**
-  - true if the underlying data and requested transformations match the ground truth, or neither plot has any transformations applied (e.g. both plots show the average with the requested grouping)
-  - false otherwise, including different aggregations or incorrect grouping (e.g. median instead of average, or year-month instead of year)
+- **encoding_correct: (e.g. what data is represented by x, y, color, size, etc.)**
+  - true if the visual encodings are appropriate and convey the intended information clearly. Equivalent variations, such as flipped x and y axes or different color assignments, are acceptable when they preserve all necessary information and do not change the interpretation
+  - false if a missing or incorrect visual encoding obscures or misrepresents what it is meant to show. Judge the use of visual channels separately from whether the plotted values are correct
+- **data_correct: (e.g. values, category assignments, normalization, aggregation, grouping, etc.)**
+  - true if the underlying values and requested transformations match the ground truth, or neither plot has any transformations applied (e.g. both plots show the average with the requested grouping)
+  - false otherwise, including values assigned to the wrong categories, different aggregations, or incorrect grouping (e.g. median instead of average, or year-month instead of year)
 - **aesthetics_correct: (e.g. colors, titles, legends, etc.)**
   - true if labels, titles, legends, and colors are well placed and legible. Their exact wording, colors, and style do not need to match the ground truth when the differences do not affect interpretation or correctness
   - false otherwise, when the presentation is missing necessary context, illegible, misleading, or otherwise affects interpretation

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import prod
-from typing import Any
+from typing import Any, Literal
 
 from genai_prices import calc_price
 from pydantic_ai.usage import RequestUsage
@@ -24,6 +24,15 @@ class _TaskResult:
     @property
     def accuracy(self) -> float:
         return self.correct / self.samples
+
+
+@dataclass(frozen=True)
+class _CategoryPassMetrics:
+    category: str
+    k: int
+    tasks: int
+    pass_at_k: float
+    pass_power_k: float
 
 
 def pass_at_k(n: int, c: int, k: int) -> float:
@@ -104,6 +113,50 @@ def _task_results_by_category(
     return results_by_category
 
 
+def _category_pass_metrics(
+    results_by_category: dict[str, list[_TaskResult]],
+) -> list[_CategoryPassMetrics]:
+    metrics: list[_CategoryPassMetrics] = []
+    for category, results in sorted(results_by_category.items()):
+        for k in range(1, max(result.samples for result in results) + 1):
+            supported = [result for result in results if k <= result.samples]
+            metrics.append(
+                _CategoryPassMetrics(
+                    category=category,
+                    k=k,
+                    tasks=len(supported),
+                    pass_at_k=sum(
+                        pass_at_k(result.samples, result.correct, k)
+                        for result in supported
+                    )
+                    / len(supported),
+                    pass_power_k=sum(
+                        pass_power_k(result.samples, result.correct, k)
+                        for result in supported
+                    )
+                    / len(supported),
+                )
+            )
+    return metrics
+
+
+def _overall_pass_metrics(
+    category_metrics: list[_CategoryPassMetrics],
+    metric: Literal["pass_at_k", "pass_power_k"],
+) -> list[list[int | float]]:
+    by_k: dict[int, list[_CategoryPassMetrics]] = {}
+    for category in category_metrics:
+        by_k.setdefault(category.k, []).append(category)
+    return [
+        [
+            k,
+            sum(category.tasks for category in categories),
+            sum(getattr(category, metric) for category in categories) / len(categories),
+        ]
+        for k, categories in sorted(by_k.items())
+    ]
+
+
 def _agent_metadata(report: EvaluationReport[Any, Any, Any]) -> dict[str, Any]:
     metadata = report.experiment_metadata
     if not isinstance(metadata, dict):
@@ -133,6 +186,12 @@ def _pricing_reference(
         return None
 
     model_provider = agent_metadata.get("model_provider")
+    if model_provider == "tuni" and model_name == "Qwen3.8-27B-AIC":
+        # Use a catalog price for the same base model at a public provider.
+        return "@cf/qwen/qwen3.8-27b", "cloudflare", True
+    if model_provider == "zai":
+        # The catalog also has Zhipu's domestic tariff for this model.
+        return model_name, "zai", True
     provider = model_provider if model_provider == "openai" else None
     return model_name, provider, False
 
@@ -175,7 +234,13 @@ def _estimate_cost(
             case_costs.append(float(price.total_price))
         else:
             if price is not None:
-                pricing_source = f"{price.provider.id}:{price.model.id}"
+                prefix = (
+                    "Proxy "
+                    if (provider, model_name)
+                    == ("cloudflare", "@cf/qwen/qwen3.8-27b")
+                    else ""
+                )
+                pricing_source = f"{prefix}{price.provider.id}:{price.model.id}"
             return sum(case_costs), pricing_source
 
     if "cost" in totals:
@@ -191,7 +256,7 @@ class TokenUsageAndCostEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetad
         self,
         ctx: ReportEvaluatorContext[str, BenchmarkOutput, CaseMetadata],
     ) -> TableResult:
-        cases = list(ctx.report.cases)
+        cases = list(ctx.report.cases) + list(getattr(ctx.report, "failures", []))
         totals = _metric_totals(cases)
         cases_with_usage = 0
         for case in cases:
@@ -207,6 +272,7 @@ class TokenUsageAndCostEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetad
         output_tokens = int(token_metrics.get("output_tokens", 0))
         rows: list[list[str | int | float | bool | None]] = [
             ["Requests", int(totals.get("requests", 0)), "requests"],
+            ["Tool calls", int(totals.get("tool_calls", 0)), "calls"],
             ["Input tokens", input_tokens, "tokens"],
             ["Output tokens", output_tokens, "tokens"],
             ["Total tokens", input_tokens + output_tokens, "tokens"],
@@ -229,7 +295,7 @@ class TokenUsageAndCostEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetad
         return TableResult(
             title="Token usage and estimated cost",
             description=(
-                "Totals from successful case runs. Cost uses the configured pricing "
+                "Totals from all attempted case runs. Cost uses the configured pricing "
                 "reference when available, otherwise recorded request prices."
             ),
             columns=["Metric", "Value", "Unit"],
@@ -248,7 +314,7 @@ class PerCategoryTokenUsageAndCostEvaluator(
         ctx: ReportEvaluatorContext[str, BenchmarkOutput, CaseMetadata],
     ) -> TableResult:
         cases_by_category: dict[str, list[Any]] = {}
-        for case in ctx.report.cases:
+        for case in [*ctx.report.cases, *getattr(ctx.report, "failures", [])]:
             if case.metadata is None:
                 raise ValueError(f"Case {case.name!r} is missing benchmark metadata")
             cases_by_category.setdefault(case.metadata.category.value, []).append(case)
@@ -272,6 +338,7 @@ class PerCategoryTokenUsageAndCostEvaluator(
                     category,
                     attempts_with_usage,
                     int(totals.get("requests", 0)),
+                    int(totals.get("tool_calls", 0)),
                     input_tokens,
                     output_tokens,
                     input_tokens + output_tokens,
@@ -287,6 +354,7 @@ class PerCategoryTokenUsageAndCostEvaluator(
                 "Category",
                 "Attempts With Usage",
                 "Requests",
+                "Tool Calls",
                 "Input Tokens",
                 "Output Tokens",
                 "Total Tokens",
@@ -446,27 +514,10 @@ class PerCategoryPassMetricsEvaluator(
         self,
         ctx: ReportEvaluatorContext[str, BenchmarkOutput, CaseMetadata],
     ) -> TableResult:
-        rows: list[list[str | int | float | bool | None]] = []
-        for category, results in sorted(_task_results_by_category(ctx.report).items()):
-            maximum_k = max(result.samples for result in results)
-            for k in range(1, maximum_k + 1):
-                supported = [result for result in results if k <= result.samples]
-                pass_at_k_values = [
-                    pass_at_k(result.samples, result.correct, k) for result in supported
-                ]
-                pass_power_k_values = [
-                    pass_power_k(result.samples, result.correct, k)
-                    for result in supported
-                ]
-                rows.append(
-                    [
-                        category,
-                        k,
-                        len(supported),
-                        sum(pass_at_k_values) / len(pass_at_k_values),
-                        sum(pass_power_k_values) / len(pass_power_k_values),
-                    ]
-                )
+        rows: list[list[str | int | float | bool | None]] = [
+            [metric.category, metric.k, metric.tasks, metric.pass_at_k, metric.pass_power_k]
+            for metric in _category_pass_metrics(_task_results_by_category(ctx.report))
+        ]
 
         return TableResult(
             title="Per-category pass metrics",
@@ -481,21 +532,18 @@ class PerCategoryPassMetricsEvaluator(
 
 @dataclass
 class AverageAccuracyEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetadata]):
-    """Report the macro-average of the per-task accuracies."""
+    """Report pass@1 averaged across category means."""
 
     def evaluate(
         self,
         ctx: ReportEvaluatorContext[str, BenchmarkOutput, CaseMetadata],
     ) -> ScalarResult:
-        results = _task_results(ctx.report)
-        value = (
-            sum(result.accuracy for result in results) / len(results)
-            if results
-            else 0.0
-        )
+        category_metrics = _category_pass_metrics(_task_results_by_category(ctx.report))
+        pass_at_one = [metric.pass_at_k for metric in category_metrics if metric.k == 1]
+        value = sum(pass_at_one) / len(pass_at_one) if pass_at_one else 0.0
         return ScalarResult(
             title="Average accuracy",
-            description="Macro-average of accuracy across tasks.",
+            description="Mean of category-level pass@1 averages.",
             value=value,
         )
 
@@ -529,28 +577,22 @@ class StratifiedAveragePassAtOneEvaluator(
 
 @dataclass
 class AveragePassAtKEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetadata]):
-    """Report the macro-average of per-task pass@k for each supported k."""
+    """Report pass@k averaged across category means for each supported k."""
 
     def evaluate(
         self,
         ctx: ReportEvaluatorContext[str, BenchmarkOutput, CaseMetadata],
     ) -> TableResult:
-        results = _task_results(ctx.report)
-        maximum_k = max((result.samples for result in results), default=0)
-        rows: list[list[str | int | float | bool | None]] = []
-
-        for k in range(1, maximum_k + 1):
-            values = [
-                pass_at_k(result.samples, result.correct, k)
-                for result in results
-                if k <= result.samples
-            ]
-            rows.append([k, len(values), sum(values) / len(values)])
+        rows = _overall_pass_metrics(
+            _category_pass_metrics(_task_results_by_category(ctx.report)),
+            "pass_at_k",
+        )
 
         return TableResult(
             title="Average pass@k",
             description=(
-                "Macro-average of per-task pass@k over tasks with at least k samples."
+                "Mean of category-level pass@k averages. Categories contribute "
+                "where they have tasks with at least k samples."
             ),
             columns=["k", "Tasks", "Average Pass@k"],
             rows=rows,
@@ -559,28 +601,22 @@ class AveragePassAtKEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetadata
 
 @dataclass
 class AveragePassPowerKEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetadata]):
-    """Report the macro-average of per-task pass^k for each supported k."""
+    """Report pass^k averaged across category means for each supported k."""
 
     def evaluate(
         self,
         ctx: ReportEvaluatorContext[str, BenchmarkOutput, CaseMetadata],
     ) -> TableResult:
-        results = _task_results(ctx.report)
-        maximum_k = max((result.samples for result in results), default=0)
-        rows: list[list[str | int | float | bool | None]] = []
-
-        for k in range(1, maximum_k + 1):
-            values = [
-                pass_power_k(result.samples, result.correct, k)
-                for result in results
-                if k <= result.samples
-            ]
-            rows.append([k, len(values), sum(values) / len(values)])
+        rows = _overall_pass_metrics(
+            _category_pass_metrics(_task_results_by_category(ctx.report)),
+            "pass_power_k",
+        )
 
         return TableResult(
             title="Average pass^k",
             description=(
-                "Macro-average of per-task pass^k over tasks with at least k samples."
+                "Mean of category-level pass^k averages. Categories contribute "
+                "where they have tasks with at least k samples."
             ),
             columns=["k", "Tasks", "Average Pass^k"],
             rows=rows,

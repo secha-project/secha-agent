@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated
 
@@ -96,6 +96,9 @@ class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]
 
     artifact_base_path: Path = Path()
     model: Model | KnownModelName | str = _DEFAULT_JUDGE_MODEL
+    model_settings: ModelSettings = field(
+        default_factory=lambda: ModelSettings(temperature=0.0)
+    )
 
     async def evaluate(
         self,
@@ -132,7 +135,7 @@ class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]
             self.model,
             output_type=VisualizationEvaluation,
             instructions=_RUBRIC,
-            model_settings=ModelSettings(temperature=0.0),
+            model_settings=self.model_settings,
         )
         result = await judge.run(
             [

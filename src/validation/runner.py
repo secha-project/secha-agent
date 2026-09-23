@@ -3,15 +3,18 @@ import os
 import shutil
 import traceback
 from collections.abc import Collection
+from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 
 import logfire
-from pydantic_ai import Agent, ModelSettings, UsageLimits
+from pydantic_ai import Agent, ModelSettings, UsageLimits, capture_run_messages
 from pydantic_ai.exceptions import ModelAPIError
+from pydantic_ai.messages import ModelMessagesTypeAdapter
 from pydantic_ai.models import Model
 from pydantic_ai.retries import RetryConfig
+from pydantic_evals import increment_eval_metric, set_eval_attribute
 from pydantic_evals.evaluators import EvaluatorFailure, ReportEvaluatorContext
 from tenacity import retry_if_exception_type, stop_after_attempt, wait_exponential
 
@@ -61,6 +64,7 @@ class AgentTask:
     model: Model
     model_settings: ModelSettings
     usage_limits: UsageLimits
+    capture_messages: bool = False
 
     def __call__(self, prompt: str) -> str:
         artifacts = ArtifactCollector()
@@ -70,13 +74,26 @@ class AgentTask:
             table_outputs=TableOutputStore(),
             table_artifact_max_rows=None,
         )
-        result = self.agent.run_sync(
-            prompt,
-            deps=run_deps,
-            model=self.model,
-            model_settings=self.model_settings,
-            usage_limits=self.usage_limits,
-        )
+        with (
+            capture_run_messages()
+            if self.capture_messages
+            else nullcontext() as messages
+        ):
+            try:
+                result = self.agent.run_sync(
+                    prompt,
+                    deps=run_deps,
+                    model=self.model,
+                    model_settings=self.model_settings,
+                    usage_limits=self.usage_limits,
+                )
+            finally:
+                if messages is not None:
+                    set_eval_attribute(
+                        "agent_messages",
+                        ModelMessagesTypeAdapter.dump_python(messages, mode="json"),
+                    )
+        increment_eval_metric("tool_calls", result.usage.tool_calls)
         write_evaluation_artifacts(artifacts.published)
         return result.output
 
@@ -424,7 +441,11 @@ def run_benchmark(
         agent=create_agent(run_config.agent.enabled_capabilities),
         deps=create_dependencies(run_config.agent),
         model=run_config.agent.create_model(),
-        model_settings=ModelSettings(temperature=run_config.agent.temperature),
+        model_settings=(
+            ModelSettings(temperature=run_config.agent.temperature)
+            if run_config.agent.temperature is not None
+            else ModelSettings()
+        ),
         usage_limits=UsageLimits(request_limit=run_config.agent.request_limit),
     )
     report = evaluate(
