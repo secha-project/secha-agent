@@ -1,0 +1,1948 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "rect",
+        "clip": true,
+        "height": {
+          "expr": "datum.__ggsql_aes_height__ * bandwidth('y')"
+        },
+        "width": {
+          "expr": "datum.__ggsql_aes_width__ * bandwidth('x')"
+        }
+      },
+      "encoding": {
+        "fill": {
+          "field": "__ggsql_aes_fill__",
+          "legend": {
+            "labelExpr": "datum.label == '50' ? '50' : datum.label == '100' ? '100' : datum.label == '0' ? '0' : datum.label",
+            "type": "gradient",
+            "values": [
+              0.0,
+              50.0,
+              100.0
+            ],
+            "gradientLength": 420
+          },
+          "scale": {
+            "domain": [
+              -2.5025,
+              135.75
+            ],
+            "range": [
+              "#440154",
+              "#440255",
+              "#440357",
+              "#450558",
+              "#45065a",
+              "#45085b",
+              "#46095c",
+              "#460b5e",
+              "#460c5f",
+              "#460e61",
+              "#470f62",
+              "#471163",
+              "#471265",
+              "#471466",
+              "#471567",
+              "#471669",
+              "#47186a",
+              "#48196b",
+              "#481a6c",
+              "#481c6e",
+              "#481d6f",
+              "#481e70",
+              "#482071",
+              "#482172",
+              "#482273",
+              "#482374",
+              "#472575",
+              "#472676",
+              "#472777",
+              "#472878",
+              "#472a79",
+              "#472b7a",
+              "#472c7b",
+              "#462d7c",
+              "#462f7c",
+              "#46307d",
+              "#46317e",
+              "#45327f",
+              "#45347f",
+              "#453580",
+              "#453681",
+              "#443781",
+              "#443982",
+              "#433a83",
+              "#433b83",
+              "#433c84",
+              "#423d84",
+              "#423e85",
+              "#424085",
+              "#414186",
+              "#414286",
+              "#404387",
+              "#404487",
+              "#3f4587",
+              "#3f4788",
+              "#3e4888",
+              "#3e4989",
+              "#3d4a89",
+              "#3d4b89",
+              "#3d4c89",
+              "#3c4d8a",
+              "#3c4e8a",
+              "#3b508a",
+              "#3b518a",
+              "#3a528b",
+              "#3a538b",
+              "#39548b",
+              "#39558b",
+              "#38568b",
+              "#38578c",
+              "#37588c",
+              "#37598c",
+              "#365a8c",
+              "#365b8c",
+              "#355c8c",
+              "#355d8c",
+              "#345e8d",
+              "#345f8d",
+              "#33608d",
+              "#33618d",
+              "#32628d",
+              "#32638d",
+              "#31648d",
+              "#31658d",
+              "#31668d",
+              "#30678d",
+              "#30688d",
+              "#2f698d",
+              "#2f6a8d",
+              "#2e6b8e",
+              "#2e6c8e",
+              "#2e6d8e",
+              "#2d6e8e",
+              "#2d6f8e",
+              "#2c708e",
+              "#2c718e",
+              "#2c728e",
+              "#2b738e",
+              "#2b748e",
+              "#2a758e",
+              "#2a768e",
+              "#2a778e",
+              "#29788e",
+              "#29798e",
+              "#287a8e",
+              "#287a8e",
+              "#287b8e",
+              "#277c8e",
+              "#277d8e",
+              "#277e8e",
+              "#267f8e",
+              "#26808e",
+              "#26818e",
+              "#25828e",
+              "#25838d",
+              "#24848d",
+              "#24858d",
+              "#24868d",
+              "#23878d",
+              "#23888d",
+              "#23898d",
+              "#22898d",
+              "#228a8d",
+              "#228b8d",
+              "#218c8d",
+              "#218d8c",
+              "#218e8c",
+              "#208f8c",
+              "#20908c",
+              "#20918c",
+              "#1f928c",
+              "#1f938b",
+              "#1f948b",
+              "#1f958b",
+              "#1f968b",
+              "#1e978a",
+              "#1e988a",
+              "#1e998a",
+              "#1e998a",
+              "#1e9a89",
+              "#1e9b89",
+              "#1e9c89",
+              "#1e9d88",
+              "#1e9e88",
+              "#1e9f88",
+              "#1ea087",
+              "#1fa187",
+              "#1fa286",
+              "#1fa386",
+              "#20a485",
+              "#20a585",
+              "#21a685",
+              "#21a784",
+              "#22a784",
+              "#23a883",
+              "#23a982",
+              "#24aa82",
+              "#25ab81",
+              "#26ac81",
+              "#27ad80",
+              "#28ae7f",
+              "#29af7f",
+              "#2ab07e",
+              "#2bb17d",
+              "#2cb17d",
+              "#2eb27c",
+              "#2fb37b",
+              "#30b47a",
+              "#32b57a",
+              "#33b679",
+              "#35b778",
+              "#36b877",
+              "#38b976",
+              "#39b976",
+              "#3bba75",
+              "#3dbb74",
+              "#3ebc73",
+              "#40bd72",
+              "#42be71",
+              "#44be70",
+              "#45bf6f",
+              "#47c06e",
+              "#49c16d",
+              "#4bc26c",
+              "#4dc26b",
+              "#4fc369",
+              "#51c468",
+              "#53c567",
+              "#55c666",
+              "#57c665",
+              "#59c764",
+              "#5bc862",
+              "#5ec961",
+              "#60c960",
+              "#62ca5f",
+              "#64cb5d",
+              "#67cc5c",
+              "#69cc5b",
+              "#6bcd59",
+              "#6dce58",
+              "#70ce56",
+              "#72cf55",
+              "#74d054",
+              "#77d052",
+              "#79d151",
+              "#7cd24f",
+              "#7ed24e",
+              "#81d34c",
+              "#83d34b",
+              "#86d449",
+              "#88d547",
+              "#8bd546",
+              "#8dd644",
+              "#90d643",
+              "#92d741",
+              "#95d73f",
+              "#97d83e",
+              "#9ad83c",
+              "#9dd93a",
+              "#9fd938",
+              "#a2da37",
+              "#a5da35",
+              "#a7db33",
+              "#aadb32",
+              "#addc30",
+              "#afdc2e",
+              "#b2dd2c",
+              "#b5dd2b",
+              "#b7dd29",
+              "#bade27",
+              "#bdde26",
+              "#bfdf24",
+              "#c2df22",
+              "#c5df21",
+              "#c7e01f",
+              "#cae01e",
+              "#cde01d",
+              "#cfe11c",
+              "#d2e11b",
+              "#d4e11a",
+              "#d7e219",
+              "#dae218",
+              "#dce218",
+              "#dfe318",
+              "#e1e318",
+              "#e4e318",
+              "#e7e419",
+              "#e9e419",
+              "#ece41a",
+              "#eee51b",
+              "#f1e51c",
+              "#f3e51e",
+              "#f6e61f",
+              "#f8e621",
+              "#fae622",
+              "#fde724"
+            ]
+          },
+          "title": "Mean price (EUR/MWh)",
+          "type": "quantitative"
+        },
+        "fillOpacity": {
+          "value": 0.8
+        },
+        "stroke": {
+          "value": "black"
+        },
+        "strokeDash": {
+          "value": []
+        },
+        "strokeWidth": {
+          "value": 1.3333333333333333
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "datum.label == '21' ? '21' : datum.label == '06' ? '06' : datum.label == '22' ? '22' : datum.label == '14' ? '14' : datum.label == '20' ? '20' : datum.label == '08' ? '08' : datum.label == '11' ? '11' : datum.label == '09' ? '09' : datum.label == '05' ? '05' : datum.label == '04' ? '04' : datum.label == '16' ? '16' : datum.label == '10' ? '10' : datum.label == '17' ? '17' : datum.label == '01' ? '01' : datum.label == '02' ? '02' : datum.label == '18' ? '18' : datum.label == '23' ? '23' : datum.label == '00' ? '00' : datum.label == '07' ? '07' : datum.label == '13' ? '13' : datum.label == '15' ? '15' : datum.label == '03' ? '03' : datum.label == '12' ? '12' : datum.label == '19' ? '19' : datum.label",
+            "grid": false
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              "00",
+              "01",
+              "02",
+              "03",
+              "04",
+              "05",
+              "06",
+              "07",
+              "08",
+              "09",
+              "10",
+              "11",
+              "12",
+              "13",
+              "14",
+              "15",
+              "16",
+              "17",
+              "18",
+              "19",
+              "20",
+              "21",
+              "22",
+              "23"
+            ],
+            "zero": false
+          },
+          "title": "UTC hour",
+          "type": "nominal"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == 'Wednesday' ? 'Wednesday' : datum.label == 'Tuesday' ? 'Tuesday' : datum.label == 'Thursday' ? 'Thursday' : datum.label == 'Monday' ? 'Monday' : datum.label == 'Friday' ? 'Friday' : datum.label == 'Saturday' ? 'Saturday' : datum.label == 'Sunday' ? 'Sunday' : datum.label",
+            "grid": false
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday"
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "Weekday",
+          "type": "nominal"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-75493120753278cfc7d0f55e7565fcbb"
+  },
+  "height": 420,
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-75493120753278cfc7d0f55e7565fcbb": [
+      {
+        "__ggsql_aes_fill__": 18.56,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "00",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15.1,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "01",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 18.3025,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "02",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 26.782499999999995,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "03",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 58.86,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "04",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 79.14750000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "05",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 91.4125,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "06",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 85.1675,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "07",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 65.9325,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "08",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 35.5975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "09",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 43.98500000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 34.42,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 34.285,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 12,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 32.805,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 13,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 39.625,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 14,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 51.057500000000005,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 15,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 65.7875,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 16,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 76.64750000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 17,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 69.27499999999999,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 18,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 49.885,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 19,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 35.4925,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 20,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 21.0925,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "21",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 21,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13.74,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "22",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 22,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 16.9,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "23",
+        "__ggsql_aes_pos2__": "Monday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 23,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13.59,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "00",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 24,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 17.1375,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "01",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 25,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 17.6475,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "02",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 26,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 25.1825,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "03",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 27,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 40.72,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "04",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 28,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 62.190000000000005,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "05",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 29,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 64.835,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "06",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 30,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 59.5525,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "07",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 31,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 44.4125,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "08",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 32,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 31.0975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "09",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 33,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 27.565,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 34,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 29.6625,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 35,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 31.9,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 36,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 31.435,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 37,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 41.74,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 38,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 53.150000000000006,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 39,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 70.7375,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 40,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 79.19999999999999,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 41,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 68.4175,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 42,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 48.3975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 43,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 51.805,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 44,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 43.730000000000004,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "21",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 45,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 42.5225,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "22",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 46,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 29.380000000000003,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "23",
+        "__ggsql_aes_pos2__": "Tuesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 47,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 27.125,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "00",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 48,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 29.0575,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "01",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 49,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 34.059999999999995,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "02",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 50,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 40.53,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "03",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 51,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 72.5575,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "04",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 52,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 106.23500000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "05",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 53,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 130.35750000000002,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "06",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 54,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 135.75,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "07",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 55,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 115.13250000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "08",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 56,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 78.7975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "09",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 57,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 50.3775,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 58,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 49.53,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 59,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 44.0125,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 60,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 42.4925,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 61,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 51.9575,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 62,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 70.38,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 63,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 82.5425,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 64,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 87.2925,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 65,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 64.5675,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 66,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 48.495,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 67,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 48.8525,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 68,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 39.7875,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "21",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 69,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 32.635,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "22",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 70,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 30.8475,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "23",
+        "__ggsql_aes_pos2__": "Wednesday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 71,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 30.035,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "00",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 72,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 28.44,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "01",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 73,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 32.082499999999996,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "02",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 74,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 37.89,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "03",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 75,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 68.0925,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "04",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 76,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 82.66,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "05",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 77,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 94.70750000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "06",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 78,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 91.1725,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "07",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 79,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 91.27,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "08",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 80,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 84.47250000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "09",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 81,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 90.45250000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 82,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 84.845,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 83,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 75.8775,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 84,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 70.76,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 85,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 68.55000000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 86,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 84.4,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 87,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 104.29249999999999,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 88,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 120.49,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 89,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 95.3825,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 90,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 61.057500000000005,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 91,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 64.5575,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 92,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 51.9925,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "21",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 93,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 38.215,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "22",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 94,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 49.3025,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "23",
+        "__ggsql_aes_pos2__": "Thursday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 95,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 47.9375,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "00",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 96,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 47.912499999999994,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "01",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 97,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 47.07000000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "02",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 98,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 51.3275,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "03",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 99,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 77.855,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "04",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 100,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 124.8225,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "05",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 101,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 129.33249999999998,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "06",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 102,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 101.41499999999999,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "07",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 103,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 80.15250000000002,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "08",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 104,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 61.495,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "09",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 105,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 52.5975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 106,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 47.2375,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 107,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 47.332499999999996,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 108,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 45.865,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 109,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 51.8775,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 110,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 67.5225,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 111,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 96.37,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 112,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 80.3525,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 113,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 48.510000000000005,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 114,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 30.697499999999998,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 115,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 21.1,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 116,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9.6925,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "21",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 117,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 2.675,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "22",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 118,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.5549999999999999,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "23",
+        "__ggsql_aes_pos2__": "Friday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 119,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.5025,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "00",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 120,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.305,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "01",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 121,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.2975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "02",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 122,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.3025,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "03",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 123,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.375,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "04",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 124,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.535,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "05",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 125,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.6400000000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "06",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 126,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.5325,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "07",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 127,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.325,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "08",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 128,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 0.095,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "09",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 129,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": -0.8650000000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 130,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": -2.5025,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 131,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": -2.355,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 132,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": -0.5950000000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 133,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 1.085,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 134,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 2.49,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 135,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 5.555,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 136,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 6.477499999999999,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 137,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 5.3075,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 138,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 3.975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 139,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 3.84,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 140,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 3.8575000000000004,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "21",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 141,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 3.4450000000000003,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "22",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 142,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 2.0975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "23",
+        "__ggsql_aes_pos2__": "Saturday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 143,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 2.8525,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "00",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 144,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 2.41,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "01",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 145,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 2.4924999999999997,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "02",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 146,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 3.975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "03",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 147,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 4.5375,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "04",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 148,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 5.015000000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "05",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 149,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8.2075,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "06",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 150,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 21.2975,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "07",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 151,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 30.7325,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "08",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 152,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 30.9,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "09",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 153,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 24.322499999999998,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 154,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 26.822499999999998,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 155,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 39.4925,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 156,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 61.8675,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 157,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 54.614999999999995,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 158,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 71.8625,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 159,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 112.95750000000001,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 160,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 104.51249999999999,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 161,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 70.8275,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 162,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 61.545,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 163,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 54.435,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 164,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 43.0225,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "21",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 165,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 47.01499999999999,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "22",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 166,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 47.095000000000006,
+        "__ggsql_aes_height__": 1.0,
+        "__ggsql_aes_pos1__": "23",
+        "__ggsql_aes_pos2__": "Sunday",
+        "__ggsql_aes_width__": 1.0,
+        "__ggsql_row_index__": 167,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

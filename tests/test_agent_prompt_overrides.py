@@ -101,3 +101,42 @@ def test_invalid_override_fails_before_execution(overrides):
 def test_inactive_component_is_rejected():
     with pytest.raises(ValueError, match="inactive"):
         create_agent({"catalog"}, prompt_overrides={"query.instructions": "text"})
+
+
+@pytest.mark.parametrize("semantic", [False, True])
+def test_few_shot_changes_examples_without_changing_tools_or_domain_access(semantic):
+    capabilities = frozenset({"catalog", "query", "table_outputs", "visualization"})
+    if semantic:
+        capabilities |= {"semantic_layer"}
+    original_instructions, original_parameters = capture(capabilities=capabilities)
+    example_instructions, example_parameters = capture(
+        capabilities=capabilities | {"few_shot"}
+    )
+
+    assert "## Tool-use examples" not in original_instructions
+    assert "## Tool-use examples" in example_instructions
+    assert ("## Semantic layer capability" in example_instructions) == semantic
+    original_tools = {tool.name: tool for tool in original_parameters.function_tools}
+    example_tools = {tool.name: tool for tool in example_parameters.function_tools}
+    assert original_tools.keys() == example_tools.keys()
+    for name, original in original_tools.items():
+        example = example_tools[name]
+        assert example.parameters_json_schema == original.parameters_json_schema
+        assert "Examples:" not in original.description
+        assert example.description.startswith(original.description)
+        assert "Examples:" in example.description
+
+    # Rendering the example profile must not contaminate cached baseline prompts.
+    assert capture(capabilities=capabilities) == (
+        original_instructions,
+        original_parameters,
+    )
+
+
+def test_few_shot_tool_examples_are_shared_across_semantic_profiles():
+    capabilities = frozenset(
+        {"catalog", "query", "table_outputs", "visualization", "few_shot"}
+    )
+    _, raw = capture(capabilities=capabilities)
+    _, semantic = capture(capabilities=capabilities | {"semantic_layer"})
+    assert raw.function_tools == semantic.function_tools

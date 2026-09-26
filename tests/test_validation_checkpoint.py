@@ -23,7 +23,7 @@ def _case(name: str) -> BenchmarkCase:
         inputs="question",
         metadata=CaseMetadata(
             case_id=uuid4(),
-            query_code="query",
+            query_path="query.sql",
             category=TaskCategory.DATA_DISCOVERY,
         ),
         expected_output=None,
@@ -31,7 +31,9 @@ def _case(name: str) -> BenchmarkCase:
 
 
 def test_expand_attempts_skips_individual_completed_repetitions() -> None:
-    dataset = BenchmarkDataset(name="benchmark", cases=[_case("task_1"), _case("task_2")])
+    dataset = BenchmarkDataset(
+        name="benchmark", cases=[_case("task_1"), _case("task_2")]
+    )
 
     pending, attempts, names = _expand_attempts(
         dataset,
@@ -67,7 +69,7 @@ def test_checkpoint_round_trip(tmp_path: Path) -> None:
     )
     case_metadata = CaseMetadata(
         case_id=uuid4(),
-        query_code="query",
+        query_path="query.sql",
         category=TaskCategory.DATA_DISCOVERY,
     )
     result = ReportCase[str, BenchmarkOutput, CaseMetadata](
@@ -113,7 +115,7 @@ def test_checkpoint_invalidate_removes_only_selected_attempts(tmp_path: Path) ->
     )
     case_metadata = CaseMetadata(
         case_id=uuid4(),
-        query_code="query",
+        query_path="query.sql",
         category=TaskCategory.DATA_DISCOVERY,
     )
     for name in ("task_1 [1/2]", "task_1 [2/2]", "task_2 [1/2]"):
@@ -166,7 +168,7 @@ def test_checkpoint_relocates_artifacts_in_a_copied_run(tmp_path: Path) -> None:
         inputs="question",
         metadata=CaseMetadata(
             case_id=uuid4(),
-            query_code="query",
+            query_path="query.sql",
             category=TaskCategory.DATA_DISCOVERY,
         ),
         expected_output=None,
@@ -349,3 +351,166 @@ def test_evaluate_rejects_unknown_redo_task_without_changing_checkpoint(
         },
     )
     assert resumed.completed_names == {"task_1"}
+
+
+def test_partial_resume_keeps_failures_until_explicit_redo(tmp_path: Path) -> None:
+    from src.validation.runner import _experiment_metadata
+
+    dataset = BenchmarkDataset(
+        name="benchmark", cases=[_case("task_1"), _case("task_2")]
+    )
+    dataset.cases[0].inputs = "fails"
+    dataset.cases[1].inputs = "succeeds"
+    config = BenchmarkRunConfig(dataset="benchmark", repetitions=2, max_concurrency=2)
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    checkpoint_path = tmp_path / "checkpoint.json"
+
+    def first_task(prompt: str) -> str:
+        if prompt == "fails":
+            raise RuntimeError("simulated task failure")
+        return "original"
+
+    first = evaluate(
+        dataset, cast(Any, first_task), "test", config, artifacts, checkpoint_path
+    )
+    assert len(first.failures) == 2
+    checkpoint = EvaluationCheckpoint(
+        checkpoint_path,
+        name="test",
+        experiment_metadata=_experiment_metadata("test", config),
+    )
+    # Leave the persisted state of an interrupted run: one repetition pending.
+    checkpoint.invalidate({"task_2 [2/2]"})
+    calls = []
+
+    def resumed_task(prompt: str) -> str:
+        calls.append(prompt)
+        return "replacement"
+
+    resumed = evaluate(
+        dataset, cast(Any, resumed_task), "test", config, artifacts, checkpoint_path
+    )
+    assert calls == ["succeeds"]
+    assert len(resumed.failures) == 2
+    assert [case.output for case in resumed.cases] == ["original", "replacement"]
+    calls.clear()
+    redone = evaluate(
+        dataset,
+        cast(Any, resumed_task),
+        "test",
+        config,
+        artifacts,
+        checkpoint_path,
+        redo_tasks=["task_1", "task_1"],
+    )
+    assert calls == ["fails", "fails"]
+    assert not redone.failures
+    assert len(redone.cases) == 4
+
+
+def test_copied_redo_preserves_source_and_unselected_artifacts(
+    tmp_path: Path,
+    make_table_artifact: Any,
+) -> None:
+    from src.validation.lifecycle import write_evaluation_artifacts
+
+    source = tmp_path / "source"
+    destination = tmp_path / "destination"
+    for directory in (source, destination):
+        (directory / "artifacts").mkdir(parents=True)
+    dataset = BenchmarkDataset(
+        name="benchmark", cases=[_case("task_1"), _case("task_2")]
+    )
+    config = BenchmarkRunConfig(dataset="benchmark", repetitions=2)
+
+    def task(_: str) -> str:
+        write_evaluation_artifacts((make_table_artifact([{"value": 1}]),))
+        return "old"
+
+    evaluate(
+        dataset,
+        cast(Any, task),
+        "test",
+        config,
+        source / "artifacts",
+        source / "checkpoint.json",
+    )
+    source_files = {
+        p.relative_to(source): p.read_bytes() for p in source.rglob("*") if p.is_file()
+    }
+    _copy_run_for_redo(source, destination)
+    report = evaluate(
+        dataset,
+        cast(Any, lambda _: "new, no artifacts"),
+        "test",
+        config,
+        destination / "artifacts",
+        destination / "checkpoint.json",
+        redo_tasks=["task_1"],
+        artifact_source_dir=source / "artifacts",
+    )
+    assert {
+        p.relative_to(source): p.read_bytes() for p in source.rglob("*") if p.is_file()
+    } == source_files
+    assert sorted(p.name for p in (destination / "artifacts").iterdir()) == [
+        "task_2_1.csv",
+        "task_2_2.csv",
+    ]
+    for case in report.cases:
+        if case.source_case_name == "task_2":
+            path = Path(case.attributes["csv_path"])
+            assert path.parent == destination / "artifacts"
+            assert path.read_bytes() == (source / "artifacts" / path.name).read_bytes()
+        else:
+            assert case.output == "new, no artifacts"
+
+
+def test_interrupted_run_resumes_only_unfinished_attempts(tmp_path: Path) -> None:
+    import pytest
+
+    dataset = BenchmarkDataset(name="benchmark", cases=[_case("task_1")])
+    config = BenchmarkRunConfig(dataset="benchmark", repetitions=3, max_concurrency=1)
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    checkpoint_path = tmp_path / "checkpoint.json"
+    calls = []
+
+    class SimulatedInterruption(BaseException):
+        pass
+
+    async def interrupted_task(prompt: str) -> str:
+        calls.append(prompt)
+        if len(calls) == 2:
+            raise SimulatedInterruption()
+        if len(calls) > 2:
+            await asyncio.Event().wait()
+        return "before interruption"
+
+    with pytest.raises(BaseExceptionGroup) as interrupted:
+        evaluate(
+            dataset,
+            cast(Any, interrupted_task),
+            "test",
+            config,
+            artifacts,
+            checkpoint_path,
+        )
+
+    assert interrupted.value.subgroup(SimulatedInterruption) is not None
+    resumed_calls = []
+
+    def resumed_task(prompt: str) -> str:
+        resumed_calls.append(prompt)
+        return "after interruption"
+
+    report = evaluate(
+        dataset, cast(Any, resumed_task), "test", config, artifacts, checkpoint_path
+    )
+    assert resumed_calls == ["question", "question"]
+    assert [case.output for case in report.cases] == [
+        "before interruption",
+        "after interruption",
+        "after interruption",
+    ]
+    assert not report.failures

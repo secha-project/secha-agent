@@ -72,6 +72,7 @@ def report_batch(
     report: BenchmarkReport,
     batch: list[BenchmarkCase],
     *,
+    artifact_base_path: Path,
     capture_traces: bool,
     repetitions: int = 1,
 ) -> EvaluationBatch[Trajectory, str]:
@@ -88,7 +89,12 @@ def report_batch(
                 )
                 for index in range(1, repetitions + 1)
             ]
-            result = report_batch(report, attempts, capture_traces=capture_traces)
+            result = report_batch(
+                report,
+                attempts,
+                artifact_base_path=artifact_base_path,
+                capture_traces=capture_traces,
+            )
             outputs.append(json.dumps(result.outputs, ensure_ascii=False))
             scores.append(sum(result.scores) / repetitions)
             if capture_traces:
@@ -134,8 +140,10 @@ def report_batch(
                     "case_name": case.name,
                     "input": case.inputs,
                     "expected_output": record.get("expected_output"),
-                    "reference_sql": case.metadata.query_code
-                    if case.metadata
+                    "reference_sql": (
+                        artifact_base_path / case.metadata.query_path
+                    ).read_text(encoding="utf-8")
+                    if case.metadata and case.metadata.query_path is not None
                     else None,
                     "actual_output": outputs[-1],
                     "score": scores[-1],
@@ -201,7 +209,11 @@ class BenchmarkAdapter:
             agent=agent,
             deps=self.deps,
             model=self.model,
-            model_settings=ModelSettings(temperature=self.config.agent.temperature),
+            model_settings=(
+                ModelSettings(temperature=self.config.agent.temperature)
+                if self.config.agent.temperature is not None
+                else ModelSettings()
+            ),
             usage_limits=UsageLimits(request_limit=self.config.agent.request_limit),
             capture_messages=capture_traces,
         )
@@ -217,6 +229,7 @@ class BenchmarkAdapter:
         result = report_batch(
             report,
             batch,
+            artifact_base_path=self.run_directory / "dataset",
             capture_traces=capture_traces,
             repetitions=self.config.repetitions,
         )

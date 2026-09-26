@@ -3,11 +3,11 @@ from typing import Annotated
 
 from pydantic import AfterValidator
 
-from . import catalog, query, semantic_layer, table_outputs, visualization
+from . import catalog, few_shot, query, semantic_layer, table_outputs, visualization
 
 # This is the canonical order for capability instructions and tools. Keep the
 # semantic policy first so governed measures precede catalog and SQL fallbacks.
-CAPABILITIES = (semantic_layer, catalog, query, table_outputs, visualization)
+CAPABILITIES = (semantic_layer, catalog, query, table_outputs, visualization, few_shot)
 
 
 def validate(enabled: Iterable[str]) -> frozenset[str]:
@@ -33,9 +33,7 @@ def validate(enabled: Iterable[str]) -> frozenset[str]:
         if "table_outputs" not in selected:
             raise ValueError("The visualization capability requires table_outputs.")
         if not output_producers & selected:
-            raise ValueError(
-                "The visualization capability requires query."
-            )
+            raise ValueError("The visualization capability requires query.")
     return selected
 
 

@@ -1,0 +1,1697 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "area",
+        "clip": true
+      },
+      "encoding": {
+        "detail": {
+          "field": "__ggsql_aes_fill__",
+          "type": "nominal"
+        },
+        "fill": {
+          "field": "__ggsql_aes_fill__",
+          "legend": {
+            "labelExpr": "datum.label == 'Tenant spaces' ? 'Tenant spaces' : datum.label == 'Shared building services' ? 'Shared building services' : datum.label"
+          },
+          "scale": {
+            "domain": [
+              "Shared building services",
+              "Tenant spaces"
+            ],
+            "range": [
+              "#0067A5",
+              "#F38400"
+            ]
+          },
+          "title": "Demand group",
+          "type": "nominal"
+        },
+        "fillOpacity": {
+          "value": 0.8
+        },
+        "stroke": {
+          "value": "black"
+        },
+        "strokeDash": {
+          "value": []
+        },
+        "strokeWidth": {
+          "value": 1.3333333333333333
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T10:00:00' ? '10:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T22:00:00' ? '22:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T14:00:00' ? '14:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T06:00:00' ? '06:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T02:00:00' ? '02:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T18:00:00' ? '18:00' : datum.label",
+            "values": [
+              "2025-03-17T02:00:00Z",
+              "2025-03-17T06:00:00Z",
+              "2025-03-17T10:00:00Z",
+              "2025-03-17T14:00:00Z",
+              "2025-03-17T18:00:00Z",
+              "2025-03-17T22:00:00Z"
+            ]
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              "2025-03-16T22:48:45Z",
+              "2025-03-18T00:56:15Z"
+            ],
+            "zero": false
+          },
+          "title": "Interval start (UTC)",
+          "type": "temporal"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == '300' ? '300' : datum.label == '0' ? '0' : datum.label == '200' ? '200' : datum.label == '100' ? '100' : datum.label",
+            "values": [
+              0.0,
+              100.0,
+              200.0,
+              300.0
+            ]
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              -16.63202144835078,
+              349.27245041536634
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "Mean active power (kW)",
+          "type": "quantitative"
+        },
+        "y2": {
+          "field": "__ggsql_aes_pos2end__"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-25974433f9e89993cd17aa6c5fb6ed79"
+  },
+  "height": 420,
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-25974433f9e89993cd17aa6c5fb6ed79": [
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T00:00:00.000Z",
+        "__ggsql_aes_pos2__": 36.98211062716556,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T00:00:00.000Z",
+        "__ggsql_aes_pos2__": 95.61045081813779,
+        "__ggsql_aes_pos2end__": 36.98211062716556,
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T00:15:00.000Z",
+        "__ggsql_aes_pos2__": 41.95598045138667,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T00:15:00.000Z",
+        "__ggsql_aes_pos2__": 111.50392505208555,
+        "__ggsql_aes_pos2end__": 41.95598045138667,
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T00:30:00.000Z",
+        "__ggsql_aes_pos2__": 42.07472001735001,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T00:30:00.000Z",
+        "__ggsql_aes_pos2__": 112.97640204861224,
+        "__ggsql_aes_pos2end__": 42.07472001735001,
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T00:45:00.000Z",
+        "__ggsql_aes_pos2__": 41.93040083767,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T00:45:00.000Z",
+        "__ggsql_aes_pos2__": 111.42014802517335,
+        "__ggsql_aes_pos2end__": 41.93040083767,
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T01:00:00.000Z",
+        "__ggsql_aes_pos2__": 43.0680665885311,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T01:00:00.000Z",
+        "__ggsql_aes_pos2__": 112.24079459200888,
+        "__ggsql_aes_pos2end__": 43.0680665885311,
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T01:15:00.000Z",
+        "__ggsql_aes_pos2__": 45.843736779522224,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T01:15:00.000Z",
+        "__ggsql_aes_pos2__": 116.15721727431554,
+        "__ggsql_aes_pos2end__": 45.843736779522224,
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T01:30:00.000Z",
+        "__ggsql_aes_pos2__": 41.60876949218222,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 12,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T01:30:00.000Z",
+        "__ggsql_aes_pos2__": 110.7644488068182,
+        "__ggsql_aes_pos2end__": 41.60876949218222,
+        "__ggsql_row_index__": 13,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T01:45:00.000Z",
+        "__ggsql_aes_pos2__": 41.713359388027776,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 14,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T01:45:00.000Z",
+        "__ggsql_aes_pos2__": 109.70802506945554,
+        "__ggsql_aes_pos2end__": 41.713359388027776,
+        "__ggsql_row_index__": 15,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T02:00:00.000Z",
+        "__ggsql_aes_pos2__": 41.49745187065222,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 16,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T02:00:00.000Z",
+        "__ggsql_aes_pos2__": 110.70722772135667,
+        "__ggsql_aes_pos2end__": 41.49745187065222,
+        "__ggsql_row_index__": 17,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T02:15:00.000Z",
+        "__ggsql_aes_pos2__": 45.058762135418895,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 18,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T02:15:00.000Z",
+        "__ggsql_aes_pos2__": 114.19780482640223,
+        "__ggsql_aes_pos2end__": 45.058762135418895,
+        "__ggsql_row_index__": 19,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T02:30:00.000Z",
+        "__ggsql_aes_pos2__": 41.776272408873325,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 20,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T02:30:00.000Z",
+        "__ggsql_aes_pos2__": 110.53114582033443,
+        "__ggsql_aes_pos2end__": 41.776272408873325,
+        "__ggsql_row_index__": 21,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T02:45:00.000Z",
+        "__ggsql_aes_pos2__": 39.973136239135556,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 22,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T02:45:00.000Z",
+        "__ggsql_aes_pos2__": 111.3180245811133,
+        "__ggsql_aes_pos2end__": 39.973136239135556,
+        "__ggsql_row_index__": 23,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T03:00:00.000Z",
+        "__ggsql_aes_pos2__": 32.77111375217222,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 24,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T03:00:00.000Z",
+        "__ggsql_aes_pos2__": 103.66381266711221,
+        "__ggsql_aes_pos2end__": 32.77111375217222,
+        "__ggsql_row_index__": 25,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T03:15:00.000Z",
+        "__ggsql_aes_pos2__": 36.09335674554939,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 26,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T03:15:00.000Z",
+        "__ggsql_aes_pos2__": 104.5491219278316,
+        "__ggsql_aes_pos2end__": 36.09335674554939,
+        "__ggsql_row_index__": 27,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T03:30:00.000Z",
+        "__ggsql_aes_pos2__": 32.702370774743336,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 28,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T03:30:00.000Z",
+        "__ggsql_aes_pos2__": 98.16630500216777,
+        "__ggsql_aes_pos2end__": 32.702370774743336,
+        "__ggsql_row_index__": 29,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T03:45:00.000Z",
+        "__ggsql_aes_pos2__": 33.03621156249778,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 30,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T03:45:00.000Z",
+        "__ggsql_aes_pos2__": 97.16814260848668,
+        "__ggsql_aes_pos2end__": 33.03621156249778,
+        "__ggsql_row_index__": 31,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T04:00:00.000Z",
+        "__ggsql_aes_pos2__": 52.81092601346111,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 32,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T04:00:00.000Z",
+        "__ggsql_aes_pos2__": 141.50623689887112,
+        "__ggsql_aes_pos2end__": 52.81092601346111,
+        "__ggsql_row_index__": 33,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T04:15:00.000Z",
+        "__ggsql_aes_pos2__": 53.378107695318896,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 34,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T04:15:00.000Z",
+        "__ggsql_aes_pos2__": 145.27623458767002,
+        "__ggsql_aes_pos2end__": 53.378107695318896,
+        "__ggsql_row_index__": 35,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T04:30:00.000Z",
+        "__ggsql_aes_pos2__": 56.56251379774001,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 36,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T04:30:00.000Z",
+        "__ggsql_aes_pos2__": 199.65033093315446,
+        "__ggsql_aes_pos2end__": 56.56251379774001,
+        "__ggsql_row_index__": 37,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T04:45:00.000Z",
+        "__ggsql_aes_pos2__": 51.56391544705331,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 38,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T04:45:00.000Z",
+        "__ggsql_aes_pos2__": 160.01112335505002,
+        "__ggsql_aes_pos2end__": 51.56391544705331,
+        "__ggsql_row_index__": 39,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T05:00:00.000Z",
+        "__ggsql_aes_pos2__": 57.18504866754113,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 40,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T05:00:00.000Z",
+        "__ggsql_aes_pos2__": 166.57044273871225,
+        "__ggsql_aes_pos2end__": 57.18504866754113,
+        "__ggsql_row_index__": 41,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T05:15:00.000Z",
+        "__ggsql_aes_pos2__": 55.46660266059222,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 42,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T05:15:00.000Z",
+        "__ggsql_aes_pos2__": 157.58100612412554,
+        "__ggsql_aes_pos2end__": 55.46660266059222,
+        "__ggsql_row_index__": 43,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T05:30:00.000Z",
+        "__ggsql_aes_pos2__": 56.67104634114333,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 44,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T05:30:00.000Z",
+        "__ggsql_aes_pos2__": 197.42347173177004,
+        "__ggsql_aes_pos2end__": 56.67104634114333,
+        "__ggsql_row_index__": 45,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T05:45:00.000Z",
+        "__ggsql_aes_pos2__": 42.53493891492998,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 46,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T05:45:00.000Z",
+        "__ggsql_aes_pos2__": 181.6494151562589,
+        "__ggsql_aes_pos2end__": 42.53493891492998,
+        "__ggsql_row_index__": 47,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T06:00:00.000Z",
+        "__ggsql_aes_pos2__": 40.95311634332223,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 48,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T06:00:00.000Z",
+        "__ggsql_aes_pos2__": 200.24778794922557,
+        "__ggsql_aes_pos2end__": 40.95311634332223,
+        "__ggsql_row_index__": 49,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T06:15:00.000Z",
+        "__ggsql_aes_pos2__": 44.17968697482556,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 50,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T06:15:00.000Z",
+        "__ggsql_aes_pos2__": 209.57789683593666,
+        "__ggsql_aes_pos2end__": 44.17968697482556,
+        "__ggsql_row_index__": 51,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T06:30:00.000Z",
+        "__ggsql_aes_pos2__": 49.6376471788111,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 52,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T06:30:00.000Z",
+        "__ggsql_aes_pos2__": 240.65694653645,
+        "__ggsql_aes_pos2end__": 49.6376471788111,
+        "__ggsql_row_index__": 53,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T06:45:00.000Z",
+        "__ggsql_aes_pos2__": 48.89291486544444,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 54,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T06:45:00.000Z",
+        "__ggsql_aes_pos2__": 258.998904789834,
+        "__ggsql_aes_pos2end__": 48.89291486544444,
+        "__ggsql_row_index__": 55,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T07:00:00.000Z",
+        "__ggsql_aes_pos2__": 58.06145759984445,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 56,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T07:00:00.000Z",
+        "__ggsql_aes_pos2__": 259.23123268665,
+        "__ggsql_aes_pos2end__": 58.06145759984445,
+        "__ggsql_row_index__": 57,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T07:15:00.000Z",
+        "__ggsql_aes_pos2__": 64.08834990450998,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 58,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T07:15:00.000Z",
+        "__ggsql_aes_pos2__": 281.0205121093711,
+        "__ggsql_aes_pos2end__": 64.08834990450998,
+        "__ggsql_row_index__": 59,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T07:30:00.000Z",
+        "__ggsql_aes_pos2__": 68.07180556422999,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 60,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T07:30:00.000Z",
+        "__ggsql_aes_pos2__": 256.8223359635355,
+        "__ggsql_aes_pos2end__": 68.07180556422999,
+        "__ggsql_row_index__": 61,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T07:45:00.000Z",
+        "__ggsql_aes_pos2__": 66.7912686381465,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 62,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T07:45:00.000Z",
+        "__ggsql_aes_pos2__": 256.7510163985632,
+        "__ggsql_aes_pos2end__": 66.7912686381465,
+        "__ggsql_row_index__": 63,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T08:00:00.000Z",
+        "__ggsql_aes_pos2__": 68.58647413196,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 64,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T08:00:00.000Z",
+        "__ggsql_aes_pos2__": 233.97060732640443,
+        "__ggsql_aes_pos2end__": 68.58647413196,
+        "__ggsql_row_index__": 65,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T08:15:00.000Z",
+        "__ggsql_aes_pos2__": 78.55881572916776,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 66,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T08:15:00.000Z",
+        "__ggsql_aes_pos2__": 233.15494069444554,
+        "__ggsql_aes_pos2end__": 78.55881572916776,
+        "__ggsql_row_index__": 67,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T08:30:00.000Z",
+        "__ggsql_aes_pos2__": 75.02906731771111,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 68,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T08:30:00.000Z",
+        "__ggsql_aes_pos2__": 281.0223964670167,
+        "__ggsql_aes_pos2end__": 75.02906731771111,
+        "__ggsql_row_index__": 69,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T08:45:00.000Z",
+        "__ggsql_aes_pos2__": 94.98258924914886,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 70,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T08:45:00.000Z",
+        "__ggsql_aes_pos2__": 302.8913349088711,
+        "__ggsql_aes_pos2end__": 94.98258924914886,
+        "__ggsql_row_index__": 71,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T09:00:00.000Z",
+        "__ggsql_aes_pos2__": 86.55536100696,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 72,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T09:00:00.000Z",
+        "__ggsql_aes_pos2__": 292.63101937501557,
+        "__ggsql_aes_pos2end__": 86.55536100696,
+        "__ggsql_row_index__": 73,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T09:15:00.000Z",
+        "__ggsql_aes_pos2__": 95.78539733508443,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 74,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T09:15:00.000Z",
+        "__ggsql_aes_pos2__": 307.1762168316122,
+        "__ggsql_aes_pos2end__": 95.78539733508443,
+        "__ggsql_row_index__": 75,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T09:30:00.000Z",
+        "__ggsql_aes_pos2__": 88.2263433072978,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 76,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T09:30:00.000Z",
+        "__ggsql_aes_pos2__": 316.4929264496589,
+        "__ggsql_aes_pos2end__": 88.2263433072978,
+        "__ggsql_row_index__": 77,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T09:45:00.000Z",
+        "__ggsql_aes_pos2__": 103.27218878470553,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 78,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T09:45:00.000Z",
+        "__ggsql_aes_pos2__": 317.5901700347055,
+        "__ggsql_aes_pos2end__": 103.27218878470553,
+        "__ggsql_row_index__": 79,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T10:00:00.000Z",
+        "__ggsql_aes_pos2__": 95.77481304687667,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 80,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T10:00:00.000Z",
+        "__ggsql_aes_pos2__": 315.64820332465445,
+        "__ggsql_aes_pos2end__": 95.77481304687667,
+        "__ggsql_row_index__": 81,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T10:15:00.000Z",
+        "__ggsql_aes_pos2__": 101.40583007811554,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 82,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T10:15:00.000Z",
+        "__ggsql_aes_pos2__": 330.36737822047667,
+        "__ggsql_aes_pos2end__": 101.40583007811554,
+        "__ggsql_row_index__": 83,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T10:30:00.000Z",
+        "__ggsql_aes_pos2__": 103.44664716145999,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 84,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T10:30:00.000Z",
+        "__ggsql_aes_pos2__": 332.64042896701557,
+        "__ggsql_aes_pos2end__": 103.44664716145999,
+        "__ggsql_row_index__": 85,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T10:45:00.000Z",
+        "__ggsql_aes_pos2__": 104.79488840277887,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 86,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T10:45:00.000Z",
+        "__ggsql_aes_pos2__": 317.46916086805663,
+        "__ggsql_aes_pos2end__": 104.79488840277887,
+        "__ggsql_row_index__": 87,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T11:00:00.000Z",
+        "__ggsql_aes_pos2__": 106.64225502605447,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 88,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T11:00:00.000Z",
+        "__ggsql_aes_pos2__": 308.87827903647116,
+        "__ggsql_aes_pos2end__": 106.64225502605447,
+        "__ggsql_row_index__": 89,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T11:15:00.000Z",
+        "__ggsql_aes_pos2__": 104.14550060764336,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 90,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T11:15:00.000Z",
+        "__ggsql_aes_pos2__": 315.0372792534767,
+        "__ggsql_aes_pos2end__": 104.14550060764336,
+        "__ggsql_row_index__": 91,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T11:30:00.000Z",
+        "__ggsql_aes_pos2__": 98.0661136284544,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 92,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T11:30:00.000Z",
+        "__ggsql_aes_pos2__": 314.02559994789885,
+        "__ggsql_aes_pos2end__": 98.0661136284544,
+        "__ggsql_row_index__": 93,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T11:45:00.000Z",
+        "__ggsql_aes_pos2__": 90.48858681423444,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 94,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T11:45:00.000Z",
+        "__ggsql_aes_pos2__": 288.8878033593733,
+        "__ggsql_aes_pos2end__": 90.48858681423444,
+        "__ggsql_row_index__": 95,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T12:00:00.000Z",
+        "__ggsql_aes_pos2__": 84.34311977431,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 96,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T12:00:00.000Z",
+        "__ggsql_aes_pos2__": 286.06909754206805,
+        "__ggsql_aes_pos2end__": 84.34311977431,
+        "__ggsql_row_index__": 97,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T12:15:00.000Z",
+        "__ggsql_aes_pos2__": 80.42944776910664,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 98,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T12:15:00.000Z",
+        "__ggsql_aes_pos2__": 273.98331438368996,
+        "__ggsql_aes_pos2end__": 80.42944776910664,
+        "__ggsql_row_index__": 99,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T12:30:00.000Z",
+        "__ggsql_aes_pos2__": 75.67282349472363,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 100,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T12:30:00.000Z",
+        "__ggsql_aes_pos2__": 254.4197423141681,
+        "__ggsql_aes_pos2end__": 75.67282349472363,
+        "__ggsql_row_index__": 101,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T12:45:00.000Z",
+        "__ggsql_aes_pos2__": 79.81010005206444,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 102,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T12:45:00.000Z",
+        "__ggsql_aes_pos2__": 269.2645076041478,
+        "__ggsql_aes_pos2end__": 79.81010005206444,
+        "__ggsql_row_index__": 103,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 75.74439480903665,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 104,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 271.37121736112,
+        "__ggsql_aes_pos2end__": 75.74439480903665,
+        "__ggsql_row_index__": 105,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T13:15:00.000Z",
+        "__ggsql_aes_pos2__": 78.68111717881334,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 106,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T13:15:00.000Z",
+        "__ggsql_aes_pos2__": 241.8015012065911,
+        "__ggsql_aes_pos2end__": 78.68111717881334,
+        "__ggsql_row_index__": 107,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T13:30:00.000Z",
+        "__ggsql_aes_pos2__": 81.27773091145556,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 108,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T13:30:00.000Z",
+        "__ggsql_aes_pos2__": 269.2117244357611,
+        "__ggsql_aes_pos2end__": 81.27773091145556,
+        "__ggsql_row_index__": 109,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T13:45:00.000Z",
+        "__ggsql_aes_pos2__": 81.23928566841333,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 110,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T13:45:00.000Z",
+        "__ggsql_aes_pos2__": 267.49402264758,
+        "__ggsql_aes_pos2end__": 81.23928566841333,
+        "__ggsql_row_index__": 111,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 67.21325537322556,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 112,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 228.91512660586446,
+        "__ggsql_aes_pos2end__": 67.21325537322556,
+        "__ggsql_row_index__": 113,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T14:15:00.000Z",
+        "__ggsql_aes_pos2__": 70.4213429036378,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 114,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T14:15:00.000Z",
+        "__ggsql_aes_pos2__": 216.35230847655114,
+        "__ggsql_aes_pos2end__": 70.4213429036378,
+        "__ggsql_row_index__": 115,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T14:30:00.000Z",
+        "__ggsql_aes_pos2__": 65.16438611545,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 116,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T14:30:00.000Z",
+        "__ggsql_aes_pos2__": 195.49785429253,
+        "__ggsql_aes_pos2end__": 65.16438611545,
+        "__ggsql_row_index__": 117,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T14:45:00.000Z",
+        "__ggsql_aes_pos2__": 64.44333121094888,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 118,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T14:45:00.000Z",
+        "__ggsql_aes_pos2__": 187.93653180123442,
+        "__ggsql_aes_pos2end__": 64.44333121094888,
+        "__ggsql_row_index__": 119,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 64.83312572481779,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 120,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 175.84159109807445,
+        "__ggsql_aes_pos2end__": 64.83312572481779,
+        "__ggsql_row_index__": 121,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T15:15:00.000Z",
+        "__ggsql_aes_pos2__": 64.66429223089223,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 122,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T15:15:00.000Z",
+        "__ggsql_aes_pos2__": 173.19758513887,
+        "__ggsql_aes_pos2end__": 64.66429223089223,
+        "__ggsql_row_index__": 123,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T15:30:00.000Z",
+        "__ggsql_aes_pos2__": 65.08605437065444,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 124,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T15:30:00.000Z",
+        "__ggsql_aes_pos2__": 162.22427990883887,
+        "__ggsql_aes_pos2end__": 65.08605437065444,
+        "__ggsql_row_index__": 125,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T15:45:00.000Z",
+        "__ggsql_aes_pos2__": 65.28067346354223,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 126,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T15:45:00.000Z",
+        "__ggsql_aes_pos2__": 157.0453254861111,
+        "__ggsql_aes_pos2end__": 65.28067346354223,
+        "__ggsql_row_index__": 127,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T16:00:00.000Z",
+        "__ggsql_aes_pos2__": 47.251707213543334,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 128,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T16:00:00.000Z",
+        "__ggsql_aes_pos2__": 135.98129684030553,
+        "__ggsql_aes_pos2end__": 47.251707213543334,
+        "__ggsql_row_index__": 129,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T16:15:00.000Z",
+        "__ggsql_aes_pos2__": 44.65102986110334,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 130,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T16:15:00.000Z",
+        "__ggsql_aes_pos2__": 131.60873111976557,
+        "__ggsql_aes_pos2end__": 44.65102986110334,
+        "__ggsql_row_index__": 131,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T16:30:00.000Z",
+        "__ggsql_aes_pos2__": 42.93682604601889,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 132,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T16:30:00.000Z",
+        "__ggsql_aes_pos2__": 126.99935679255111,
+        "__ggsql_aes_pos2end__": 42.93682604601889,
+        "__ggsql_row_index__": 133,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T16:45:00.000Z",
+        "__ggsql_aes_pos2__": 42.80017767796111,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 134,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T16:45:00.000Z",
+        "__ggsql_aes_pos2__": 131.07307181858778,
+        "__ggsql_aes_pos2end__": 42.80017767796111,
+        "__ggsql_row_index__": 135,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T17:00:00.000Z",
+        "__ggsql_aes_pos2__": 42.62640796251498,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 136,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T17:00:00.000Z",
+        "__ggsql_aes_pos2__": 128.06587144058713,
+        "__ggsql_aes_pos2end__": 42.62640796251498,
+        "__ggsql_row_index__": 137,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T17:15:00.000Z",
+        "__ggsql_aes_pos2__": 43.170252612862214,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 138,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T17:15:00.000Z",
+        "__ggsql_aes_pos2__": 128.58354727430998,
+        "__ggsql_aes_pos2end__": 43.170252612862214,
+        "__ggsql_row_index__": 139,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T17:30:00.000Z",
+        "__ggsql_aes_pos2__": 42.49873595052334,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 140,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T17:30:00.000Z",
+        "__ggsql_aes_pos2__": 125.82811644531999,
+        "__ggsql_aes_pos2end__": 42.49873595052334,
+        "__ggsql_row_index__": 141,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T17:45:00.000Z",
+        "__ggsql_aes_pos2__": 40.709123062071114,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 142,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T17:45:00.000Z",
+        "__ggsql_aes_pos2__": 124.87873216796446,
+        "__ggsql_aes_pos2end__": 40.709123062071114,
+        "__ggsql_row_index__": 143,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T18:00:00.000Z",
+        "__ggsql_aes_pos2__": 33.603741328130006,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 144,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T18:00:00.000Z",
+        "__ggsql_aes_pos2__": 122.94846851561113,
+        "__ggsql_aes_pos2end__": 33.603741328130006,
+        "__ggsql_row_index__": 145,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T18:15:00.000Z",
+        "__ggsql_aes_pos2__": 33.43671663196667,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 146,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T18:15:00.000Z",
+        "__ggsql_aes_pos2__": 126.72909838543998,
+        "__ggsql_aes_pos2end__": 33.43671663196667,
+        "__ggsql_row_index__": 147,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T18:30:00.000Z",
+        "__ggsql_aes_pos2__": 32.84806581381111,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 148,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T18:30:00.000Z",
+        "__ggsql_aes_pos2__": 123.84333268879107,
+        "__ggsql_aes_pos2end__": 32.84806581381111,
+        "__ggsql_row_index__": 149,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T18:45:00.000Z",
+        "__ggsql_aes_pos2__": 33.40809161893112,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 150,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T18:45:00.000Z",
+        "__ggsql_aes_pos2__": 122.9617615755289,
+        "__ggsql_aes_pos2end__": 33.40809161893112,
+        "__ggsql_row_index__": 151,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T19:00:00.000Z",
+        "__ggsql_aes_pos2__": 34.01243716363223,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 152,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T19:00:00.000Z",
+        "__ggsql_aes_pos2__": 118.88791850041558,
+        "__ggsql_aes_pos2end__": 34.01243716363223,
+        "__ggsql_row_index__": 153,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T19:15:00.000Z",
+        "__ggsql_aes_pos2__": 41.18367463758111,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 154,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T19:15:00.000Z",
+        "__ggsql_aes_pos2__": 125.36628037545111,
+        "__ggsql_aes_pos2end__": 41.18367463758111,
+        "__ggsql_row_index__": 155,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T19:30:00.000Z",
+        "__ggsql_aes_pos2__": 42.30057074218666,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 156,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T19:30:00.000Z",
+        "__ggsql_aes_pos2__": 125.8038160112811,
+        "__ggsql_aes_pos2end__": 42.30057074218666,
+        "__ggsql_row_index__": 157,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T19:45:00.000Z",
+        "__ggsql_aes_pos2__": 42.12488757377889,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 158,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T19:45:00.000Z",
+        "__ggsql_aes_pos2__": 127.22690891057665,
+        "__ggsql_aes_pos2end__": 42.12488757377889,
+        "__ggsql_row_index__": 159,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T20:00:00.000Z",
+        "__ggsql_aes_pos2__": 41.73567314236333,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 160,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T20:00:00.000Z",
+        "__ggsql_aes_pos2__": 116.6436164843611,
+        "__ggsql_aes_pos2end__": 41.73567314236333,
+        "__ggsql_row_index__": 161,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T20:15:00.000Z",
+        "__ggsql_aes_pos2__": 42.525124457458894,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 162,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T20:15:00.000Z",
+        "__ggsql_aes_pos2__": 118.21420845050554,
+        "__ggsql_aes_pos2end__": 42.525124457458894,
+        "__ggsql_row_index__": 163,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T20:30:00.000Z",
+        "__ggsql_aes_pos2__": 40.10698242839,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 164,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T20:30:00.000Z",
+        "__ggsql_aes_pos2__": 116.07159765406222,
+        "__ggsql_aes_pos2end__": 40.10698242839,
+        "__ggsql_row_index__": 165,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T20:45:00.000Z",
+        "__ggsql_aes_pos2__": 32.571037547735564,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 166,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T20:45:00.000Z",
+        "__ggsql_aes_pos2__": 107.9708140147589,
+        "__ggsql_aes_pos2end__": 32.571037547735564,
+        "__ggsql_row_index__": 167,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T21:00:00.000Z",
+        "__ggsql_aes_pos2__": 33.05738320962889,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 168,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T21:00:00.000Z",
+        "__ggsql_aes_pos2__": 107.08978768879555,
+        "__ggsql_aes_pos2end__": 33.05738320962889,
+        "__ggsql_row_index__": 169,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T21:15:00.000Z",
+        "__ggsql_aes_pos2__": 32.913773543832214,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 170,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T21:15:00.000Z",
+        "__ggsql_aes_pos2__": 105.54225054035555,
+        "__ggsql_aes_pos2end__": 32.913773543832214,
+        "__ggsql_row_index__": 171,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T21:30:00.000Z",
+        "__ggsql_aes_pos2__": 32.65980198216648,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 172,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T21:30:00.000Z",
+        "__ggsql_aes_pos2__": 100.16059741618648,
+        "__ggsql_aes_pos2end__": 32.65980198216648,
+        "__ggsql_row_index__": 173,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T21:45:00.000Z",
+        "__ggsql_aes_pos2__": 33.32024483288001,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 174,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T21:45:00.000Z",
+        "__ggsql_aes_pos2__": 98.52904863496002,
+        "__ggsql_aes_pos2end__": 33.32024483288001,
+        "__ggsql_row_index__": 175,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T22:00:00.000Z",
+        "__ggsql_aes_pos2__": 32.85049913847,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 176,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T22:00:00.000Z",
+        "__ggsql_aes_pos2__": 96.90127864802666,
+        "__ggsql_aes_pos2end__": 32.85049913847,
+        "__ggsql_row_index__": 177,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T22:15:00.000Z",
+        "__ggsql_aes_pos2__": 40.82339087455889,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 178,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T22:15:00.000Z",
+        "__ggsql_aes_pos2__": 105.42193415980083,
+        "__ggsql_aes_pos2end__": 40.82339087455889,
+        "__ggsql_row_index__": 179,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T22:30:00.000Z",
+        "__ggsql_aes_pos2__": 42.22999797744,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 180,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T22:30:00.000Z",
+        "__ggsql_aes_pos2__": 107.71536354166889,
+        "__ggsql_aes_pos2end__": 42.22999797744,
+        "__ggsql_row_index__": 181,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T22:45:00.000Z",
+        "__ggsql_aes_pos2__": 42.66273028211223,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 182,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T22:45:00.000Z",
+        "__ggsql_aes_pos2__": 107.2616825217089,
+        "__ggsql_aes_pos2end__": 42.66273028211223,
+        "__ggsql_row_index__": 183,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T23:00:00.000Z",
+        "__ggsql_aes_pos2__": 41.97428001734222,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 184,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T23:00:00.000Z",
+        "__ggsql_aes_pos2__": 107.29423892359779,
+        "__ggsql_aes_pos2end__": 41.97428001734222,
+        "__ggsql_row_index__": 185,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T23:15:00.000Z",
+        "__ggsql_aes_pos2__": 42.15093201824444,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 186,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T23:15:00.000Z",
+        "__ggsql_aes_pos2__": 109.15668930992334,
+        "__ggsql_aes_pos2end__": 42.15093201824444,
+        "__ggsql_row_index__": 187,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T23:30:00.000Z",
+        "__ggsql_aes_pos2__": 42.09913579861888,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 188,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T23:30:00.000Z",
+        "__ggsql_aes_pos2__": 115.83891528646112,
+        "__ggsql_aes_pos2end__": 42.09913579861888,
+        "__ggsql_row_index__": 189,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Shared building services",
+        "__ggsql_aes_pos1__": "2025-03-17T23:45:00.000Z",
+        "__ggsql_aes_pos2__": 41.73779929687778,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 190,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "Tenant spaces",
+        "__ggsql_aes_pos1__": "2025-03-17T23:45:00.000Z",
+        "__ggsql_aes_pos2__": 113.19156401910888,
+        "__ggsql_aes_pos2end__": 41.73779929687778,
+        "__ggsql_row_index__": 191,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

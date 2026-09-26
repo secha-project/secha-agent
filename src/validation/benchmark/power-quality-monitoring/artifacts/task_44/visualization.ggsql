@@ -1,0 +1,4 @@
+VISUALISE utc_hour AS x, same_direction_percentage AS y
+DRAW bar
+SCALE y FROM (0, 100)
+LABEL x => 'Hour start (UTC)', y => 'Jointly active minutes in same direction (%)'

@@ -1,0 +1,1101 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "point",
+        "clip": true,
+        "filled": false
+      },
+      "encoding": {
+        "fill": {
+          "field": "__ggsql_aes_fill__",
+          "legend": {
+            "labelExpr": "datum.label == '8' ? '8' : datum.label == '11' ? '11' : datum.label == '9' ? '9' : datum.label == '10' ? '10' : datum.label == '13' ? '13' : datum.label == '15' ? '15' : datum.label == '12' ? '12' : datum.label == '14' ? '14' : datum.label",
+            "type": "gradient",
+            "values": [
+              8.0,
+              9.0,
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ],
+            "gradientLength": 420
+          },
+          "scale": {
+            "domain": [
+              8.0,
+              15.0
+            ],
+            "range": [
+              "#440154",
+              "#440255",
+              "#440357",
+              "#450558",
+              "#45065a",
+              "#45085b",
+              "#46095c",
+              "#460b5e",
+              "#460c5f",
+              "#460e61",
+              "#470f62",
+              "#471163",
+              "#471265",
+              "#471466",
+              "#471567",
+              "#471669",
+              "#47186a",
+              "#48196b",
+              "#481a6c",
+              "#481c6e",
+              "#481d6f",
+              "#481e70",
+              "#482071",
+              "#482172",
+              "#482273",
+              "#482374",
+              "#472575",
+              "#472676",
+              "#472777",
+              "#472878",
+              "#472a79",
+              "#472b7a",
+              "#472c7b",
+              "#462d7c",
+              "#462f7c",
+              "#46307d",
+              "#46317e",
+              "#45327f",
+              "#45347f",
+              "#453580",
+              "#453681",
+              "#443781",
+              "#443982",
+              "#433a83",
+              "#433b83",
+              "#433c84",
+              "#423d84",
+              "#423e85",
+              "#424085",
+              "#414186",
+              "#414286",
+              "#404387",
+              "#404487",
+              "#3f4587",
+              "#3f4788",
+              "#3e4888",
+              "#3e4989",
+              "#3d4a89",
+              "#3d4b89",
+              "#3d4c89",
+              "#3c4d8a",
+              "#3c4e8a",
+              "#3b508a",
+              "#3b518a",
+              "#3a528b",
+              "#3a538b",
+              "#39548b",
+              "#39558b",
+              "#38568b",
+              "#38578c",
+              "#37588c",
+              "#37598c",
+              "#365a8c",
+              "#365b8c",
+              "#355c8c",
+              "#355d8c",
+              "#345e8d",
+              "#345f8d",
+              "#33608d",
+              "#33618d",
+              "#32628d",
+              "#32638d",
+              "#31648d",
+              "#31658d",
+              "#31668d",
+              "#30678d",
+              "#30688d",
+              "#2f698d",
+              "#2f6a8d",
+              "#2e6b8e",
+              "#2e6c8e",
+              "#2e6d8e",
+              "#2d6e8e",
+              "#2d6f8e",
+              "#2c708e",
+              "#2c718e",
+              "#2c728e",
+              "#2b738e",
+              "#2b748e",
+              "#2a758e",
+              "#2a768e",
+              "#2a778e",
+              "#29788e",
+              "#29798e",
+              "#287a8e",
+              "#287a8e",
+              "#287b8e",
+              "#277c8e",
+              "#277d8e",
+              "#277e8e",
+              "#267f8e",
+              "#26808e",
+              "#26818e",
+              "#25828e",
+              "#25838d",
+              "#24848d",
+              "#24858d",
+              "#24868d",
+              "#23878d",
+              "#23888d",
+              "#23898d",
+              "#22898d",
+              "#228a8d",
+              "#228b8d",
+              "#218c8d",
+              "#218d8c",
+              "#218e8c",
+              "#208f8c",
+              "#20908c",
+              "#20918c",
+              "#1f928c",
+              "#1f938b",
+              "#1f948b",
+              "#1f958b",
+              "#1f968b",
+              "#1e978a",
+              "#1e988a",
+              "#1e998a",
+              "#1e998a",
+              "#1e9a89",
+              "#1e9b89",
+              "#1e9c89",
+              "#1e9d88",
+              "#1e9e88",
+              "#1e9f88",
+              "#1ea087",
+              "#1fa187",
+              "#1fa286",
+              "#1fa386",
+              "#20a485",
+              "#20a585",
+              "#21a685",
+              "#21a784",
+              "#22a784",
+              "#23a883",
+              "#23a982",
+              "#24aa82",
+              "#25ab81",
+              "#26ac81",
+              "#27ad80",
+              "#28ae7f",
+              "#29af7f",
+              "#2ab07e",
+              "#2bb17d",
+              "#2cb17d",
+              "#2eb27c",
+              "#2fb37b",
+              "#30b47a",
+              "#32b57a",
+              "#33b679",
+              "#35b778",
+              "#36b877",
+              "#38b976",
+              "#39b976",
+              "#3bba75",
+              "#3dbb74",
+              "#3ebc73",
+              "#40bd72",
+              "#42be71",
+              "#44be70",
+              "#45bf6f",
+              "#47c06e",
+              "#49c16d",
+              "#4bc26c",
+              "#4dc26b",
+              "#4fc369",
+              "#51c468",
+              "#53c567",
+              "#55c666",
+              "#57c665",
+              "#59c764",
+              "#5bc862",
+              "#5ec961",
+              "#60c960",
+              "#62ca5f",
+              "#64cb5d",
+              "#67cc5c",
+              "#69cc5b",
+              "#6bcd59",
+              "#6dce58",
+              "#70ce56",
+              "#72cf55",
+              "#74d054",
+              "#77d052",
+              "#79d151",
+              "#7cd24f",
+              "#7ed24e",
+              "#81d34c",
+              "#83d34b",
+              "#86d449",
+              "#88d547",
+              "#8bd546",
+              "#8dd644",
+              "#90d643",
+              "#92d741",
+              "#95d73f",
+              "#97d83e",
+              "#9ad83c",
+              "#9dd93a",
+              "#9fd938",
+              "#a2da37",
+              "#a5da35",
+              "#a7db33",
+              "#aadb32",
+              "#addc30",
+              "#afdc2e",
+              "#b2dd2c",
+              "#b5dd2b",
+              "#b7dd29",
+              "#bade27",
+              "#bdde26",
+              "#bfdf24",
+              "#c2df22",
+              "#c5df21",
+              "#c7e01f",
+              "#cae01e",
+              "#cde01d",
+              "#cfe11c",
+              "#d2e11b",
+              "#d4e11a",
+              "#d7e219",
+              "#dae218",
+              "#dce218",
+              "#dfe318",
+              "#e1e318",
+              "#e4e318",
+              "#e7e419",
+              "#e9e419",
+              "#ece41a",
+              "#eee51b",
+              "#f1e51c",
+              "#f3e51e",
+              "#f6e61f",
+              "#f8e621",
+              "#fae622",
+              "#fde724"
+            ]
+          },
+          "title": "UTC hour",
+          "type": "quantitative"
+        },
+        "fillOpacity": {
+          "value": 0.8
+        },
+        "opacity": {
+          "value": 1.0
+        },
+        "shape": {
+          "value": "M0.800,0.000 L0.785,0.156 L0.739,0.306 L0.665,0.444 L0.566,0.566 L0.444,0.665 L0.306,0.739 L0.156,0.785 L0.000,0.800 L-0.156,0.785 L-0.306,0.739 L-0.444,0.665 L-0.566,0.566 L-0.665,0.444 L-0.739,0.306 L-0.785,0.156 L-0.800,0.000 L-0.785,-0.156 L-0.739,-0.306 L-0.665,-0.444 L-0.566,-0.566 L-0.444,-0.665 L-0.306,-0.739 L-0.156,-0.785 L-0.000,-0.800 L0.156,-0.785 L0.306,-0.739 L0.444,-0.665 L0.566,-0.566 L0.665,-0.444 L0.739,-0.306 L0.785,-0.156 Z"
+        },
+        "size": {
+          "value": 50.26548245743668
+        },
+        "stroke": {
+          "value": "black"
+        },
+        "strokeWidth": {
+          "value": 1.3333333333333333
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "datum.label == '0' ? '0' : datum.label == '100' ? '100' : datum.label == '200' ? '200' : datum.label == '300' ? '300' : datum.label == '400' ? '400' : datum.label == '500' ? '500' : datum.label",
+            "values": [
+              0.0,
+              100.0,
+              200.0,
+              300.0,
+              400.0,
+              500.0
+            ]
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              -12.362283533333336,
+              588.3037795333333
+            ],
+            "zero": false
+          },
+          "title": "Global irradiance (W/m²)",
+          "type": "quantitative"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == '30' ? '30' : datum.label == '40' ? '40' : datum.label == '0' ? '0' : datum.label == '50' ? '50' : datum.label == '10' ? '10' : datum.label == '20' ? '20' : datum.label",
+            "values": [
+              0.0,
+              10.0,
+              20.0,
+              30.0,
+              40.0,
+              50.0
+            ]
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              -2.5137940900351667,
+              53.94203606402517
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "Positive solar active power (kW)",
+          "type": "quantitative"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-4307c30414300305e171e284f21abb11"
+  },
+  "height": 420,
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-4307c30414300305e171e284f21abb11": [
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 488.56603,
+        "__ggsql_aes_pos2__": 47.66973089842,
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 483.5686666666667,
+        "__ggsql_aes_pos2__": 47.39043246096667,
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 513.2545033333333,
+        "__ggsql_aes_pos2__": 47.920458281260004,
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 525.2174966666666,
+        "__ggsql_aes_pos2__": 48.816524062510005,
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 544.20127,
+        "__ggsql_aes_pos2__": 49.17388683592669,
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 520.7333900000002,
+        "__ggsql_aes_pos2__": 49.088789283873325,
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 493.83630333333326,
+        "__ggsql_aes_pos2__": 49.085780807286675,
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 482.67158333333333,
+        "__ggsql_aes_pos2__": 49.028434492189994,
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 484.9871166666666,
+        "__ggsql_aes_pos2__": 49.00635052082999,
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 489.42358666666667,
+        "__ggsql_aes_pos2__": 49.01922527342666,
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 495.3307399999998,
+        "__ggsql_aes_pos2__": 48.99729135418,
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 8,
+        "__ggsql_aes_pos1__": 500.21782666666667,
+        "__ggsql_aes_pos2__": 48.992811692686665,
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 505.41292,
+        "__ggsql_aes_pos2__": 49.01540166664666,
+        "__ggsql_row_index__": 12,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 513.8621766666669,
+        "__ggsql_aes_pos2__": 49.026055481803326,
+        "__ggsql_row_index__": 13,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 506.9773833333333,
+        "__ggsql_aes_pos2__": 49.09546846355666,
+        "__ggsql_row_index__": 14,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 538.8185866666666,
+        "__ggsql_aes_pos2__": 49.202811223963344,
+        "__ggsql_row_index__": 15,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 550.85,
+        "__ggsql_aes_pos2__": 49.20306559896999,
+        "__ggsql_row_index__": 16,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 547.2092466666668,
+        "__ggsql_aes_pos2__": 49.140227369799995,
+        "__ggsql_row_index__": 17,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 540.2495433333332,
+        "__ggsql_aes_pos2__": 49.06259829427333,
+        "__ggsql_row_index__": 18,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 538.8172033333332,
+        "__ggsql_aes_pos2__": 49.03987417969334,
+        "__ggsql_row_index__": 19,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 541.2785333333334,
+        "__ggsql_aes_pos2__": 49.05754908855334,
+        "__ggsql_row_index__": 20,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 552.9365266666666,
+        "__ggsql_aes_pos2__": 49.127600312483324,
+        "__ggsql_row_index__": 21,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 555.6157166666666,
+        "__ggsql_aes_pos2__": 49.10550304689,
+        "__ggsql_row_index__": 22,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 9,
+        "__ggsql_aes_pos1__": 557.7578333333335,
+        "__ggsql_aes_pos2__": 49.11125925779333,
+        "__ggsql_row_index__": 23,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 557.3503966666667,
+        "__ggsql_aes_pos2__": 49.13265712237334,
+        "__ggsql_row_index__": 24,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 553.9854633333333,
+        "__ggsql_aes_pos2__": 49.11727446612001,
+        "__ggsql_row_index__": 25,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 557.6854400000001,
+        "__ggsql_aes_pos2__": 49.167982161446666,
+        "__ggsql_row_index__": 26,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 556.1596133333334,
+        "__ggsql_aes_pos2__": 49.350095338546666,
+        "__ggsql_row_index__": 27,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 554.93649,
+        "__ggsql_aes_pos2__": 49.71318209634001,
+        "__ggsql_row_index__": 28,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 547.3172533333335,
+        "__ggsql_aes_pos2__": 50.03565860678667,
+        "__ggsql_row_index__": 29,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 539.83997,
+        "__ggsql_aes_pos2__": 50.30560841146999,
+        "__ggsql_row_index__": 30,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 514.1468199999999,
+        "__ggsql_aes_pos2__": 49.68919630206667,
+        "__ggsql_row_index__": 31,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 550.6729833333333,
+        "__ggsql_aes_pos2__": 51.24372526043,
+        "__ggsql_row_index__": 32,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 556.4266533333333,
+        "__ggsql_aes_pos2__": 51.34230738280333,
+        "__ggsql_row_index__": 33,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 561.0007766666666,
+        "__ggsql_aes_pos2__": 51.375861966113334,
+        "__ggsql_row_index__": 34,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 10,
+        "__ggsql_aes_pos1__": 552.82723,
+        "__ggsql_aes_pos2__": 51.06022182291001,
+        "__ggsql_row_index__": 35,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 543.8589499999999,
+        "__ggsql_aes_pos2__": 50.62969470052333,
+        "__ggsql_row_index__": 36,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 541.2357066666667,
+        "__ggsql_aes_pos2__": 50.56938662759333,
+        "__ggsql_row_index__": 37,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 540.5757033333333,
+        "__ggsql_aes_pos2__": 50.22621841146,
+        "__ggsql_row_index__": 38,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 542.4185666666666,
+        "__ggsql_aes_pos2__": 49.94136295571666,
+        "__ggsql_row_index__": 39,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 520.1176666666668,
+        "__ggsql_aes_pos2__": 47.724935032550015,
+        "__ggsql_row_index__": 40,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 549.6408466666667,
+        "__ggsql_aes_pos2__": 49.35573360678667,
+        "__ggsql_row_index__": 41,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 553.3450066666666,
+        "__ggsql_aes_pos2__": 48.965003997366665,
+        "__ggsql_row_index__": 42,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 548.96037,
+        "__ggsql_aes_pos2__": 48.73557360676333,
+        "__ggsql_row_index__": 43,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 545.7335999999999,
+        "__ggsql_aes_pos2__": 49.00200649738667,
+        "__ggsql_row_index__": 44,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 549.5326666666666,
+        "__ggsql_aes_pos2__": 49.14243429454818,
+        "__ggsql_row_index__": 45,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 525.935,
+        "__ggsql_aes_pos2__": 46.26150322263334,
+        "__ggsql_row_index__": 46,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 11,
+        "__ggsql_aes_pos1__": 226.9290333333333,
+        "__ggsql_aes_pos2__": 16.77937673831333,
+        "__ggsql_row_index__": 47,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 257.40569,
+        "__ggsql_aes_pos2__": 19.708072148439996,
+        "__ggsql_row_index__": 48,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 340.86459999999994,
+        "__ggsql_aes_pos2__": 27.05642787109666,
+        "__ggsql_row_index__": 49,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 328.76873,
+        "__ggsql_aes_pos2__": 22.969021347663332,
+        "__ggsql_row_index__": 50,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 208.88843,
+        "__ggsql_aes_pos2__": 10.251403092443333,
+        "__ggsql_row_index__": 51,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 229.44471000000001,
+        "__ggsql_aes_pos2__": 12.123308268213336,
+        "__ggsql_row_index__": 52,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 318.70168000000007,
+        "__ggsql_aes_pos2__": 21.007970712880002,
+        "__ggsql_row_index__": 53,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 328.1910433333333,
+        "__ggsql_aes_pos2__": 20.824008030586665,
+        "__ggsql_row_index__": 54,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 284.15831333333335,
+        "__ggsql_aes_pos2__": 18.12091220705,
+        "__ggsql_row_index__": 55,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 265.5356966666667,
+        "__ggsql_aes_pos2__": 15.620424798183329,
+        "__ggsql_row_index__": 56,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 375.0134699999999,
+        "__ggsql_aes_pos2__": 24.783901380213337,
+        "__ggsql_row_index__": 57,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 278.84821666666664,
+        "__ggsql_aes_pos2__": 17.813603876940004,
+        "__ggsql_row_index__": 58,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 12,
+        "__ggsql_aes_pos1__": 217.75186,
+        "__ggsql_aes_pos2__": 11.168424153616666,
+        "__ggsql_row_index__": 59,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 226.05568999999997,
+        "__ggsql_aes_pos2__": 10.415409731443333,
+        "__ggsql_row_index__": 60,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 211.4468666666667,
+        "__ggsql_aes_pos2__": 8.594601586930002,
+        "__ggsql_row_index__": 61,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 259.02619666666664,
+        "__ggsql_aes_pos2__": 10.921086385106664,
+        "__ggsql_row_index__": 62,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 256.5736566666667,
+        "__ggsql_aes_pos2__": 10.724898445636668,
+        "__ggsql_row_index__": 63,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 267.63171,
+        "__ggsql_aes_pos2__": 11.205603173830001,
+        "__ggsql_row_index__": 64,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 187.30656333333337,
+        "__ggsql_aes_pos2__": 5.7890735262033335,
+        "__ggsql_row_index__": 65,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 121.18312333333336,
+        "__ggsql_aes_pos2__": 3.6714011800266664,
+        "__ggsql_row_index__": 66,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 155.02804333333333,
+        "__ggsql_aes_pos2__": 5.333043697923333,
+        "__ggsql_row_index__": 67,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 136.30722666666668,
+        "__ggsql_aes_pos2__": 5.26810506838,
+        "__ggsql_row_index__": 68,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 184.56898333333334,
+        "__ggsql_aes_pos2__": 8.346010734083334,
+        "__ggsql_row_index__": 69,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 255.2373133333333,
+        "__ggsql_aes_pos2__": 14.170693457016664,
+        "__ggsql_row_index__": 70,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 13,
+        "__ggsql_aes_pos1__": 297.0007166666667,
+        "__ggsql_aes_pos2__": 16.446164749323337,
+        "__ggsql_row_index__": 71,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 318.4378033333333,
+        "__ggsql_aes_pos2__": 17.793118294276667,
+        "__ggsql_row_index__": 72,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 278.00049333333334,
+        "__ggsql_aes_pos2__": 14.525718681633332,
+        "__ggsql_row_index__": 73,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 151.04748333333336,
+        "__ggsql_aes_pos2__": 5.804868131506666,
+        "__ggsql_row_index__": 74,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 86.66595366666667,
+        "__ggsql_aes_pos2__": 2.0791119303733336,
+        "__ggsql_row_index__": 75,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 89.20485966666666,
+        "__ggsql_aes_pos2__": 2.0832661812166666,
+        "__ggsql_row_index__": 76,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 81.795174,
+        "__ggsql_aes_pos2__": 1.7538752351966667,
+        "__ggsql_row_index__": 77,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 67.03221366666668,
+        "__ggsql_aes_pos2__": 1.2700372774066668,
+        "__ggsql_row_index__": 78,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 35.001937,
+        "__ggsql_aes_pos2__": 0.6458060274233335,
+        "__ggsql_row_index__": 79,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 25.176247666666676,
+        "__ggsql_aes_pos2__": 0.30095868843,
+        "__ggsql_row_index__": 80,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 23.78509933333333,
+        "__ggsql_aes_pos2__": 0.2782834273166666,
+        "__ggsql_row_index__": 81,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 29.942046333333327,
+        "__ggsql_aes_pos2__": 0.43812114349000003,
+        "__ggsql_row_index__": 82,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 14,
+        "__ggsql_aes_pos1__": 39.61384333333333,
+        "__ggsql_aes_pos2__": 0.6690257985466666,
+        "__ggsql_row_index__": 83,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 44.19465466666668,
+        "__ggsql_aes_pos2__": 0.8183603751633335,
+        "__ggsql_row_index__": 84,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 35.91616766666668,
+        "__ggsql_aes_pos2__": 0.5750785956633334,
+        "__ggsql_row_index__": 85,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 31.244214666666668,
+        "__ggsql_aes_pos2__": 0.47852891864666675,
+        "__ggsql_row_index__": 86,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 33.03098399999999,
+        "__ggsql_aes_pos2__": 0.49222270485666647,
+        "__ggsql_row_index__": 87,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 35.19151133333334,
+        "__ggsql_aes_pos2__": 0.5927481565166668,
+        "__ggsql_row_index__": 88,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 35.068988999999995,
+        "__ggsql_aes_pos2__": 0.5107091080833335,
+        "__ggsql_row_index__": 89,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 23.898354,
+        "__ggsql_aes_pos2__": 0.28386225916999996,
+        "__ggsql_row_index__": 90,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 15.338148,
+        "__ggsql_aes_pos2__": 0.07943343968,
+        "__ggsql_row_index__": 91,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 14.940719333333334,
+        "__ggsql_aes_pos2__": 0.05238000787666666,
+        "__ggsql_row_index__": 92,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 15.938071,
+        "__ggsql_aes_pos2__": 0.09242935418333334,
+        "__ggsql_row_index__": 93,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 17.576519,
+        "__ggsql_aes_pos2__": 0.09471817380333332,
+        "__ggsql_row_index__": 94,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": 15,
+        "__ggsql_aes_pos1__": 19.779456333333336,
+        "__ggsql_aes_pos2__": 0.10337555685333333,
+        "__ggsql_row_index__": 95,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

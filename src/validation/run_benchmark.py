@@ -1,24 +1,32 @@
 import argparse
 from pathlib import Path
 
-from src.validation.config import load_run_config
-from src.validation.runner import run_benchmark
+from src.agent.agent import create_agent
+from src.validation.config import BENCHMARKS_DIR, BenchmarkRunConfig, load_run_config
+from src.validation.eval_models import TableOutput, VisualizationOutput
+from src.validation.runner import load_dataset, run_benchmark
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a configured benchmark")
     parser.add_argument(
         "--config",
         required=True,
         help=(
             "Run config name from src/validation/run_configs "
-            "(for example, 'openai-mini')"
+            "(for example, 'gpt-6-sol__baseline')"
         ),
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--resume",
         type=Path,
         help="Resume an interrupted run from its benchmark-results directory.",
+    )
+    mode.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate configuration, prompts, dataset, and files without external calls.",
     )
     parser.add_argument(
         "--redo",
@@ -30,15 +38,62 @@ def parse_args() -> argparse.Namespace:
             "Requires --resume."
         ),
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.redo and args.resume is None:
         parser.error("--redo requires --resume")
     return args
 
 
-def main() -> None:
-    args = parse_args()
+def dry_run(run_name: str, run_config: BenchmarkRunConfig) -> None:
+    """Validate local inputs without evaluating tasks or creating run artifacts."""
+    provider = run_config.agent.load_provider()
+    create_agent(run_config.agent.enabled_capabilities)
+    dataset = load_dataset(run_config.dataset)
+    if not dataset.cases:
+        raise ValueError("The benchmark dataset must contain tasks")
+    names = [case.name for case in dataset.cases]
+    if None in names or len(set(names)) != len(names):
+        raise ValueError("Benchmark tasks must have unique names")
+
+    base = BENCHMARKS_DIR / run_config.dataset
+    paths: set[Path] = set()
+    for case in dataset.cases:
+        if case.metadata is not None:
+            for value in (case.metadata.query_path, case.metadata.ggsql_path):
+                if value:
+                    paths.add(base / value)
+        if not isinstance(case.expected_output, list):
+            continue
+        for item in case.expected_output:
+            if isinstance(item, TableOutput):
+                paths.add(base / item.table_path)
+            elif isinstance(item, VisualizationOutput):
+                paths.add(base / item.image_path)
+                if item.spec_path:
+                    paths.add(base / item.spec_path)
+    missing = sorted(str(path) for path in paths if not path.is_file())
+    if missing:
+        raise FileNotFoundError(f"Missing benchmark reference files: {missing}")
+
+    model_name = run_config.agent.model_name or provider.model_name
+    print(f"Dry run OK: {run_name}")
+    print(f"Model: {run_config.agent.model_provider}/{model_name}")
+    print(f"Capabilities: {', '.join(sorted(run_config.agent.enabled_capabilities))}")
+    print(
+        f"Dataset: {run_config.dataset}; {len(dataset.cases)} tasks x "
+        f"{run_config.repetitions} repetitions = "
+        f"{len(dataset.cases) * run_config.repetitions} attempts; "
+        f"{len(paths)} reference files checked"
+    )
+    print("No model, database, or evaluator calls; no benchmark results written.")
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
     run_name, run_config = load_run_config(args.config)
+    if args.dry_run:
+        dry_run(run_name, run_config)
+        return
     run_benchmark(
         run_name,
         run_config,

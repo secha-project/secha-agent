@@ -1,0 +1,14 @@
+agent:
+  model_provider: openai
+  model_name: gpt-6-luna
+  request_limit: 50
+  enabled_capabilities:
+    - catalog
+    - query
+    - table_outputs
+    - visualization
+
+dataset: power-quality-monitoring
+repetitions: 5
+max_concurrency: 4
+task_max_attempts: 3

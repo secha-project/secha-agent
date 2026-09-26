@@ -1,0 +1,6 @@
+VISUALISE interval_start AS x, mean_active_power_kw AS y, demand_group AS fill
+DRAW area
+    SETTING position => 'stack'
+SCALE x
+    RENAMING * => '{:time %H:%M}'
+LABEL x => 'Interval start (UTC)', y => 'Mean active power (kW)', fill => 'Demand group'

@@ -1,0 +1,6 @@
+VISUALISE temperature_bin_midpoint_c AS x
+DRAW histogram
+    SETTING binwidth => 1, closed => 'left'
+SCALE x FROM (-4, 8)
+SCALE y FROM (0, null)
+LABEL title => 'Outdoor temperature distribution — Hervanta campus, 24 March 2025 UTC', x => 'Five-minute mean temperature (°C)', y => 'Observed five-minute intervals'

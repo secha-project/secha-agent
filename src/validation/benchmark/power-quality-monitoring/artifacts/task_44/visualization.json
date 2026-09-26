@@ -1,0 +1,324 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "align": "center",
+        "clip": true,
+        "width": {
+          "expr": "bandwidth('x') * 0.9"
+        }
+      },
+      "encoding": {
+        "fill": {
+          "value": "black"
+        },
+        "fillOpacity": {
+          "value": 0.8
+        },
+        "stroke": {
+          "value": "black"
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "datum.label == '06:00' ? '06:00' : datum.label == '17:00' ? '17:00' : datum.label == '18:00' ? '18:00' : datum.label == '19:00' ? '19:00' : datum.label == '00:00' ? '00:00' : datum.label == '23:00' ? '23:00' : datum.label == '11:00' ? '11:00' : datum.label == '08:00' ? '08:00' : datum.label == '02:00' ? '02:00' : datum.label == '03:00' ? '03:00' : datum.label == '04:00' ? '04:00' : datum.label == '01:00' ? '01:00' : datum.label == '16:00' ? '16:00' : datum.label == '20:00' ? '20:00' : datum.label == '21:00' ? '21:00' : datum.label == '14:00' ? '14:00' : datum.label == '10:00' ? '10:00' : datum.label == '12:00' ? '12:00' : datum.label == '22:00' ? '22:00' : datum.label == '07:00' ? '07:00' : datum.label == '05:00' ? '05:00' : datum.label == '15:00' ? '15:00' : datum.label == '13:00' ? '13:00' : datum.label == '09:00' ? '09:00' : datum.label"
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              "00:00",
+              "01:00",
+              "02:00",
+              "03:00",
+              "04:00",
+              "05:00",
+              "06:00",
+              "07:00",
+              "08:00",
+              "09:00",
+              "10:00",
+              "11:00",
+              "12:00",
+              "13:00",
+              "14:00",
+              "15:00",
+              "16:00",
+              "17:00",
+              "18:00",
+              "19:00",
+              "20:00",
+              "21:00",
+              "22:00",
+              "23:00"
+            ],
+            "zero": false
+          },
+          "title": "Hour start (UTC)",
+          "type": "nominal"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == '80' ? '80' : datum.label == '100' ? '100' : datum.label == '0' ? '0' : datum.label == '20' ? '20' : datum.label == '60' ? '60' : datum.label == '40' ? '40' : datum.label",
+            "values": [
+              0.0,
+              20.0,
+              40.0,
+              60.0,
+              80.0,
+              100.0
+            ]
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              0.0,
+              100.0
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "Jointly active minutes in same direction (%)",
+          "type": "quantitative"
+        },
+        "y2": {
+          "field": "__ggsql_aes_pos2end__"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-4e113d85c875c2d526da0ddcb1279fbc"
+  },
+  "height": 420,
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-4e113d85c875c2d526da0ddcb1279fbc": [
+      {
+        "__ggsql_aes_pos1__": "00:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "01:00",
+        "__ggsql_aes_pos2__": 91.667,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "02:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "03:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "04:00",
+        "__ggsql_aes_pos2__": 98.039,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "05:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "06:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "07:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "08:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "09:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "10:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "11:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "12:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 12,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "13:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 13,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "14:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 14,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "15:00",
+        "__ggsql_aes_pos2__": 98.113,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 15,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "16:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 16,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "17:00",
+        "__ggsql_aes_pos2__": 98.214,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 17,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "18:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 18,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "19:00",
+        "__ggsql_aes_pos2__": 98.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 19,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "20:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 20,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "21:00",
+        "__ggsql_aes_pos2__": 100.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 21,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "22:00",
+        "__ggsql_aes_pos2__": 93.75,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 22,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "23:00",
+        "__ggsql_aes_pos2__": 98.077,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 23,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

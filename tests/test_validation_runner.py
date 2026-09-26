@@ -1,10 +1,68 @@
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
+
+import pytest
+import yaml
 
 import src.validation.runner as runner_module
 from src.agent.deps import Deps
 from src.agent.outputs.artifacts import Artifact, ArtifactCollector, TableArtifact
 from src.validation.runner import AgentTask
+
+
+def test_load_dataset_preserves_paths_and_source() -> None:
+    dataset_path = (
+        runner_module.BENCHMARKS_DIR / "power-quality-monitoring" / "dataset.yaml"
+    )
+    original = dataset_path.read_bytes()
+    source = yaml.safe_load(original)
+
+    dataset = runner_module.load_dataset("power-quality-monitoring")
+
+    assert [case.name for case in dataset.cases] == [
+        case["name"] for case in source["cases"]
+    ]
+    for case, raw_case in zip(dataset.cases, source["cases"], strict=True):
+        assert case.metadata is not None
+        assert case.metadata.query_path == raw_case["metadata"].get("query_path")
+        assert case.metadata.ggsql_path == raw_case["metadata"].get("ggsql_path")
+        assert case.evaluators
+    assert dataset.report_evaluators
+    assert dataset_path.read_bytes() == original
+
+
+def test_load_dataset_rejects_inline_sql(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    dataset_dir = tmp_path / "test"
+    dataset_dir.mkdir()
+    metadata = {
+        "case_id": "11111111-1111-1111-1111-111111111111",
+        "category": "data discovery",
+        "query_code": "SELECT 'inline SQL'",
+    }
+    (dataset_dir / "dataset.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "name": "test",
+                "cases": [
+                    {
+                        "name": "case",
+                        "inputs": "question",
+                        "metadata": metadata,
+                        "expected_output": [{"text": ["answer"]}],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner_module, "BENCHMARKS_DIR", tmp_path)
+
+    with pytest.raises(ValueError, match="query_code"):
+        runner_module.load_dataset("test")
 
 
 def test_agent_task_uses_fresh_output_state_for_each_run(
@@ -86,3 +144,49 @@ def test_agent_task_writes_only_the_artifacts_from_that_run(
     assert len(written) == 1
     assert len(written[0]) == 1
     assert isinstance(written[0][0], TableArtifact)
+
+
+def test_resume_rejects_invalid_checkpoint_before_external_setup(
+    monkeypatch: Any,
+    tmp_path: Any,
+) -> None:
+    from src.validation.checkpoint import EvaluationCheckpoint
+    from src.validation.config import BenchmarkRunConfig
+    from src.validation.eval_models import BenchmarkDataset
+
+    config = BenchmarkRunConfig(dataset="benchmark")
+    (tmp_path / "artifacts").mkdir()
+    monkeypatch.setattr(
+        runner_module,
+        "load_dataset",
+        lambda _: BenchmarkDataset(name="benchmark", cases=[]),
+    )
+
+    def forbidden(*args: Any, **kwargs: Any) -> Any:
+        pytest.fail("Invalid resume must fail before external setup or copying")
+
+    for name in (
+        "configure_observability",
+        "create_dependencies",
+        "create_agent",
+        "create_run_directory",
+    ):
+        monkeypatch.setattr(runner_module, name, forbidden)
+    with pytest.raises(ValueError, match="no checkpoint"):
+        runner_module.run_benchmark("test", config, resume_directory=tmp_path)
+
+    checkpoint = EvaluationCheckpoint(
+        tmp_path / "checkpoint.json", name="wrong-run", experiment_metadata={}
+    )
+    checkpoint.completed_report([], trace_id=None, span_id=None)
+    with pytest.raises(ValueError, match="belongs to run"):
+        runner_module.run_benchmark("test", config, resume_directory=tmp_path)
+
+    checkpoint.report.name = "test"
+    checkpoint.completed_report([], trace_id=None, span_id=None)
+    with pytest.raises(ValueError, match="different run configuration"):
+        runner_module.run_benchmark("test", config, resume_directory=tmp_path)
+
+    (tmp_path / "checkpoint.json").write_text("invalid json")
+    with pytest.raises(ValueError):
+        runner_module.run_benchmark("test", config, resume_directory=tmp_path)

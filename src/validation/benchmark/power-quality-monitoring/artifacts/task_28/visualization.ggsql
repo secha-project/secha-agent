@@ -1,0 +1,2 @@
+VISUALISE timestamp AS x, fhz_std AS y
+DRAW line

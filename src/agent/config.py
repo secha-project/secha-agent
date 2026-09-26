@@ -74,7 +74,7 @@ class AgentConfig(BaseSettings):
     model_provider: Literal["tuni", "openai", "zai"] = "tuni"
     model_name: str | None = None
     pricing: PricingReference | None = None
-    temperature: float | None = Field(default=0.0, ge=0.0)
+    temperature: float | None = Field(default=None, ge=0.0)
     request_limit: int = Field(default=50, ge=1)
     enabled_capabilities: EnabledCapabilities = DEFAULT_ENABLED_CAPABILITIES
     otel_exporter_otlp_endpoint: str

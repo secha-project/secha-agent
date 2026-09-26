@@ -5,7 +5,6 @@ description = "AI data agent for the SECHA data platform"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "argon2-cffi>=25.1.0",
     "ggsql>=0.3.2",
     "genai-prices>=0.1.8",
     "jinja2>=3.1.6,<4",
@@ -13,21 +12,22 @@ dependencies = [
     "numpy>=2.0.0",
     "pandas>=2.2.0",
     "pydantic>=2.13.4",
-    "pydantic-ai>=2.12.0",
+    "pydantic-ai-slim[logfire,openai,retries]>=2.12.0",
     "pydantic-evals[logfire]>=2.13.0",
     "pydantic-settings>=2.14.2",
     "pyarrow>=24.0.0",
-    "pyspark==4.2.0",
     "pyspark-client==4.2.0",
     "pyyaml>=6.0.3",
     "python-dotenv>=1.2.2",
-    "starlette>=0.40.0,<2",
-    "streamlit>=1.60.0",
     "vl-convert-python>=1.9.0",
-    "plotnine>=0.15.8",
 ]
 
 [dependency-groups]
+app = [
+    "argon2-cffi>=25.1.0",
+    "starlette>=0.40.0,<2",
+    "streamlit>=1.64.0",
+]
 dev = [
     "pytest>=9.0.0",
     "ruff>=0.16.3",
@@ -35,6 +35,9 @@ dev = [
 ]
 optimization = [
     "gepa>=0.1.4",
+]
+plots = [
+    "plotnine>=0.15.8",
 ]
 
 [tool.pytest.ini_options]

@@ -1,0 +1,500 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "line",
+        "clip": true
+      },
+      "encoding": {
+        "opacity": {
+          "value": 1.0
+        },
+        "order": {
+          "field": "__ggsql_row_index__",
+          "type": "quantitative"
+        },
+        "stroke": {
+          "value": "black"
+        },
+        "strokeDash": {
+          "value": []
+        },
+        "strokeWidth": {
+          "value": 2.0
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-01T13:37:00' ? '2025-03-01T13:37:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-01T13:47:00' ? '2025-03-01T13:47:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-01T13:17:00' ? '2025-03-01T13:17:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-01T13:57:00' ? '2025-03-01T13:57:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-01T13:27:00' ? '2025-03-01T13:27:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-01T13:07:00' ? '2025-03-01T13:07:00' : datum.label",
+            "values": [
+              "2025-03-01T13:07:00Z",
+              "2025-03-01T13:17:00Z",
+              "2025-03-01T13:27:00Z",
+              "2025-03-01T13:37:00Z",
+              "2025-03-01T13:47:00Z",
+              "2025-03-01T13:57:00Z"
+            ]
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              "2025-03-01T12:57:03Z",
+              "2025-03-01T14:01:57Z"
+            ],
+            "zero": false,
+            "type": "utc"
+          },
+          "title": "timestamp",
+          "type": "temporal"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == '0.01' ? '0.01' : datum.label == '0.015' ? '0.015' : datum.label == '0.02' ? '0.02' : datum.label",
+            "values": [
+              0.01,
+              0.015,
+              0.02
+            ]
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              0.005660257418462165,
+              0.023105283354315716
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "fhz_std",
+          "type": "quantitative"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-89fcb39f65bda1e2ee9ad01fc4e3ae90"
+  },
+  "height": 420,
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-89fcb39f65bda1e2ee9ad01fc4e3ae90": [
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.009141646955917486,
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:01:00.000Z",
+        "__ggsql_aes_pos2__": 0.011925502159936983,
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:02:00.000Z",
+        "__ggsql_aes_pos2__": 0.01499262057146871,
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:03:00.000Z",
+        "__ggsql_aes_pos2__": 0.012086886851735434,
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:04:00.000Z",
+        "__ggsql_aes_pos2__": 0.011592103427188612,
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:05:00.000Z",
+        "__ggsql_aes_pos2__": 0.011467443911641916,
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:06:00.000Z",
+        "__ggsql_aes_pos2__": 0.011723334542696726,
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:07:00.000Z",
+        "__ggsql_aes_pos2__": 0.010743258005214624,
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:08:00.000Z",
+        "__ggsql_aes_pos2__": 0.006893165467813165,
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:09:00.000Z",
+        "__ggsql_aes_pos2__": 0.007035070565860542,
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:10:00.000Z",
+        "__ggsql_aes_pos2__": 0.008040806253105104,
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:11:00.000Z",
+        "__ggsql_aes_pos2__": 0.006453213142819145,
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:12:00.000Z",
+        "__ggsql_aes_pos2__": 0.008906184839761994,
+        "__ggsql_row_index__": 12,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:13:00.000Z",
+        "__ggsql_aes_pos2__": 0.01399479771438976,
+        "__ggsql_row_index__": 13,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:14:00.000Z",
+        "__ggsql_aes_pos2__": 0.015184152668708532,
+        "__ggsql_row_index__": 14,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.01286640582939586,
+        "__ggsql_row_index__": 15,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:16:00.000Z",
+        "__ggsql_aes_pos2__": 0.012070436026367388,
+        "__ggsql_row_index__": 16,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:17:00.000Z",
+        "__ggsql_aes_pos2__": 0.012425106541461041,
+        "__ggsql_row_index__": 17,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:18:00.000Z",
+        "__ggsql_aes_pos2__": 0.013743345177455252,
+        "__ggsql_row_index__": 18,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:19:00.000Z",
+        "__ggsql_aes_pos2__": 0.012584609484074279,
+        "__ggsql_row_index__": 19,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:20:00.000Z",
+        "__ggsql_aes_pos2__": 0.014301627176655004,
+        "__ggsql_row_index__": 20,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:21:00.000Z",
+        "__ggsql_aes_pos2__": 0.008616235568198263,
+        "__ggsql_row_index__": 21,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:22:00.000Z",
+        "__ggsql_aes_pos2__": 0.007918699045088667,
+        "__ggsql_row_index__": 22,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:23:00.000Z",
+        "__ggsql_aes_pos2__": 0.0112240502434136,
+        "__ggsql_row_index__": 23,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:24:00.000Z",
+        "__ggsql_aes_pos2__": 0.011682010456252208,
+        "__ggsql_row_index__": 24,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:25:00.000Z",
+        "__ggsql_aes_pos2__": 0.011730608465322175,
+        "__ggsql_row_index__": 25,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:26:00.000Z",
+        "__ggsql_aes_pos2__": 0.009999464734006711,
+        "__ggsql_row_index__": 26,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:27:00.000Z",
+        "__ggsql_aes_pos2__": 0.010140606365827571,
+        "__ggsql_row_index__": 27,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:28:00.000Z",
+        "__ggsql_aes_pos2__": 0.008429132782597352,
+        "__ggsql_row_index__": 28,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:29:00.000Z",
+        "__ggsql_aes_pos2__": 0.013213204265681996,
+        "__ggsql_row_index__": 29,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.012081495118569503,
+        "__ggsql_row_index__": 30,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:31:00.000Z",
+        "__ggsql_aes_pos2__": 0.013002292690137357,
+        "__ggsql_row_index__": 31,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:32:00.000Z",
+        "__ggsql_aes_pos2__": 0.014386472930034795,
+        "__ggsql_row_index__": 32,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:33:00.000Z",
+        "__ggsql_aes_pos2__": 0.016814473892055728,
+        "__ggsql_row_index__": 33,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:34:00.000Z",
+        "__ggsql_aes_pos2__": 0.013853613286791803,
+        "__ggsql_row_index__": 34,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:35:00.000Z",
+        "__ggsql_aes_pos2__": 0.01768586303991726,
+        "__ggsql_row_index__": 35,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:36:00.000Z",
+        "__ggsql_aes_pos2__": 0.01766715346247632,
+        "__ggsql_row_index__": 36,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:37:00.000Z",
+        "__ggsql_aes_pos2__": 0.012225818189389106,
+        "__ggsql_row_index__": 37,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:38:00.000Z",
+        "__ggsql_aes_pos2__": 0.015876742832416572,
+        "__ggsql_row_index__": 38,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:39:00.000Z",
+        "__ggsql_aes_pos2__": 0.01603377346312024,
+        "__ggsql_row_index__": 39,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:40:00.000Z",
+        "__ggsql_aes_pos2__": 0.01557139739929067,
+        "__ggsql_row_index__": 40,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:41:00.000Z",
+        "__ggsql_aes_pos2__": 0.009832176071449313,
+        "__ggsql_row_index__": 41,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:42:00.000Z",
+        "__ggsql_aes_pos2__": 0.0069675140018986325,
+        "__ggsql_row_index__": 42,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:43:00.000Z",
+        "__ggsql_aes_pos2__": 0.021947610333853503,
+        "__ggsql_row_index__": 43,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:44:00.000Z",
+        "__ggsql_aes_pos2__": 0.022312327629958738,
+        "__ggsql_row_index__": 44,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.021952020371709458,
+        "__ggsql_row_index__": 45,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:46:00.000Z",
+        "__ggsql_aes_pos2__": 0.02148408537188856,
+        "__ggsql_row_index__": 46,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:47:00.000Z",
+        "__ggsql_aes_pos2__": 0.02085816579104354,
+        "__ggsql_row_index__": 47,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:48:00.000Z",
+        "__ggsql_aes_pos2__": 0.01886214389105064,
+        "__ggsql_row_index__": 48,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:49:00.000Z",
+        "__ggsql_aes_pos2__": 0.012221160770017872,
+        "__ggsql_row_index__": 49,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:50:00.000Z",
+        "__ggsql_aes_pos2__": 0.01522611060535789,
+        "__ggsql_row_index__": 50,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:51:00.000Z",
+        "__ggsql_aes_pos2__": 0.015318189745090636,
+        "__ggsql_row_index__": 51,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:52:00.000Z",
+        "__ggsql_aes_pos2__": 0.009594805921260585,
+        "__ggsql_row_index__": 52,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:53:00.000Z",
+        "__ggsql_aes_pos2__": 0.011320212524506924,
+        "__ggsql_row_index__": 53,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:54:00.000Z",
+        "__ggsql_aes_pos2__": 0.01691004455345764,
+        "__ggsql_row_index__": 54,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:55:00.000Z",
+        "__ggsql_aes_pos2__": 0.018460634698370018,
+        "__ggsql_row_index__": 55,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:56:00.000Z",
+        "__ggsql_aes_pos2__": 0.018118825800805687,
+        "__ggsql_row_index__": 56,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:57:00.000Z",
+        "__ggsql_aes_pos2__": 0.018598518798549374,
+        "__ggsql_row_index__": 57,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:58:00.000Z",
+        "__ggsql_aes_pos2__": 0.01823181077585586,
+        "__ggsql_row_index__": 58,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-01T13:59:00.000Z",
+        "__ggsql_aes_pos2__": 0.021748354700222013,
+        "__ggsql_row_index__": 59,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

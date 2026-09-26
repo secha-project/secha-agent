@@ -177,7 +177,11 @@ def main(argv: list[str] | None = None) -> None:
         reflection.create_model(),
         output_type=str,
         instructions=proposer_instructions,
-        model_settings=ModelSettings(temperature=reflection.temperature),
+        model_settings=(
+            ModelSettings(temperature=reflection.temperature)
+            if reflection.temperature is not None
+            else ModelSettings()
+        ),
     )
     adapter = BenchmarkAdapter(
         config=config,

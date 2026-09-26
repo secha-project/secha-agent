@@ -320,6 +320,14 @@ async def _apply_report_evaluators(
                 report.analyses.append(result)
 
 
+def _experiment_metadata(run_name: str, run_config: BenchmarkRunConfig) -> dict:
+    return {
+        "run_config": run_name,
+        "agent": run_config.agent.experiment_metadata(),
+        "benchmark": run_config.model_dump(mode="json", exclude={"agent"}),
+    }
+
+
 def evaluate(
     dataset: BenchmarkDataset,
     task: AgentTask,
@@ -330,11 +338,7 @@ def evaluate(
     redo_tasks: Collection[str] = (),
     artifact_source_dir: Path | None = None,
 ) -> BenchmarkReport:
-    metadata = {
-        "run_config": run_name,
-        "agent": run_config.agent.experiment_metadata(),
-        "benchmark": run_config.model_dump(mode="json", exclude={"agent"}),
-    }
+    metadata = _experiment_metadata(run_name, run_config)
     checkpoint = EvaluationCheckpoint(
         checkpoint_path,
         name=run_name,
@@ -419,12 +423,20 @@ def run_benchmark(
 
     dataset = load_dataset(run_config.dataset)
     _validate_redo_tasks(dataset, redo_tasks)
+    if source_directory is not None:
+        source_checkpoint = source_directory / "checkpoint.json"
+        if not source_checkpoint.is_file():
+            raise ValueError(f"Resume source has no checkpoint: {source_checkpoint}")
+        # Reject incompatible or corrupt checkpoints before copying files or
+        # initializing database/model dependencies.
+        EvaluationCheckpoint(
+            source_checkpoint,
+            name=run_name,
+            experiment_metadata=_experiment_metadata(run_name, run_config),
+        )
     artifact_source_dir: Path | None = None
     if redo_tasks:
         assert source_directory is not None
-        source_checkpoint = source_directory / "checkpoint.json"
-        if not source_checkpoint.is_file():
-            raise ValueError(f"Redo source has no checkpoint: {source_checkpoint}")
         run_directory = create_run_directory(run_name, run_config.dataset)
         _copy_run_for_redo(source_directory, run_directory)
         artifact_source_dir = source_directory / "artifacts"

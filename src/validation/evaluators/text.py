@@ -1,4 +1,5 @@
 import re
+from collections import Counter
 from dataclasses import dataclass
 from typing import cast
 
@@ -6,15 +7,24 @@ from pydantic_evals.evaluators import Evaluator, EvaluatorContext, EvaluatorOutp
 
 from ..eval_models import BenchmarkOutput, CaseMetadata, TextOutput
 
+_MARKDOWN_PATTERN = re.compile(
+    r"(?<!\w)(`|\*\*|\*|__|_)(?=\S)(.+?)(?<=\S)\1(?!\w)", re.DOTALL
+)
+
 
 def normalize_text(value: str) -> str:
-    """Normalize case and whitespace while preserving punctuation."""
+    """Ignore case, whitespace, and basic Markdown without altering identifiers."""
+    while True:
+        unwrapped = _MARKDOWN_PATTERN.sub(r"\2", value)
+        if unwrapped == value:
+            break
+        value = unwrapped
     return re.sub(r"\s+", " ", value.lower()).strip()
 
 
 @dataclass
 class ValidateTextOutput(Evaluator[str, BenchmarkOutput, CaseMetadata]):
-    """Check that every expected text value appears in the agent response."""
+    """Compare a sole text answer exactly; otherwise require distinct bounded matches."""
 
     def evaluate(
         self, ctx: EvaluatorContext[str, BenchmarkOutput, CaseMetadata]
@@ -31,9 +41,24 @@ class ValidateTextOutput(Evaluator[str, BenchmarkOutput, CaseMetadata]):
             return {}
 
         actual_text = normalize_text(cast(str, ctx.output))
-        for text_output in text_outputs:
-            for expected_text in text_output.text:
-                if normalize_text(expected_text) not in actual_text:
-                    return False
+        expected_texts = [
+            normalize_text(value)
+            for text_output in text_outputs
+            for value in text_output.text
+        ]
+        if not all(expected_texts):
+            return False
 
-        return True
+        if len(expected_output) == 1 and len(expected_texts) == 1:
+            return actual_text == expected_texts[0]
+
+        # Prefer longer phrases at the same position. A single scan makes matches
+        # non-overlapping; Counter preserves repeated expected occurrences.
+        alternatives = "|".join(
+            re.escape(value)
+            for value in sorted(
+                set(expected_texts), key=lambda value: (-len(value), value)
+            )
+        )
+        matches = re.findall(rf"(?<!\w)(?:{alternatives})(?!\w)", actual_text)
+        return not (Counter(expected_texts) - Counter(matches))

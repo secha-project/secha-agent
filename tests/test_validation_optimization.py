@@ -32,13 +32,13 @@ from src.validation.run_optimization import parse_args
 SELECTED_CAPABILITIES = frozenset({"query", "table_outputs"})
 
 
-def make_case(name):
+def make_case(name, query_path="query.sql"):
     return BenchmarkCase(
         name=name,
         inputs=name,
         metadata=CaseMetadata(
             case_id=uuid4(),
-            query_code="SELECT 'correct'",
+            query_path=query_path,
             category=TaskCategory.DATA_DISCOVERY,
         ),
         expected_output=[TextOutput(text=["correct"])],
@@ -48,6 +48,10 @@ def make_case(name):
 
 @pytest.fixture
 def adapter(tmp_path, monkeypatch):
+    (tmp_path / "dataset").mkdir()
+    (tmp_path / "dataset" / "query.sql").write_text(
+        "SELECT 'correct'", encoding="utf-8"
+    )
     logfire.configure(send_to_logfire=False, console=False)
     monkeypatch.setattr(
         AgentConfig, "experiment_metadata", lambda self: {"model": "offline-test"}
@@ -101,13 +105,18 @@ def adapter(tmp_path, monkeypatch):
 
 
 def test_adapter_preserves_order_failures_and_candidate_isolation(adapter):
-    batch = [make_case("error"), make_case("pass"), make_case("wrong")]
+    batch = [
+        make_case("error"),
+        make_case("pass"),
+        make_case("wrong", query_path=None),
+    ]
     first = adapter.evaluate(batch, {}, capture_traces=True)
     assert first.scores == [0.0, 1.0, 0.0]
     assert first.outputs == ["", "correct", "wrong"]
     assert first.trajectories[0]["error"] == "RuntimeError: Deliberate test failure"
     assert first.trajectories[1]["attributes"]["agent_messages"]
     assert first.trajectories[1]["reference_sql"] == "SELECT 'correct'"
+    assert first.trajectories[2]["reference_sql"] is None
     second = adapter.evaluate(batch, {"base.instructions": "Answer correctly."})
     assert second.scores == [0.0, 1.0, 1.0]
     directories = list((adapter.run_directory / "evaluations").iterdir())
@@ -169,6 +178,10 @@ def test_search_uses_configured_repetitions_and_reflects_each_attempt(adapter):
     result = adapter.evaluate([make_case("repeat")], {}, capture_traces=True)
     assert result.scores == [0.5]
     assert len(result.trajectories[0]["attempts"]) == 2
+    assert all(
+        attempt["reference_sql"] == "SELECT 'correct'"
+        for attempt in result.trajectories[0]["attempts"]
+    )
     feedback = adapter.make_reflective_dataset({}, result, ["base.instructions"])
     assert sorted(
         (record["feedback"]["actual_output"], record["feedback"]["score"])
@@ -188,6 +201,8 @@ def test_cli_allows_component_listing_without_credentials():
 def test_cli_snapshots_inputs_and_exports_winner(adapter, monkeypatch, dry_run):
     from src.validation import run_optimization as cli
 
+    run_directory = adapter.run_directory / "cli-run"
+    run_directory.mkdir()
     reflection_config = adapter.config.model_copy(
         update={
             "agent": adapter.config.agent.model_copy(
@@ -204,7 +219,7 @@ def test_cli_snapshots_inputs_and_exports_winner(adapter, monkeypatch, dry_run):
         ),
     )
     monkeypatch.setattr(
-        cli, "create_run_directory", lambda *args: adapter.run_directory
+        cli, "create_run_directory", lambda *args: run_directory
     )
     source = adapter.run_directory / "source"
     (source / "test").mkdir(parents=True)
@@ -212,12 +227,15 @@ def test_cli_snapshots_inputs_and_exports_winner(adapter, monkeypatch, dry_run):
         "name: test\ncases:\n"
         "- name: train\n  inputs: train\n  metadata:\n"
         "    case_id: 11111111-1111-1111-1111-111111111111\n"
-        "    category: data discovery\n    query_code: ''\n"
+        "    category: data discovery\n    query_path: query.sql\n"
         "  expected_output:\n  - text: [correct]\n"
         "- name: val\n  inputs: val\n  metadata:\n"
         "    case_id: 22222222-2222-2222-2222-222222222222\n"
-        "    category: data discovery\n    query_code: ''\n"
+        "    category: data discovery\n    query_path: query.sql\n"
         "  expected_output:\n  - text: [correct]\n"
+    )
+    (source / "test" / "query.sql").write_text(
+        "SELECT 'correct'", encoding="utf-8"
     )
     monkeypatch.setattr(cli, "BENCHMARKS_DIR", source)
     monkeypatch.setattr(cli, "load_dataset", lambda name: adapter.dataset)
@@ -255,23 +273,23 @@ def test_cli_snapshots_inputs_and_exports_winner(adapter, monkeypatch, dry_run):
             ]
         )
     cli.main(args)
-    manifest = json.loads((adapter.run_directory / "manifest.json").read_text())
+    manifest = json.loads((run_directory / "manifest.json").read_text())
     assert "semantic_layer.instructions" not in manifest["prompt_files"]
     assert manifest["benchmark"]["repetitions"] == adapter.config.repetitions
     if dry_run:
         assert manifest["reflection"] is None
         assert set(manifest["components"]) == set(adapter.baseline)
     else:
-        best = json.loads((adapter.run_directory / "best-prompts.json").read_text())
+        best = json.loads((run_directory / "best-prompts.json").read_text())
         assert best == adapter.baseline | {"base.instructions": "Answer correctly."}
         assert (
-            adapter.run_directory / "prompts" / "base.md"
+            run_directory / "prompts" / "base.md"
         ).read_text() == "Answer correctly.\n"
         assert (
             "+Answer correctly.\n"
-            in (adapter.run_directory / "prompt-changes.diff").read_text()
+            in (run_directory / "prompt-changes.diff").read_text()
         )
     assert (
-        json.loads((adapter.run_directory / "baseline.json").read_text())
+        json.loads((run_directory / "baseline.json").read_text())
         == adapter.baseline
     )

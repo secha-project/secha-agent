@@ -1,0 +1,238 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "clip": true
+      },
+      "encoding": {
+        "fill": {
+          "value": "black"
+        },
+        "fillOpacity": {
+          "value": 0.8
+        },
+        "stroke": {
+          "value": "black"
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "datum.label == '4' ? '4' : datum.label == '-2' ? '-2' : datum.label == '8' ? '8' : datum.label == '0' ? '0' : datum.label == '-4' ? '-4' : datum.label == '2' ? '2' : datum.label == '6' ? '6' : datum.label",
+            "values": [
+              -4.0,
+              -2.0,
+              0.0,
+              2.0,
+              4.0,
+              6.0,
+              8.0
+            ]
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              -4.0,
+              8.0
+            ],
+            "zero": false
+          },
+          "title": "Five-minute mean temperature (°C)",
+          "type": "quantitative"
+        },
+        "x2": {
+          "field": "__ggsql_aes_pos1end__"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == '40' ? '40' : datum.label == '80' ? '80' : datum.label == '20' ? '20' : datum.label == '60' ? '60' : datum.label == '0' ? '0' : datum.label",
+            "values": [
+              0.0,
+              20.0,
+              40.0,
+              60.0,
+              80.0
+            ]
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              0.0,
+              91.35
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "Observed five-minute intervals",
+          "type": "quantitative"
+        },
+        "y2": {
+          "field": "__ggsql_aes_pos2end__"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-705ca1aa97cce4718aebaf0c7a85fef0"
+  },
+  "height": 420,
+  "title": "Outdoor temperature distribution — Hervanta campus, 24 March 2025 UTC",
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-705ca1aa97cce4718aebaf0c7a85fef0": [
+      {
+        "__ggsql_aes_pos1__": -4.0,
+        "__ggsql_aes_pos1end__": -3.0,
+        "__ggsql_aes_pos2__": 22.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": -3.0,
+        "__ggsql_aes_pos1end__": -2.0,
+        "__ggsql_aes_pos2__": 34.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": -2.0,
+        "__ggsql_aes_pos1end__": -1.0,
+        "__ggsql_aes_pos2__": 17.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": -1.0,
+        "__ggsql_aes_pos1end__": 0.0,
+        "__ggsql_aes_pos2__": 7.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": 0.0,
+        "__ggsql_aes_pos1end__": 1.0,
+        "__ggsql_aes_pos2__": 4.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": 1.0,
+        "__ggsql_aes_pos1end__": 2.0,
+        "__ggsql_aes_pos2__": 6.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": 2.0,
+        "__ggsql_aes_pos1end__": 3.0,
+        "__ggsql_aes_pos2__": 87.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": 3.0,
+        "__ggsql_aes_pos1end__": 4.0,
+        "__ggsql_aes_pos2__": 17.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": 4.0,
+        "__ggsql_aes_pos1end__": 5.0,
+        "__ggsql_aes_pos2__": 18.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": 5.0,
+        "__ggsql_aes_pos1end__": 6.0,
+        "__ggsql_aes_pos2__": 21.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": 6.0,
+        "__ggsql_aes_pos1end__": 7.0,
+        "__ggsql_aes_pos2__": 23.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": 7.0,
+        "__ggsql_aes_pos1end__": 8.0,
+        "__ggsql_aes_pos2__": 32.0,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

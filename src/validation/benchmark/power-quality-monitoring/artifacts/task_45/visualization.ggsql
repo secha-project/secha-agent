@@ -1,0 +1,8 @@
+VISUALISE interval_start AS x, mean_positive_power_kw AS y, power_series AS color
+DRAW line
+SCALE DISCRETE color
+    FROM ('EV charging', 'Solar generation')
+SCALE x
+    RENAMING * => '{:time %H:%M}'
+SCALE y FROM (0, null)
+LABEL x => 'Interval start (UTC)', y => 'Mean positive active power (kW)', color => 'Power series'

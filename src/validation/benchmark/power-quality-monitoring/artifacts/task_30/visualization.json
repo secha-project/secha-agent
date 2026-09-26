@@ -1,0 +1,830 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "line",
+        "clip": true
+      },
+      "encoding": {
+        "detail": {
+          "field": "__ggsql_aes_stroke__",
+          "type": "nominal"
+        },
+        "opacity": {
+          "value": 1.0
+        },
+        "order": {
+          "field": "__ggsql_row_index__",
+          "type": "quantitative"
+        },
+        "stroke": {
+          "field": "__ggsql_aes_stroke__",
+          "legend": {
+            "labelExpr": "datum.label == 'Negative' ? 'Negative' : datum.label == 'Positive' ? 'Positive' : datum.label"
+          },
+          "scale": {
+            "domain": [
+              "Positive",
+              "Negative"
+            ],
+            "range": [
+              "#0067A5",
+              "#F38400"
+            ]
+          },
+          "title": "power_direction",
+          "type": "nominal"
+        },
+        "strokeDash": {
+          "value": []
+        },
+        "strokeWidth": {
+          "value": 2.0
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-05T12:00:00' ? '12:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-05T14:00:00' ? '14:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-05T16:00:00' ? '16:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-05T13:00:00' ? '13:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-05T15:00:00' ? '15:00' : datum.label",
+            "values": [
+              "2025-03-05T12:00:00Z",
+              "2025-03-05T13:00:00Z",
+              "2025-03-05T14:00:00Z",
+              "2025-03-05T15:00:00Z",
+              "2025-03-05T16:00:00Z"
+            ]
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              "2025-03-05T12:00:00Z",
+              "2025-03-05T16:00:00Z"
+            ],
+            "zero": false
+          },
+          "title": "Interval start (UTC)",
+          "type": "temporal"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == '0' ? '0' : datum.label == '500' ? '500' : datum.label == '-500' ? '-500' : datum.label",
+            "values": [
+              -500.0,
+              0.0,
+              500.0
+            ]
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              -511.0498964068968,
+              908.1098874876299
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "Mean active power (kW)",
+          "type": "quantitative"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-902c8b89dd1ec5d066ec8d9b38c97100"
+  },
+  "height": 420,
+  "title": "Battery power by sign",
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-902c8b89dd1ec5d066ec8d9b38c97100": [
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:00:00.000Z",
+        "__ggsql_aes_pos2__": -24.79881842123,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:00:00.000Z",
+        "__ggsql_aes_pos2__": 196.47610848917338,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:05:00.000Z",
+        "__ggsql_aes_pos2__": -199.9054233919267,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:05:00.000Z",
+        "__ggsql_aes_pos2__": 10.650030402833334,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:10:00.000Z",
+        "__ggsql_aes_pos2__": -100.12965378754667,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:10:00.000Z",
+        "__ggsql_aes_pos2__": 43.40414823072,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:15:00.000Z",
+        "__ggsql_aes_pos2__": -6.382464082126666,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:15:00.000Z",
+        "__ggsql_aes_pos2__": 142.31391951943002,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:20:00.000Z",
+        "__ggsql_aes_pos2__": -63.92200295632667,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:20:00.000Z",
+        "__ggsql_aes_pos2__": 52.64694365463334,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:25:00.000Z",
+        "__ggsql_aes_pos2__": -120.11926297160669,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:25:00.000Z",
+        "__ggsql_aes_pos2__": 56.290126808303334,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:30:00.000Z",
+        "__ggsql_aes_pos2__": -114.61027572887333,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 12,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:30:00.000Z",
+        "__ggsql_aes_pos2__": 48.169606349180015,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 13,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:35:00.000Z",
+        "__ggsql_aes_pos2__": -45.67537751871334,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 14,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:35:00.000Z",
+        "__ggsql_aes_pos2__": 71.71990083017332,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 15,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:40:00.000Z",
+        "__ggsql_aes_pos2__": -120.11493357787668,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 16,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:40:00.000Z",
+        "__ggsql_aes_pos2__": 35.304532599850006,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 17,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:45:00.000Z",
+        "__ggsql_aes_pos2__": -253.17944786133666,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 18,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:45:00.000Z",
+        "__ggsql_aes_pos2__": 19.424199607753337,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 19,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:50:00.000Z",
+        "__ggsql_aes_pos2__": -359.79034156250003,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 20,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:50:00.000Z",
+        "__ggsql_aes_pos2__": 0.41107287027999995,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 21,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:55:00.000Z",
+        "__ggsql_aes_pos2__": -102.79364524089002,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 22,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T12:55:00.000Z",
+        "__ggsql_aes_pos2__": 79.58797975992,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 23,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:00:00.000Z",
+        "__ggsql_aes_pos2__": -81.27409348469332,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 24,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 191.90218026692665,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 25,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:05:00.000Z",
+        "__ggsql_aes_pos2__": -297.87298667968327,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 26,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:05:00.000Z",
+        "__ggsql_aes_pos2__": 38.684013125,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 27,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:10:00.000Z",
+        "__ggsql_aes_pos2__": -307.94518144286667,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 28,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:10:00.000Z",
+        "__ggsql_aes_pos2__": 8.145620035286667,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 29,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:15:00.000Z",
+        "__ggsql_aes_pos2__": -86.64308279296999,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 30,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:15:00.000Z",
+        "__ggsql_aes_pos2__": 91.95862948976334,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 31,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:20:00.000Z",
+        "__ggsql_aes_pos2__": -43.04530966144667,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 32,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:20:00.000Z",
+        "__ggsql_aes_pos2__": 153.71244911784,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 33,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:25:00.000Z",
+        "__ggsql_aes_pos2__": -24.52645281575666,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 34,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:25:00.000Z",
+        "__ggsql_aes_pos2__": 179.52237236005666,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 35,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:30:00.000Z",
+        "__ggsql_aes_pos2__": -174.35140867105665,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 36,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:30:00.000Z",
+        "__ggsql_aes_pos2__": 59.80741275390666,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 37,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:35:00.000Z",
+        "__ggsql_aes_pos2__": -185.45100148112337,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 38,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:35:00.000Z",
+        "__ggsql_aes_pos2__": 25.212293045246668,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 39,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:40:00.000Z",
+        "__ggsql_aes_pos2__": -103.73686632648668,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 40,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:40:00.000Z",
+        "__ggsql_aes_pos2__": 45.11288246091999,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 41,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:45:00.000Z",
+        "__ggsql_aes_pos2__": -44.06148006245667,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 42,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:45:00.000Z",
+        "__ggsql_aes_pos2__": 172.6434679134233,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 43,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:50:00.000Z",
+        "__ggsql_aes_pos2__": -54.98456169922333,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 44,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:50:00.000Z",
+        "__ggsql_aes_pos2__": 173.13656220703996,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 45,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:55:00.000Z",
+        "__ggsql_aes_pos2__": -243.82514599549006,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 46,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T13:55:00.000Z",
+        "__ggsql_aes_pos2__": 20.95719904622667,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 47,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 48,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 810.9504218750001,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 49,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:05:00.000Z",
+        "__ggsql_aes_pos2__": -35.83530038328999,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 50,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:05:00.000Z",
+        "__ggsql_aes_pos2__": 204.54787301004333,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 51,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:10:00.000Z",
+        "__ggsql_aes_pos2__": -36.35239723295666,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 52,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:10:00.000Z",
+        "__ggsql_aes_pos2__": 150.46379752471663,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 53,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:15:00.000Z",
+        "__ggsql_aes_pos2__": -46.43870887695999,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 54,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:15:00.000Z",
+        "__ggsql_aes_pos2__": 131.02587998089,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 55,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:20:00.000Z",
+        "__ggsql_aes_pos2__": -103.29301292560999,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 56,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:20:00.000Z",
+        "__ggsql_aes_pos2__": 79.79234774515335,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 57,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:25:00.000Z",
+        "__ggsql_aes_pos2__": -135.41287243814998,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 58,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:25:00.000Z",
+        "__ggsql_aes_pos2__": 26.110476047273334,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 59,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:30:00.000Z",
+        "__ggsql_aes_pos2__": -290.04700795817337,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 60,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:30:00.000Z",
+        "__ggsql_aes_pos2__": 4.196315886230001,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 61,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:35:00.000Z",
+        "__ggsql_aes_pos2__": -446.5426335026001,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 62,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:35:00.000Z",
+        "__ggsql_aes_pos2__": 1.6904234993466665,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 63,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:40:00.000Z",
+        "__ggsql_aes_pos2__": -202.0678629675167,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 64,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:40:00.000Z",
+        "__ggsql_aes_pos2__": 40.53903453705333,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 65,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:45:00.000Z",
+        "__ggsql_aes_pos2__": -166.38715181315334,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 66,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:45:00.000Z",
+        "__ggsql_aes_pos2__": 46.07522035157333,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 67,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:50:00.000Z",
+        "__ggsql_aes_pos2__": -185.9805572819,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 68,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:50:00.000Z",
+        "__ggsql_aes_pos2__": 22.93685253987334,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 69,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:55:00.000Z",
+        "__ggsql_aes_pos2__": -174.75123915772335,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 70,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T14:55:00.000Z",
+        "__ggsql_aes_pos2__": 93.37104571044999,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 71,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 72,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 843.6026245833332,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 73,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:05:00.000Z",
+        "__ggsql_aes_pos2__": -2.5452658098300005,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 74,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:05:00.000Z",
+        "__ggsql_aes_pos2__": 308.1989686177567,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 75,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:10:00.000Z",
+        "__ggsql_aes_pos2__": -78.08546252503334,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 76,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:10:00.000Z",
+        "__ggsql_aes_pos2__": 131.85571283995668,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 77,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:15:00.000Z",
+        "__ggsql_aes_pos2__": -94.83467290959334,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 78,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:15:00.000Z",
+        "__ggsql_aes_pos2__": 62.807135576983335,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 79,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:20:00.000Z",
+        "__ggsql_aes_pos2__": -84.17774984795334,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 80,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:20:00.000Z",
+        "__ggsql_aes_pos2__": 61.18435486206666,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 81,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:25:00.000Z",
+        "__ggsql_aes_pos2__": -277.34419678181666,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 82,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:25:00.000Z",
+        "__ggsql_aes_pos2__": 4.1298250944033335,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 83,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:30:00.000Z",
+        "__ggsql_aes_pos2__": -298.2492180403566,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 84,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:30:00.000Z",
+        "__ggsql_aes_pos2__": 20.96813479005,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 85,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:35:00.000Z",
+        "__ggsql_aes_pos2__": -108.48811251709,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 86,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:35:00.000Z",
+        "__ggsql_aes_pos2__": 31.44172462381667,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 87,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:40:00.000Z",
+        "__ggsql_aes_pos2__": -86.63592198730667,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 88,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:40:00.000Z",
+        "__ggsql_aes_pos2__": 39.195516614519995,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 89,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:45:00.000Z",
+        "__ggsql_aes_pos2__": -25.096934445389998,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 90,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:45:00.000Z",
+        "__ggsql_aes_pos2__": 248.51429316162665,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 91,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:50:00.000Z",
+        "__ggsql_aes_pos2__": -79.04824775228002,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 92,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:50:00.000Z",
+        "__ggsql_aes_pos2__": 86.55482957193334,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 93,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:55:00.000Z",
+        "__ggsql_aes_pos2__": -315.6911199414066,
+        "__ggsql_aes_stroke__": "Negative",
+        "__ggsql_row_index__": 94,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-05T15:55:00.000Z",
+        "__ggsql_aes_pos2__": 32.454714559736665,
+        "__ggsql_aes_stroke__": "Positive",
+        "__ggsql_row_index__": 95,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

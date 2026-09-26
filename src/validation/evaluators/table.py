@@ -1,5 +1,6 @@
-from collections import Counter
+import re
 from dataclasses import dataclass
+from numbers import Real
 from pathlib import Path
 
 import pandas as pd
@@ -10,131 +11,137 @@ from pydantic_evals.evaluators import (
 )
 
 from ..eval_models import BenchmarkOutput, CaseMetadata, TableOutput
+from ._numeric import numbers_match
 
 _MISSING = object()
+_ISO_TIMESTAMP = re.compile(
+    r"\d{4}-\d{2}-\d{2}"
+    r"(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})?)?"
+)
 
 
-def _value_key(value):
-    return _MISSING if pd.isna(value) else value
+def _normalize_value(value):
+    if pd.isna(value):
+        return _MISSING
+    if isinstance(value, str) and _ISO_TIMESTAMP.fullmatch(value):
+        try:
+            timestamp = pd.Timestamp(value)
+            # Reference CSVs store timezone-free timestamps in UTC.
+            if timestamp.tzinfo is None:
+                return timestamp.tz_localize("UTC")
+            return timestamp.tz_convert("UTC")
+        except ValueError:
+            pass
+    return value
 
 
-def _column_counts(column):
-    return Counter(_value_key(value) for value in column)
+def _values_match(expected, actual, tolerance):
+    if expected is _MISSING or actual is _MISSING:
+        return expected is actual
+    if isinstance(expected, bool) or isinstance(actual, bool):
+        return type(expected) is type(actual) and expected == actual
+    if isinstance(expected, Real) and isinstance(actual, Real):
+        return numbers_match(expected, actual, tolerance)
+    return expected == actual
 
 
-def _is_ordered_subsequence(target_column, candidate_column):
-    target_values = [_value_key(v) for v in target_column]
-    candidate_values = [_value_key(v) for v in candidate_column]
+def _column_positions(target_table, candidate_table):
+    """Match names first, then pair remaining aliases in their column order."""
+    if (
+        len(candidate_table.columns) < len(target_table.columns)
+        or not target_table.columns.is_unique
+        or not candidate_table.columns.is_unique
+    ):
+        return None
 
-    candidate_index = 0
-
-    for target_value in target_values:
-        if (
-            candidate_index < len(candidate_values)
-            and target_value == candidate_values[candidate_index]
-        ):
-            candidate_index += 1
-
-    return candidate_index == len(candidate_values)
+    positions = {name: index for index, name in enumerate(candidate_table.columns)}
+    matched = [positions.get(name) for name in target_table.columns]
+    used = {index for index in matched if index is not None}
+    remaining = iter(index for index in range(len(positions)) if index not in used)
+    return [index if index is not None else next(remaining) for index in matched]
 
 
-def _counts_are_subset(target_counts, candidate_counts):
+def _rows_match(expected, actual, tolerance):
     return all(
-        count <= target_counts[value] for value, count in candidate_counts.items()
+        _values_match(target, candidate, tolerance)
+        for target, candidate in zip(expected, actual, strict=True)
     )
 
 
-def find_matching_columns(
-    target_column,
-    candidate_table,
-    partial=False,
-):
-    unordered_match = None
+def _has_distinct_row_matches(matches, target_count):
+    """Find one-to-one matches, reassigning earlier choices when tolerances overlap."""
+    owners = [None] * target_count
+    for start in range(len(matches)):
+        parents = {start: None}
+        pending = [start]
+        end = None
+        for candidate in pending:
+            for target in matches[candidate]:
+                owner = owners[target]
+                if owner is None:
+                    end = (candidate, target)
+                    break
+                if owner not in parents:
+                    parents[owner] = (candidate, target)
+                    pending.append(owner)
+            if end is not None:
+                break
+        if end is None:
+            return False
 
-    target_counts = None
-    target_sorted = None
-
-    for column in candidate_table.columns:
-        candidate_column = candidate_table[column]
-
-        if len(candidate_column) > len(target_column):
-            continue
-
-        if partial:
-            ordered = _is_ordered_subsequence(
-                target_column,
-                candidate_column,
-            )
-
-            if ordered:
-                return column, column
-
-            if target_counts is None:
-                target_counts = _column_counts(target_column)
-
-            candidate_counts = _column_counts(candidate_column)
-
-            unordered = _counts_are_subset(
-                target_counts,
-                candidate_counts,
-            )
-
-        else:
-            ordered = len(candidate_column) == len(
-                target_column
-            ) and target_column.equals(candidate_column)
-
-            if ordered:
-                return column, column
-
-            if target_sorted is None:
-                target_sorted = target_column.sort_values(ignore_index=True)
-
-            candidate_sorted = candidate_column.sort_values(ignore_index=True)
-
-            unordered = target_sorted.equals(candidate_sorted)
-
-        if unordered and unordered_match is None:
-            unordered_match = column
-
-        # Continue because a later column might match in order.
-
-    return None, unordered_match
+        # Flip the alternating path to free a target for this candidate row.
+        while end is not None:
+            candidate, target = end
+            owners[target] = candidate
+            end = parents[candidate]
+    return True
 
 
 def table_match_modes(
     target_table,
     candidate_table,
     partial=False,
+    tolerance=0.005,
 ):
-    """
-    Return:
-        (all_columns_match_in_order,
-         all_columns_match_ignoring_order)
-    """
-    all_ordered = True
+    """Return whether whole rows match in order and ignoring order, respectively."""
+    positions = _column_positions(target_table, candidate_table)
+    if positions is None or len(candidate_table) > len(target_table):
+        return False, False
+    if not partial and len(candidate_table) != len(target_table):
+        return False, False
 
-    for column in target_table.columns:
-        ordered_match, unordered_match = find_matching_columns(
-            target_table[column],
-            candidate_table,
-            partial=partial,
-        )
+    target_rows = [
+        tuple(_normalize_value(value) for value in row)
+        for row in target_table.itertuples(index=False, name=None)
+    ]
+    candidate_rows = [
+        tuple(_normalize_value(value) for value in row)
+        for row in candidate_table.iloc[:, positions].itertuples(index=False, name=None)
+    ]
+    # An ordered partial match must be a subsequence of complete reference rows.
+    remaining = iter(target_rows)
+    if all(
+        any(_rows_match(target, candidate, tolerance) for target in remaining)
+        for candidate in candidate_rows
+    ):
+        return True, True
 
-        if ordered_match is None:
-            all_ordered = False
-
-        # If one required column has no match at all, the table fails.
-        if unordered_match is None:
-            return False, False
-
-    return all_ordered, True
+    matches = [
+        [
+            index
+            for index, target in enumerate(target_rows)
+            if _rows_match(target, candidate, tolerance)
+        ]
+        for candidate in candidate_rows
+    ]
+    return False, _has_distinct_row_matches(matches, len(target_rows))
 
 
 def classify_table_match(
     target_table,
     candidate_table,
     min_coverage=0.5,
+    tolerance=0.005,
 ):
     target_rows = len(target_table)
     candidate_rows = len(candidate_table)
@@ -147,6 +154,7 @@ def classify_table_match(
             target_table,
             candidate_table,
             partial=False,
+            tolerance=tolerance,
         )
 
         if ordered:
@@ -169,6 +177,7 @@ def classify_table_match(
         target_table,
         candidate_table,
         partial=partial,
+        tolerance=tolerance,
     )
 
     if ordered:
@@ -210,6 +219,7 @@ class ValidateTableValues(Evaluator[str, BenchmarkOutput, CaseMetadata]):
 
     artifact_base_path: Path = Path()
     min_coverage: float = 0.5
+    tolerance: float = 0.005
 
     def evaluate(
         self, ctx: EvaluatorContext[str, BenchmarkOutput, CaseMetadata]
@@ -238,6 +248,7 @@ class ValidateTableValues(Evaluator[str, BenchmarkOutput, CaseMetadata]):
                 target_table,
                 candidate_table,
                 min_coverage=self.min_coverage,
+                tolerance=self.tolerance,
             )
 
             if match_type != "exact_match" and not (

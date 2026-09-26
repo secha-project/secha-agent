@@ -76,7 +76,11 @@ class AgentService:
             prompt,
             deps=deps,
             model=self.config.create_model(),
-            model_settings=ModelSettings(temperature=self.config.temperature),
+            model_settings=(
+                ModelSettings(temperature=self.config.temperature)
+                if self.config.temperature is not None
+                else ModelSettings()
+            ),
             usage_limits=UsageLimits(request_limit=self.config.request_limit),
             message_history=message_history,
         ) as events:

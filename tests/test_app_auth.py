@@ -223,7 +223,9 @@ def test_temporary_password_blocks_app_before_resources_load(tmp_path, monkeypat
             AssertionError("App resources must not load before changing the password")
         ),
     )
-    app = AppTest.from_file("src/app/application.py").run()
+    app = AppTest.from_file(
+        Path(__file__).resolve().parents[1] / "src/app/application.py"
+    ).run()
     assert not app.exception
     assert app.title[0].value == "Choose your password"
 
@@ -267,7 +269,9 @@ def test_users_navigation_returns_to_new_and_existing_chats(tmp_path, monkeypatc
     monkeypatch.setattr(
         resources, "load_resources", lambda: SimpleNamespace(history=history)
     )
-    app = AppTest.from_file("src/app/application.py").run()
+    app = AppTest.from_file(
+        Path(__file__).resolve().parents[1] / "src/app/application.py"
+    ).run()
 
     def click_sidebar(label):
         next(

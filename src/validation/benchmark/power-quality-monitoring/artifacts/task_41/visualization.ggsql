@@ -1,0 +1,4 @@
+VISUALISE irradiance_w_per_m2 AS x, solar_power_kw AS y, utc_hour AS fill
+DRAW point
+SCALE fill TO viridis
+LABEL x => 'Global irradiance (W/m²)', y => 'Positive solar active power (kW)', fill => 'UTC hour'

@@ -1,15 +1,15 @@
 agent:
-  model_provider: openai
-  model_name: gpt-5.4-mini
-  temperature: 0
+  model_provider: tuni
+  model_name: Qwen3.8-27B-AIC
   request_limit: 50
   enabled_capabilities:
     - catalog
     - query
     - table_outputs
     - visualization
+    - few_shot
 
 dataset: power-quality-monitoring
-repetitions: 1
+repetitions: 5
 max_concurrency: 4
 task_max_attempts: 3

@@ -4,7 +4,9 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from pydantic_ai import Agent, BinaryContent, ModelSettings
-from pydantic_ai.models import KnownModelName, Model
+from pydantic_ai.models import Model
+from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIResponsesModelSettings
+from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_evals.evaluators import (
     EvaluationReason,
     Evaluator,
@@ -12,12 +14,14 @@ from pydantic_evals.evaluators import (
     EvaluatorOutput,
 )
 
+from src.agent.config import OpenAIProviderConfig
+
 from ..eval_models import BenchmarkOutput, CaseMetadata, VisualizationOutput
 
 _RUBRIC = (
     Path(__file__).with_name("visualization_rubric.md").read_text(encoding="utf-8")
 )
-_DEFAULT_JUDGE_MODEL = "openai:gpt-5.4-mini"
+_DEFAULT_JUDGE_MODEL = "gpt-6-luna"
 
 
 class VisualizationEvaluation(BaseModel):
@@ -92,12 +96,12 @@ class ValidateVisualizationIncluded(Evaluator[str, BenchmarkOutput, CaseMetadata
 
 @dataclass
 class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]):
-    """Use a multimodal LLM to compare a generated plot with its reference."""
+    """Use a multimodal LLM to assess a plot against its task and reference."""
 
     artifact_base_path: Path = Path()
-    model: Model | KnownModelName | str = _DEFAULT_JUDGE_MODEL
+    model: Model | str = _DEFAULT_JUDGE_MODEL
     model_settings: ModelSettings = field(
-        default_factory=lambda: ModelSettings(temperature=0.0)
+        default_factory=lambda: OpenAIResponsesModelSettings(openai_reasoning_effort="max")
     )
 
     async def evaluate(
@@ -131,14 +135,25 @@ class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]
             description="Ground-truth visualization image",
         )
 
+        model = self.model
+        if isinstance(model, str):
+            provider_config = OpenAIProviderConfig()
+            model = OpenAIResponsesModel(
+                model,
+                provider=OpenAIProvider(
+                    api_key=provider_config.api_key.get_secret_value(),
+                ),
+            )
+
         judge = Agent(
-            self.model,
+            model,
             output_type=VisualizationEvaluation,
             instructions=_RUBRIC,
             model_settings=self.model_settings,
         )
         result = await judge.run(
             [
+                f"Original task:\n{ctx.inputs}",
                 "Generated plot (first image):",
                 generated_image,
                 "Ground-truth plot (second image):",

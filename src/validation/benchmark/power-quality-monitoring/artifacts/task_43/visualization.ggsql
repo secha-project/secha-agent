@@ -1,0 +1,8 @@
+VISUALISE hour_start AS x, mean_active_power_kw AS y, service AS color
+DRAW line
+SCALE DISCRETE color
+    FROM ('Elevator 1', 'Elevator 2', 'Water cooling 1', 'Water cooling 2')
+SCALE x
+    RENAMING * => '{:time %H:%M}'
+SCALE y FROM (0, null)
+LABEL x => 'Hour start (UTC)', y => 'Mean active power (kW)', color => 'Service'

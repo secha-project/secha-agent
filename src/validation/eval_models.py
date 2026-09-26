@@ -45,7 +45,8 @@ class TaskCategory(str, Enum):
 class CaseMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
     case_id: UUID
-    query_code: str
+    query_path: str | None = None
+    ggsql_path: str | None = None
     category: TaskCategory
 
 

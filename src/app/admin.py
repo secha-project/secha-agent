@@ -1,4 +1,4 @@
-"""Local-only account provisioning: uv run python -m src.app.admin USERNAME."""
+"""Account provisioning: uv run --group app python -m src.app.admin USERNAME."""
 
 import argparse
 from getpass import getpass

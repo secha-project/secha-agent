@@ -1,0 +1,1503 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "line",
+        "clip": true
+      },
+      "encoding": {
+        "detail": {
+          "field": "__ggsql_aes_stroke__",
+          "type": "nominal"
+        },
+        "opacity": {
+          "value": 1.0
+        },
+        "order": {
+          "field": "__ggsql_row_index__",
+          "type": "quantitative"
+        },
+        "stroke": {
+          "field": "__ggsql_aes_stroke__",
+          "legend": {
+            "labelExpr": "datum.label == 'EV charging' ? 'EV charging' : datum.label == 'Solar generation' ? 'Solar generation' : datum.label"
+          },
+          "scale": {
+            "domain": [
+              "EV charging",
+              "Solar generation"
+            ],
+            "range": [
+              "#0067A5",
+              "#F38400"
+            ]
+          },
+          "title": "power_series",
+          "type": "nominal"
+        },
+        "strokeDash": {
+          "value": []
+        },
+        "strokeWidth": {
+          "value": 2.0
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-02T02:00:00' ? '02:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-02T14:00:00' ? '14:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-02T22:00:00' ? '22:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-02T18:00:00' ? '18:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-02T06:00:00' ? '06:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-02T10:00:00' ? '10:00' : datum.label",
+            "values": [
+              "2025-03-02T02:00:00Z",
+              "2025-03-02T06:00:00Z",
+              "2025-03-02T10:00:00Z",
+              "2025-03-02T14:00:00Z",
+              "2025-03-02T18:00:00Z",
+              "2025-03-02T22:00:00Z"
+            ]
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              "2025-03-01T22:48:45Z",
+              "2025-03-03T00:56:15Z"
+            ],
+            "zero": false
+          },
+          "title": "Interval start (UTC)",
+          "type": "temporal"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == '10' ? '10' : datum.label == '0' ? '0' : datum.label == '30' ? '30' : datum.label == '20' ? '20' : datum.label",
+            "values": [
+              0.0,
+              10.0,
+              20.0,
+              30.0
+            ]
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              0.0,
+              35.02208583855101
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "Mean positive active power (kW)",
+          "type": "quantitative"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-e2efdb4d57ffc57ab07d8a69a5e38991"
+  },
+  "height": 420,
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-e2efdb4d57ffc57ab07d8a69a5e38991": [
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T00:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.02749974057777778,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T00:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T00:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027560053236666663,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T00:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T00:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.02754297833222222,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T00:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T00:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.02747800896333333,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T00:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T01:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027675086172222217,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T01:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T01:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.02756818156444445,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T01:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T01:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027519340615555554,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 12,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T01:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 13,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T01:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027610585116666662,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 14,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T01:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 15,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T02:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027630667362222222,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 16,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T02:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 17,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T02:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027538592946725865,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 18,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T02:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 19,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T02:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027479225554444445,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 20,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T02:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 21,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T02:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.02744796207222222,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 22,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T02:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 23,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T03:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027522283868888893,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 24,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T03:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 25,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T03:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027611162333333335,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 26,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T03:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 27,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T03:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027410314066666667,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 28,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T03:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 29,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T03:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027185327985555556,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 30,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T03:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 31,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T04:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027099833765555557,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 32,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T04:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 33,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T04:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.02714410382111111,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 34,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T04:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 35,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T04:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027231637162222228,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 36,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T04:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 37,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T04:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027401174413333333,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 38,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T04:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 39,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T05:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027302845053333337,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 40,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T05:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 41,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T05:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027303635222222226,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 42,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T05:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 43,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T05:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027209399631111107,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 44,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T05:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 45,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T05:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027203798857777777,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 46,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T05:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 47,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T06:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027177375900000002,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 48,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T06:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.06598973075,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 49,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T06:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027381106723333336,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 50,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T06:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.19223060599999997,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 51,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T06:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027444216803551608,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 52,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T06:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.39848849900555555,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 53,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T06:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027276802037777784,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 54,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T06:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.62318821802,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 55,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T07:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027224848520000004,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 56,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T07:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.8681453981499999,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 57,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T07:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027313763505555554,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 58,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T07:15:00.000Z",
+        "__ggsql_aes_pos2__": 2.142742532145556,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 59,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T07:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027184830389999994,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 60,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T07:30:00.000Z",
+        "__ggsql_aes_pos2__": 1.7510208083922225,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 61,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T07:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.02703827268666667,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 62,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T07:45:00.000Z",
+        "__ggsql_aes_pos2__": 1.9730237074222219,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 63,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T08:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.02713217781,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 64,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T08:00:00.000Z",
+        "__ggsql_aes_pos2__": 2.485662402888889,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 65,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T08:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.02718350811444444,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 66,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T08:15:00.000Z",
+        "__ggsql_aes_pos2__": 2.6256072481199997,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 67,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T08:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027199406232222223,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 68,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T08:30:00.000Z",
+        "__ggsql_aes_pos2__": 3.294339590375556,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 69,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T08:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027217129408888888,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 70,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T08:45:00.000Z",
+        "__ggsql_aes_pos2__": 2.2854698886544447,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 71,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T09:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027200927708888895,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 72,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T09:00:00.000Z",
+        "__ggsql_aes_pos2__": 2.4526341974722223,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 73,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T09:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027210320713333326,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 74,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T09:15:00.000Z",
+        "__ggsql_aes_pos2__": 2.053315863161111,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 75,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T09:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027148722261111112,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 76,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T09:30:00.000Z",
+        "__ggsql_aes_pos2__": 2.9928793983266666,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 77,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T09:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027142262535555555,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 78,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T09:45:00.000Z",
+        "__ggsql_aes_pos2__": 6.3183520342266695,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 79,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T10:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027226040831111114,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 80,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T10:00:00.000Z",
+        "__ggsql_aes_pos2__": 5.2767049448157595,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 81,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T10:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027152161886666668,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 82,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T10:15:00.000Z",
+        "__ggsql_aes_pos2__": 5.959735792102222,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 83,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T10:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027100696227777773,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 84,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T10:30:00.000Z",
+        "__ggsql_aes_pos2__": 3.926965499145556,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 85,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T10:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027337333371111116,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 86,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T10:45:00.000Z",
+        "__ggsql_aes_pos2__": 4.7680012893555554,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 87,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T11:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.02736555403773585,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 88,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T11:00:00.000Z",
+        "__ggsql_aes_pos2__": 4.125064962576666,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 89,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T11:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027275788461111113,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 90,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T11:15:00.000Z",
+        "__ggsql_aes_pos2__": 2.702528562006667,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 91,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T11:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027351340395555552,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 92,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T11:30:00.000Z",
+        "__ggsql_aes_pos2__": 2.8403893608944446,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 93,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T11:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.02746974943888888,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 94,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T11:45:00.000Z",
+        "__ggsql_aes_pos2__": 2.0095098156666666,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 95,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T12:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027406242753333334,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 96,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T12:00:00.000Z",
+        "__ggsql_aes_pos2__": 1.6046780094455555,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 97,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T12:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027379931133333337,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 98,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T12:15:00.000Z",
+        "__ggsql_aes_pos2__": 1.8835619571888893,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 99,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T12:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.02732560126,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 100,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T12:30:00.000Z",
+        "__ggsql_aes_pos2__": 2.029770279138889,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 101,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T12:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.02754033568888889,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 102,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T12:45:00.000Z",
+        "__ggsql_aes_pos2__": 1.681989111316667,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 103,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 7.023706114265556,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 104,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 2.540448078618889,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 105,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T13:15:00.000Z",
+        "__ggsql_aes_pos2__": 11.225072465286669,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 106,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T13:15:00.000Z",
+        "__ggsql_aes_pos2__": 1.3261014074100004,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 107,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T13:30:00.000Z",
+        "__ggsql_aes_pos2__": 18.639295936175557,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 108,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T13:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.42109766702666673,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 109,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T13:45:00.000Z",
+        "__ggsql_aes_pos2__": 22.235915449197787,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 110,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T13:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.2564573298288889,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 111,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 22.218188519958886,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 112,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.3000357523688889,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 113,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T14:15:00.000Z",
+        "__ggsql_aes_pos2__": 22.21381464411,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 114,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T14:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.7293750153499999,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 115,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T14:30:00.000Z",
+        "__ggsql_aes_pos2__": 26.001198668630003,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 116,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T14:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.608985497651111,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 117,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T14:45:00.000Z",
+        "__ggsql_aes_pos2__": 33.35136552518334,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 118,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T14:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.39267066349888885,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 119,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 33.32206684462333,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 120,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0977245100911111,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 121,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T15:15:00.000Z",
+        "__ggsql_aes_pos2__": 33.28696667098888,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 122,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T15:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.12519401358777776,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 123,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T15:30:00.000Z",
+        "__ggsql_aes_pos2__": 33.24818927321976,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 124,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T15:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 125,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T15:45:00.000Z",
+        "__ggsql_aes_pos2__": 33.35436746528667,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 126,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T15:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 127,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T16:00:00.000Z",
+        "__ggsql_aes_pos2__": 33.3490935850489,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 128,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T16:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 129,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T16:15:00.000Z",
+        "__ggsql_aes_pos2__": 33.12464038628889,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 130,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T16:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 131,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T16:30:00.000Z",
+        "__ggsql_aes_pos2__": 22.23615771268111,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 132,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T16:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 133,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T16:45:00.000Z",
+        "__ggsql_aes_pos2__": 22.239635870226667,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 134,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T16:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 135,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T17:00:00.000Z",
+        "__ggsql_aes_pos2__": 12.273368003478888,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 136,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T17:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 137,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T17:15:00.000Z",
+        "__ggsql_aes_pos2__": 11.08717431641667,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 138,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T17:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 139,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T17:30:00.000Z",
+        "__ggsql_aes_pos2__": 11.086272583543334,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 140,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T17:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 141,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T17:45:00.000Z",
+        "__ggsql_aes_pos2__": 11.097975911005555,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 142,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T17:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 143,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T18:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.4325068538888889,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 144,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T18:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 145,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T18:15:00.000Z",
+        "__ggsql_aes_pos2__": 1.9039406445233336,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 146,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T18:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 147,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T18:30:00.000Z",
+        "__ggsql_aes_pos2__": 1.2460928681311112,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 148,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T18:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 149,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T18:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027730394400000004,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 150,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T18:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 151,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T19:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027586257532222228,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 152,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T19:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 153,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T19:15:00.000Z",
+        "__ggsql_aes_pos2__": 3.869559108955556,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 154,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T19:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 155,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T19:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.5785900088766666,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 156,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T19:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 157,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T19:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.02756645125888889,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 158,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T19:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 159,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T20:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.02766114786348502,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 160,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T20:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 161,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T20:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027645920881111122,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 162,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T20:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 163,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T20:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.02770365684777777,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 164,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T20:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 165,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T20:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.02707925393777778,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 166,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T20:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 167,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T21:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.026969793149999997,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 168,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T21:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 169,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T21:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.02703038839111111,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 170,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T21:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 171,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T21:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027120798163333328,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 172,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T21:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 173,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T21:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027089018105555557,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 174,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T21:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 175,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T22:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027084610332222227,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 176,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T22:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 177,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T22:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.02711699832666667,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 178,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T22:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 179,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T22:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027118498504444446,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 180,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T22:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 181,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T22:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.027092987248888888,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 182,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T22:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 183,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T23:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.027269927028888887,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 184,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T23:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 185,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T23:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.027232098211111107,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 186,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T23:15:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 187,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T23:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.027203902134444437,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 188,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T23:30:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 189,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T23:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.02722324948333334,
+        "__ggsql_aes_stroke__": "EV charging",
+        "__ggsql_row_index__": 190,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-02T23:45:00.000Z",
+        "__ggsql_aes_pos2__": 0.0,
+        "__ggsql_aes_stroke__": "Solar generation",
+        "__ggsql_row_index__": 191,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

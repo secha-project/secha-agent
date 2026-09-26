@@ -1,0 +1,9 @@
+VISUALISE harmonic_order AS x, mean_percent AS y, phase AS fill
+DRAW bar
+    SETTING position => 'dodge'
+SCALE DISCRETE x
+    FROM ('2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20')
+SCALE DISCRETE fill
+    FROM ('L1', 'L2', 'L3')
+SCALE y FROM (0, null)
+LABEL title => 'Ventilation voltage harmonics by phase - March 17 2025 12:00 to 13:00 UTC', x => 'Harmonic order', y => 'Mean harmonic (%)', fill => 'Phase'

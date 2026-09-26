@@ -1,0 +1,694 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "bar",
+        "align": "center",
+        "clip": true,
+        "width": {
+          "expr": "bandwidth('x') * 0.3"
+        }
+      },
+      "encoding": {
+        "detail": {
+          "field": "__ggsql_aes_fill__",
+          "type": "nominal"
+        },
+        "fill": {
+          "field": "__ggsql_aes_fill__",
+          "legend": {
+            "labelExpr": "datum.label == 'L2' ? 'L2' : datum.label == 'L3' ? 'L3' : datum.label == 'L1' ? 'L1' : datum.label"
+          },
+          "scale": {
+            "domain": [
+              "L1",
+              "L2",
+              "L3"
+            ],
+            "range": [
+              "#0067A5",
+              "#F38400",
+              "#008856"
+            ]
+          },
+          "title": "Phase",
+          "type": "nominal"
+        },
+        "fillOpacity": {
+          "value": 0.8
+        },
+        "stroke": {
+          "value": "black"
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "datum.label == '5' ? '5' : datum.label == '14' ? '14' : datum.label == '2' ? '2' : datum.label == '9' ? '9' : datum.label == '15' ? '15' : datum.label == '17' ? '17' : datum.label == '4' ? '4' : datum.label == '8' ? '8' : datum.label == '3' ? '3' : datum.label == '6' ? '6' : datum.label == '13' ? '13' : datum.label == '18' ? '18' : datum.label == '19' ? '19' : datum.label == '20' ? '20' : datum.label == '10' ? '10' : datum.label == '11' ? '11' : datum.label == '7' ? '7' : datum.label == '16' ? '16' : datum.label == '12' ? '12' : datum.label"
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+              "13",
+              "14",
+              "15",
+              "16",
+              "17",
+              "18",
+              "19",
+              "20"
+            ],
+            "zero": false
+          },
+          "title": "Harmonic order",
+          "type": "nominal"
+        },
+        "xOffset": {
+          "field": "__ggsql_aes_pos1offset__",
+          "scale": {
+            "domain": [
+              -0.5,
+              0.5
+            ]
+          },
+          "type": "quantitative"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == '0' ? '0' : datum.label == '3' ? '3' : datum.label == '2' ? '2' : datum.label == '1' ? '1' : datum.label",
+            "values": [
+              0.0,
+              1.0,
+              2.0,
+              3.0
+            ]
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              0.0,
+              3.1918890870416674
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "Mean harmonic (%)",
+          "type": "quantitative"
+        },
+        "y2": {
+          "field": "__ggsql_aes_pos2end__"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-e7c04b14d31f10f8b14c59f1a63103a5"
+  },
+  "height": 420,
+  "title": "Ventilation voltage harmonics by phase - March 17 2025 12:00 to 13:00 UTC",
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-e7c04b14d31f10f8b14c59f1a63103a5": [
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "2",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.021384471666666665,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "2",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.015840522777777782,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "2",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.02008805444444444,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "3",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.4265404363888888,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "3",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.09925050499999999,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "3",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.5002956927777779,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "4",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.029919161388888886,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "4",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.027730601666666667,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "4",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.026503561111111105,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "5",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 2.9922480886111114,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "5",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 3.0398943686111117,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "5",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 2.957420178611111,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "6",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.02829635833333333,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 12,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "6",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.027967678333333332,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 13,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "6",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.026160741944444444,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 14,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "7",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 1.1687087061111114,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 15,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "7",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.7988797725,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 16,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "7",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 1.0709103800000002,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 17,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "8",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.01566143916666667,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 18,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "8",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.013213724166666666,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 19,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "8",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.01566714361111111,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 20,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "9",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.07663582416666666,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 21,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "9",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.18123714805555555,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 22,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "9",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.13003295194444445,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 23,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.007746788888888887,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 24,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.006955571388888888,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 25,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "10",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.007382676111111112,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 26,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.1274063525,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 27,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.2791564958333333,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 28,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "11",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.24706394222222228,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 29,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.016253902777777777,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 30,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.013829395,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 31,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "12",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.013829627777777777,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 32,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.3777609719444443,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 33,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.24591034888888885,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 34,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "13",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.33282979805555557,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 35,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.015387073333333334,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 36,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.020454382499999993,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 37,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "14",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.011962002222222224,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 38,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.08652171027777777,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 39,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.027037655,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 40,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "15",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.10294266638888888,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 41,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.007686929444444443,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 42,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.006835269722222222,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 43,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "16",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.007457978888888891,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 44,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.17110684111111113,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 45,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.2527761519444445,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 46,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "17",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.18878543666666667,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 47,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.020930229999999998,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 48,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.018892090555555557,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 49,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "18",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.02052717,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 50,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.23271980194444442,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 51,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.1095518266666667,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 52,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "19",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.1389606247222222,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 53,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L1",
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos1offset__": -0.3,
+        "__ggsql_aes_pos2__": 0.015934802499999998,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 54,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L2",
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos1offset__": 0.0,
+        "__ggsql_aes_pos2__": 0.020735525833333338,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 55,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_fill__": "L3",
+        "__ggsql_aes_pos1__": "20",
+        "__ggsql_aes_pos1offset__": 0.3,
+        "__ggsql_aes_pos2__": 0.012410803611111108,
+        "__ggsql_aes_pos2end__": 0.0,
+        "__ggsql_row_index__": 56,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

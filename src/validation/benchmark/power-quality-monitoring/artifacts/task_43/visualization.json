@@ -1,0 +1,392 @@
+{
+  "config": {
+    "view": {
+      "continuousWidth": 300,
+      "continuousHeight": 300,
+      "fill": "#EBEBEB",
+      "stroke": null
+    },
+    "axis": {
+      "domain": false,
+      "grid": true,
+      "gridColor": "#FFFFFF",
+      "gridWidth": 1,
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "tickColor": "#333333",
+      "tickSize": 4,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 10
+    },
+    "header": {
+      "labelColor": "#000000",
+      "labelFontSize": 15,
+      "labelFontWeight": "normal",
+      "labelPadding": 5,
+      "title": null
+    },
+    "legend": {
+      "labelColor": "#4D4D4D",
+      "labelFontSize": 12,
+      "rowPadding": 6,
+      "titleColor": "#000000",
+      "titleFontSize": 15,
+      "titleFontWeight": "normal",
+      "titlePadding": 8
+    },
+    "title": {
+      "anchor": "start",
+      "color": "#000000",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "frame": "group",
+      "offset": 10,
+      "subtitleColor": "#4D4D4D",
+      "subtitleFontSize": 15,
+      "subtitleFontWeight": "normal"
+    }
+  },
+  "layer": [
+    {
+      "mark": {
+        "type": "line",
+        "clip": true
+      },
+      "encoding": {
+        "detail": {
+          "field": "__ggsql_aes_stroke__",
+          "type": "nominal"
+        },
+        "opacity": {
+          "value": 1.0
+        },
+        "order": {
+          "field": "__ggsql_row_index__",
+          "type": "quantitative"
+        },
+        "stroke": {
+          "field": "__ggsql_aes_stroke__",
+          "legend": {
+            "labelExpr": "datum.label == 'Elevator 2' ? 'Elevator 2' : datum.label == 'Water cooling 2' ? 'Water cooling 2' : datum.label == 'Elevator 1' ? 'Elevator 1' : datum.label == 'Water cooling 1' ? 'Water cooling 1' : datum.label"
+          },
+          "scale": {
+            "domain": [
+              "Elevator 1",
+              "Elevator 2",
+              "Water cooling 1",
+              "Water cooling 2"
+            ],
+            "range": [
+              "#0067A5",
+              "#F38400",
+              "#008856",
+              "#F3C300"
+            ]
+          },
+          "title": "service",
+          "type": "nominal"
+        },
+        "strokeDash": {
+          "value": []
+        },
+        "strokeWidth": {
+          "value": 2.0
+        },
+        "x": {
+          "axis": {
+            "labelExpr": "utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T15:00:00' ? '15:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T11:00:00' ? '11:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T12:00:00' ? '12:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T10:00:00' ? '10:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T09:00:00' ? '09:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T13:00:00' ? '13:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T08:00:00' ? '08:00' : utcFormat(datum.value, '%Y-%m-%dT%H:%M:%S') == '2025-03-17T14:00:00' ? '14:00' : datum.label",
+            "values": [
+              "2025-03-17T08:00:00Z",
+              "2025-03-17T09:00:00Z",
+              "2025-03-17T10:00:00Z",
+              "2025-03-17T11:00:00Z",
+              "2025-03-17T12:00:00Z",
+              "2025-03-17T13:00:00Z",
+              "2025-03-17T14:00:00Z",
+              "2025-03-17T15:00:00Z"
+            ]
+          },
+          "field": "__ggsql_aes_pos1__",
+          "scale": {
+            "domain": [
+              "2025-03-17T07:39:00Z",
+              "2025-03-17T15:21:00Z"
+            ],
+            "zero": false
+          },
+          "title": "Hour start (UTC)",
+          "type": "temporal"
+        },
+        "y": {
+          "axis": {
+            "labelExpr": "datum.label == '6' ? '6' : datum.label == '2' ? '2' : datum.label == '0' ? '0' : datum.label == '1' ? '1' : datum.label == '3' ? '3' : datum.label == '4' ? '4' : datum.label == '5' ? '5' : datum.label",
+            "values": [
+              0.0,
+              1.0,
+              2.0,
+              3.0,
+              4.0,
+              5.0,
+              6.0
+            ]
+          },
+          "field": "__ggsql_aes_pos2__",
+          "scale": {
+            "domain": [
+              0.0,
+              6.075761175840416
+            ],
+            "zero": false
+          },
+          "stack": null,
+          "title": "Mean active power (kW)",
+          "type": "quantitative"
+        }
+      },
+      "transform": [
+        {
+          "filter": {
+            "equal": "__ggsql_layer_0__",
+            "field": "__ggsql_source__"
+          }
+        }
+      ]
+    }
+  ],
+  "data": {
+    "name": "data-c7d6979cf96eec33c4f487eb0119ee3f"
+  },
+  "height": 420,
+  "width": "container",
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "datasets": {
+    "data-c7d6979cf96eec33c4f487eb0119ee3f": [
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T08:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.6134569534619444,
+        "__ggsql_aes_stroke__": "Elevator 1",
+        "__ggsql_row_index__": 0,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T08:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.33257516375000007,
+        "__ggsql_aes_stroke__": "Elevator 2",
+        "__ggsql_row_index__": 1,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T08:00:00.000Z",
+        "__ggsql_aes_pos2__": 5.78643921508611,
+        "__ggsql_aes_stroke__": "Water cooling 1",
+        "__ggsql_row_index__": 2,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T08:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.05862481985222222,
+        "__ggsql_aes_stroke__": "Water cooling 2",
+        "__ggsql_row_index__": 3,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T09:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.6536760883961112,
+        "__ggsql_aes_stroke__": "Elevator 1",
+        "__ggsql_row_index__": 4,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T09:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.5600359741233334,
+        "__ggsql_aes_stroke__": "Elevator 2",
+        "__ggsql_row_index__": 5,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T09:00:00.000Z",
+        "__ggsql_aes_pos2__": 5.774114941355457,
+        "__ggsql_aes_stroke__": "Water cooling 1",
+        "__ggsql_row_index__": 6,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T09:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.051739354638888874,
+        "__ggsql_aes_stroke__": "Water cooling 2",
+        "__ggsql_row_index__": 7,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T10:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.8321973715948348,
+        "__ggsql_aes_stroke__": "Elevator 1",
+        "__ggsql_row_index__": 8,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T10:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.3007244212761111,
+        "__ggsql_aes_stroke__": "Elevator 2",
+        "__ggsql_row_index__": 9,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T10:00:00.000Z",
+        "__ggsql_aes_pos2__": 5.768971805288057,
+        "__ggsql_aes_stroke__": "Water cooling 1",
+        "__ggsql_row_index__": 10,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T10:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.05470057311055555,
+        "__ggsql_aes_stroke__": "Water cooling 2",
+        "__ggsql_row_index__": 11,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T11:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.9597735036713888,
+        "__ggsql_aes_stroke__": "Elevator 1",
+        "__ggsql_row_index__": 12,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T11:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.5525725802725,
+        "__ggsql_aes_stroke__": "Elevator 2",
+        "__ggsql_row_index__": 13,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T11:00:00.000Z",
+        "__ggsql_aes_pos2__": 5.772747937426941,
+        "__ggsql_aes_stroke__": "Water cooling 1",
+        "__ggsql_row_index__": 14,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T11:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.06792885057666666,
+        "__ggsql_aes_stroke__": "Water cooling 2",
+        "__ggsql_row_index__": 15,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T12:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.60050128109,
+        "__ggsql_aes_stroke__": "Elevator 1",
+        "__ggsql_row_index__": 16,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T12:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.22271650368036658,
+        "__ggsql_aes_stroke__": "Elevator 2",
+        "__ggsql_row_index__": 17,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T12:00:00.000Z",
+        "__ggsql_aes_pos2__": 5.775762569444445,
+        "__ggsql_aes_stroke__": "Water cooling 1",
+        "__ggsql_row_index__": 18,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T12:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.08353706634666666,
+        "__ggsql_aes_stroke__": "Water cooling 2",
+        "__ggsql_row_index__": 19,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.7168415635597222,
+        "__ggsql_aes_stroke__": "Elevator 1",
+        "__ggsql_row_index__": 20,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.4171876503591668,
+        "__ggsql_aes_stroke__": "Elevator 2",
+        "__ggsql_row_index__": 21,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 5.775256630318889,
+        "__ggsql_aes_stroke__": "Water cooling 1",
+        "__ggsql_row_index__": 22,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T13:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.08023094498250487,
+        "__ggsql_aes_stroke__": "Water cooling 2",
+        "__ggsql_row_index__": 23,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.6722387628902777,
+        "__ggsql_aes_stroke__": "Elevator 1",
+        "__ggsql_row_index__": 24,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.45848662340111107,
+        "__ggsql_aes_stroke__": "Elevator 2",
+        "__ggsql_row_index__": 25,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 5.781792066104166,
+        "__ggsql_aes_stroke__": "Water cooling 1",
+        "__ggsql_row_index__": 26,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T14:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.05481424710305556,
+        "__ggsql_aes_stroke__": "Water cooling 2",
+        "__ggsql_row_index__": 27,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.5606467633660095,
+        "__ggsql_aes_stroke__": "Elevator 1",
+        "__ggsql_row_index__": 28,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.340477911265,
+        "__ggsql_aes_stroke__": "Elevator 2",
+        "__ggsql_row_index__": 29,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 5.774010635066926,
+        "__ggsql_aes_stroke__": "Water cooling 1",
+        "__ggsql_row_index__": 30,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      },
+      {
+        "__ggsql_aes_pos1__": "2025-03-17T15:00:00.000Z",
+        "__ggsql_aes_pos2__": 0.03978781572166667,
+        "__ggsql_aes_stroke__": "Water cooling 2",
+        "__ggsql_row_index__": 31,
+        "__ggsql_source__": "__ggsql_layer_0__"
+      }
+    ]
+  }
+}

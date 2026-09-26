@@ -16,6 +16,7 @@ PROMPT_ENVIRONMENT = Environment(
 # Stable component names used in experiments; paths remain the file defaults.
 PROMPT_FILES = {
     "base.instructions": "base.md",
+    "few_shot.instructions": "capabilities/few_shot/instructions.md",
     "semantic_layer.instructions": "capabilities/semantic_layer/instructions.md",
     "catalog.instructions": "capabilities/catalog/instructions.md",
     "query.instructions": "capabilities/query/instructions.md",
