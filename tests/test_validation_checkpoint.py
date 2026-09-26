@@ -1,10 +1,15 @@
 import asyncio
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 from uuid import uuid4
 
+import httpx
+import pytest
 from pydantic_evals.reporting import ReportCase
 
+from src.agent.deps import Deps
+from src.agent.model_retry import ModelRetryTransport
 from src.validation.checkpoint import EvaluationCheckpoint
 from src.validation.config import BenchmarkRunConfig
 from src.validation.eval_models import (
@@ -14,7 +19,13 @@ from src.validation.eval_models import (
     CaseMetadata,
     TaskCategory,
 )
-from src.validation.runner import _copy_run_for_redo, _expand_attempts, evaluate
+from src.validation.lifecycle import LifecycleFactory
+from src.validation.runner import (
+    AgentTask,
+    _copy_run_for_redo,
+    _expand_attempts,
+    evaluate,
+)
 
 
 def _case(name: str) -> BenchmarkCase:
@@ -28,6 +39,84 @@ def _case(name: str) -> BenchmarkCase:
         ),
         expected_output=None,
     )
+
+
+def test_cancel_backoff_keeps_case_pending_and_resume_skips_completed(
+    tmp_path, monkeypatch
+) -> None:
+    import src.validation.runner as runner_module
+
+    monkeypatch.setattr(runner_module, "_experiment_metadata", lambda *_: {})
+    dataset = BenchmarkDataset(name="test", cases=[_case("done"), _case("pending")])
+    for case in dataset.cases:
+        case.inputs = case.name
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    checkpoint = EvaluationCheckpoint(
+        tmp_path / "checkpoint.json", name="test", experiment_metadata={}
+    )
+    waiting = asyncio.Event()
+    resumed = False
+    calls = []
+
+    def rate_limited(request):
+        waiting.set()
+        return httpx.Response(429, json={"error": {"code": "1302"}})
+
+    async def run(prompt, **_kwargs):
+        calls.append(prompt)
+        if prompt == "pending" and not resumed:
+            async with httpx.AsyncClient(
+                transport=ModelRetryTransport(
+                    httpx.MockTransport(rate_limited),
+                    max_attempts=None,
+                    retry_budget_seconds=None,
+                )
+            ) as client:
+                await client.get("https://model.invalid")
+        return SimpleNamespace(output="answer", usage=SimpleNamespace(tool_calls=0))
+
+    task = AgentTask(
+        agent=cast(Any, SimpleNamespace(run=run)),
+        deps=Deps(
+            spark=cast(Any, object()),
+            catalog=cast(Any, object()),
+            schema_name="bronze",
+            table_column_page_size=20,
+        ),
+        model=cast(Any, object()),
+        model_settings={},
+        usage_limits=cast(Any, object()),
+    )
+
+    async def cancel():
+        evaluation = asyncio.create_task(
+            dataset.evaluate(
+                task.__call__,
+                max_concurrency=1,
+                lifecycle=LifecycleFactory(artifacts, checkpoint),
+            )
+        )
+        await asyncio.wait_for(waiting.wait(), timeout=2)
+        evaluation.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.wait_for(evaluation, timeout=2)
+
+    asyncio.run(cancel())
+    assert checkpoint.completed_names == {"done"}
+    assert checkpoint.report.failures == []
+    resumed = True
+    report = evaluate(
+        dataset,
+        task,
+        "test",
+        BenchmarkRunConfig(dataset="test", max_concurrency=1),
+        artifacts,
+        checkpoint.path,
+    )
+    assert calls == ["done", "pending", "pending"]
+    assert [case.name for case in report.cases] == ["done", "pending"]
+    assert report.failures == []
 
 
 def test_expand_attempts_skips_individual_completed_repetitions() -> None:

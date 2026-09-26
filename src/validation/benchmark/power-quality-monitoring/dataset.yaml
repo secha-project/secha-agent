@@ -86,7 +86,7 @@ cases:
 - name: task_8
   inputs: I need days with complete data for a daily electricity-cost comparison.
     How many UTC calendar days have one non-null Finnish day-ahead price for every
-    hour from 2025-03-01 00:00:00 UTC to 2025-03-09 00:00:00 UTC?
+    hour from 2025-03-01 00:00:00 UTC (inclusive) to 2025-03-09 00:00:00 UTC (exclusive)?
     Return only the integer day count.
   metadata:
     case_id: 9dd89588-96e8-40bd-a242-2c511ccbb907
@@ -98,7 +98,7 @@ cases:
   evaluators: []
 - name: task_9
   inputs: I want to analyze three-phase short-term flicker for device_21 from 2025-03-05
-    00:00:00 UTC to 2025-03-06 00:00:00 UTC. What percentage of its records has usable
+    00:00:00 UTC (inclusive) to 2025-03-06 00:00:00 UTC (exclusive). What percentage of its records has usable
     readings for all three phases at once? Treat null values and -1 as unavailable,
     and round the result to two decimal places.
     Return only the percentage number on the 0–100 scale, without a percent sign.
@@ -125,7 +125,7 @@ cases:
   evaluators: []
 - name: task_11
   inputs: Give me all the data you have for device 156 for March 1, 2025 from 12:00
-    to 18:00 UTC.
+    to 18:00 UTC (start inclusive, end exclusive).
   metadata:
     case_id: 3161d9fd-ef2f-414a-9162-922bdfd991df
     query_path: artifacts/task_11/query.sql
@@ -138,7 +138,7 @@ cases:
   inputs: 'Get me the following power quality data:  frequency, supply voltage magnitude
     across the three phases, phase-to-phase voltages and total voltage
     distortion across the three phases; from the solar power plants in Marjamaki for
-    01.03.2025, 12:00 - 12:05 UTC in ascending order of time.'
+    01.03.2025, 12:00 - 12:05 UTC (start inclusive, end exclusive) in ascending order of time.'
   metadata:
     case_id: b61ec73c-4b9a-436c-a4dd-582cc53b644b
     query_path: artifacts/task_12/query.sql
@@ -151,7 +151,7 @@ cases:
   inputs: 'Get me the following power quality data:  frequency, supply voltage magnitude
     across the three phases, phase-to-phase voltages and total voltage
     distortion across the three phases; from all EV-charging stations for 01.03.2025,
-    12:00 - 12:05 UTC in ascending order of time, breaking ties by device identifier in ascending order.'
+    12:00 - 12:05 UTC (start inclusive, end exclusive) in ascending order of time, breaking ties by device identifier in ascending order.'
   metadata:
     case_id: cb7c7341-37ed-42b0-b028-c238ecd9d36f
     query_path: artifacts/task_13/query.sql
@@ -162,7 +162,7 @@ cases:
   evaluators: []
 - name: task_14
   inputs: I'm investigating a reported power-quality issue in the Electrix data from
-    2025-03-06 08:00:00 UTC to 2025-03-06 10:00:00 UTC. Which meters were active during
+    2025-03-06 08:00:00 UTC (inclusive) to 2025-03-06 10:00:00 UTC (exclusive). Which meters were active during
     that window? List each observed device identifier alongside its catalog description,
     ordered by identifier.
     Display a table and reproduce each catalog description verbatim.
@@ -177,7 +177,7 @@ cases:
 - name: task_15
   inputs: I'm preparing an hourly comparison of Kampusareena solar generation, Hervanta
     campus outdoor irradiance, and Finnish spot prices from 2025-03-05 00:00:00 UTC
-    to 2025-03-06 00:00:00 UTC. For each hour, show the hour start, the number of
+    (inclusive) to 2025-03-06 00:00:00 UTC (exclusive). For each hour, show the hour start, the number of
     minutes containing a solar active-power reading, the number containing a global-irradiance
     reading, and the number of complete, non-null Finnish price records at the hour
     start. Include all 24 hours in chronological order.
@@ -206,6 +206,7 @@ cases:
 - name: task_17
   inputs: What was the peak demand in kW over a rolling 15 minute window of the EV charging
     station in Kampusareena on March 1st 2025?
+    Use measurements from that UTC day only and include both endpoints of each rolling window.
     Return the power to four decimal places and the window-ending UTC time in HH:MM
     format.
   metadata:
@@ -236,7 +237,7 @@ cases:
   evaluators: []
 - name: task_19
   inputs: How heavily did Marjamäki battery storage system 1 operate from 12:00 to
-    16:00 UTC on 5 March 2025? Calculate the 50th, 90th, and 99th percentiles of its
+    16:00 UTC (start inclusive, end exclusive) on 5 March 2025? Calculate the 50th, 90th, and 99th percentiles of its
     absolute clock-aligned one-minute mean active power in kW. Average signed, non-null
     power readings within each minute before taking the absolute value. Use exact
     linearly interpolated percentiles and return the three values in that order, rounded
@@ -253,7 +254,7 @@ cases:
   evaluators: []
 - name: task_20
   inputs: I’m reviewing wind conditions for rooftop work at the Hervanta campus from
-    12:00 to 13:00 UTC on 24 March 2025. What was the average recorded wind direction
+    12:00 to 13:00 UTC (start inclusive, end exclusive) on 24 March 2025. What was the average recorded wind direction
     in degrees? Treat directions as points around a compass when averaging, use complete
     records with a non-null wind direction, report the result on a 0–360° scale, and
     round it to six decimal places. Return null if no average direction is defined.
@@ -268,8 +269,8 @@ cases:
 - name: task_21
   inputs: Get me 1-minute averages of the fundamental voltage in phase L1 and all
     of its harmonics for the solar power plant in the Kampusareena building from 01.03.2025,
-    12:00 - 17:00 in ascending order of time.
-    Display a table with each minute labeled by its UTC end time.
+    12:00 - 17:00 UTC (start inclusive, end exclusive) in ascending order of time.
+    Display a table with each minute labeled by its exclusive UTC end time.
   metadata:
     case_id: c4e85ffc-4104-49af-8254-5e3988b75f6b
     query_path: artifacts/task_21/query.sql
@@ -283,6 +284,7 @@ cases:
     5-minute rolling window differ by more than 13% of that window’s minimum power in the electric
     vehicle charging station at Kampusareena for March 1st 2025 (UTC). Group the identified
     measurements by device in ascending order of time.
+    Use measurements from that UTC day only and include both endpoints of each rolling window.
   metadata:
     case_id: 7d4e2969-7487-4256-af2a-f84cdb3c62de
     query_path: artifacts/task_22/query.sql
@@ -296,6 +298,7 @@ cases:
     exceeded 0.25 on at least one phase in each of at least two consecutive measurements
     during March 2025 (UTC). Include the device identifier together with the start and end
     of the flicker peak. Order by device in ascending order of flicker peak start time.
+    Use the first and last qualifying measurement timestamps as the inclusive peak boundaries.
   metadata:
     case_id: c5530243-de20-4d3c-b568-8158b94d2ae8
     query_path: artifacts/task_23/query.sql
@@ -306,8 +309,8 @@ cases:
   evaluators: []
 - name: task_24
   inputs: I want to know when the TTY Lempäälä EV charging station is busiest. For
-    each UTC date from 3 through 9 March 2025, show its mean active power during 06:00–10:00
-    and 16:00–20:00, together with the absolute difference between them, in kW. Order
+    each UTC date from 3 through 9 March 2025 (both dates inclusive), show its mean active power during 06:00–10:00
+    and 16:00–20:00 (start inclusive, end exclusive for each window), together with the absolute difference between them, in kW. Order
     the results chronologically.
   metadata:
     case_id: 3d55d21b-4e78-44ef-9c5d-29cea7203a7f
@@ -319,10 +322,10 @@ cases:
   evaluators: []
 - name: task_25
   inputs: I can shift a three-hour electricity load once per day. For each UTC date
-    from 22 through 28 March 2025, find the three consecutive Finnish day-ahead price
+    from 22 through 28 March 2025 (both dates inclusive), find the three consecutive Finnish day-ahead price
     hours with the lowest mean price. Use complete, non-null hourly records, retain
-    negative prices, and keep each window within one date. Return the date, window
-    start, exclusive window end, and three-hour mean price in EUR/MWh. Choose the
+    negative prices, and keep each window within one date. Return the date, inclusive
+    window start, exclusive window end, and three-hour mean price in EUR/MWh. Choose the
     earliest start if tied and order the table by date.
   metadata:
     case_id: 88619a31-5dc0-4435-95c3-6f5877561467
@@ -349,7 +352,7 @@ cases:
   evaluators: []
 - name: task_27
   inputs: Which times of the week tended to have the lowest and highest Finnish day-ahead
-    electricity prices during the four full weeks from 3 through 30 March 2025 (UTC)?
+    electricity prices during the four full weeks from 3 through 30 March 2025 (UTC, both dates inclusive)?
     Show the mean price for each weekday and UTC hour as a heatmap, with hours 0–23
     on the x-axis, Monday–Sunday on the y-axis, and price in EUR/MWh as color. Average
     the available complete, non-null hourly price records.
@@ -364,7 +367,8 @@ cases:
   evaluators: []
 - name: task_28
   inputs: Plot the rolling 5-minute standard deviation of frequency at the EV charging
-    station in Kruunu Herkku Oy for March 1st 2025 from 13:00 to 14:00 UTC.
+    station in Kruunu Herkku Oy for March 1st 2025 from 13:00 to 14:00 UTC (start inclusive, end exclusive).
+    For each plotted time, include readings from exactly five minutes earlier through that time, including both endpoints.
   metadata:
     case_id: 0945a37d-2465-4cac-a95e-a2219e683cf9
     query_path: artifacts/task_28/query.sql
@@ -376,7 +380,7 @@ cases:
   evaluators: []
 - name: task_29
   inputs: Which individual voltage harmonics were most prominent across phases at
-    Kampusareena’s ventilation system from 12:00 to 13:00 UTC on 17 March 2025? Show
+    Kampusareena’s ventilation system from 12:00 to 13:00 UTC (start inclusive, end exclusive) on 17 March 2025? Show
     a grouped bar chart of the mean recorded harmonic percentage for orders 2–20,
     with harmonic order on the x-axis, mean percentage on the y-axis, and adjacent
     bars colored by phase. Average non-null readings separately for each phase and
@@ -392,7 +396,7 @@ cases:
   evaluators: []
 - name: task_30
   inputs: 'I want to see how power in Marjamäki''s battery storage system 2 fluctuated
-    in positive and negative directions from 12:00 to 16:00 UTC on 5 March 2025. Plot
+    in positive and negative directions from 12:00 to 16:00 UTC (start inclusive, end exclusive) on 5 March 2025. Plot
     two aligned time series of five-minute mean active power: one for the positive
     part of each non-null reading and one for the negative part. Put the interval
     start on the x-axis, signed power in kW on the y-axis.'
@@ -420,7 +424,7 @@ cases:
 - name: task_32
   inputs: At TTY Lempäälä, what is the correlation between the charging power and
     voltage distortion across the three phases on March 2, 2025 between 12:00 and
-    17:00 UTC.
+    17:00 UTC (start inclusive, end exclusive).
     Return three decimal coefficients in L1, L2, L3 order, rounded to six decimal
     places, using '-' for negative values.
   metadata:
@@ -448,7 +452,7 @@ cases:
     - 16.56679385556739
   evaluators: []
 - name: task_34
-  inputs: During 08:00–16:00 UTC on 24 March 2025, what percentage of Kampusareena’s
+  inputs: During 08:00–16:00 UTC (start inclusive, end exclusive) on 24 March 2025, what percentage of Kampusareena’s
     electricity demand could be supplied by its solar generation at the same time?
     Use matched, clock-aligned five-minute means and cap the solar contribution at
     demand in each interval. Report one percentage.
@@ -464,7 +468,7 @@ cases:
   evaluators: []
 - name: task_35
   inputs: What were the Pearson correlations between outdoor wind speed and Kampusareena
-    ventilation power from 08:00 to 12:00 UTC on 17 March 2025, first within the same
+    ventilation power from 08:00 to 12:00 UTC (start inclusive, end exclusive for both series) on 17 March 2025, first within the same
     minute and then with ventilation power five minutes later? Use matched one-minute
     means and return the two correlations in that order.
     Write both coefficients in the final answer to six decimal places, using '-'
@@ -485,6 +489,7 @@ cases:
     1st 2025 (UTC). Only identify measurements where the preceding measurement did not meet
     these conditions.  Provide the potential charging start time, measured value,
     rolling average, and increase in kW, ordered chronologically.
+    Include readings exactly ten minutes before the current measurement in its rolling window; exclude the current measurement itself.
     Display a table with these columns even if there are no matching rows.
   metadata:
     case_id: d5884b41-e3f7-4ef5-bb2e-5c445e9743e1
@@ -499,6 +504,7 @@ cases:
     Treat consecutive measurements below 0.5 kW as one idle period, provided it lasted
     at least 15 minutes. List the start time, end time, duration, and average consumption
     of each period in chronological order.
+    Use the first and last below-threshold measurement timestamps as the inclusive period boundaries.
     Display a table with duration in completed whole minutes and average consumption
     in kW.
   metadata:
@@ -512,7 +518,7 @@ cases:
 - name: task_38
   inputs: In Kampusareena's EV charging station on 5 March 2025 (UTC), how did EV charging
     activity vary with electricity prices over the course of the day? Present a
-    chronological table with each hour’s end time, mean charging power in W, and
+    chronological table with each hour’s exclusive end time, mean charging power in W, and
     electricity price in EUR/MWh.
   metadata:
     case_id: 1889847e-6b16-4979-afe9-52cc1ea559ab
@@ -525,7 +531,7 @@ cases:
 - name: task_39
   inputs: Identify 15-minute intervals in March 2, 2025 where at least 25% of the
     energy consumption in the Kampusareena's EV charging station could be covered
-    by nearby solar power generation. Provide the start and end of the interval as
+    by nearby solar power generation. Provide the inclusive start and exclusive end of the interval as
     columns along with the total energy for each during the interval.
     Estimate net energy from each interval's mean signed power.
     Display a table in chronological order, with energy in kWh and interval boundaries
@@ -553,7 +559,7 @@ cases:
   evaluators: []
 - name: task_41
   inputs: How did available global irradiance relate to solar generation at Kampusareena
-    from 08:00 to 16:00 UTC on 24 March 2025? Show a scatter plot of clock-aligned
+    from 08:00 to 16:00 UTC (start inclusive, end exclusive) on 24 March 2025? Show a scatter plot of clock-aligned
     five-minute means, with irradiance in W/m² on the x-axis and the positive part
     of mean active power in kW on the y-axis, treating a negative power mean as zero.
     Color points by UTC hour and include only intervals where both means are available.
@@ -581,7 +587,7 @@ cases:
   evaluators: []
 - name: task_43
   inputs: How did the hourly mean active power of Kampusareena’s two elevators and
-    two water-cooling machines change during the eight hours from 08:00 to 16:00 UTC
+    two water-cooling machines change during the eight hours from 08:00 to 16:00 UTC (start inclusive, end exclusive)
     on 17 March 2025? Show the four devices as separate lines on a shared axis, in
     kW.
   metadata:
@@ -626,6 +632,7 @@ cases:
     meter follow the same pattern? Compare their absolute voltage harmonic distortion
     in aligned, non-overlapping three-second windows from 01:08 to 01:10 UTC, and
     return the correlations for each phase.
+    Select windows whose end times are after 01:08 UTC and at or before 01:10 UTC.
     Display a single-row table with separate columns for the unrounded L1, L2, and
     L3 correlations.
   metadata:
@@ -638,12 +645,13 @@ cases:
   evaluators: []
 - name: task_47
   inputs: Unusual active-power variation was observed at Kampusareena’s EV charging
-    station from 07:10 to 07:12 UTC on 27 March 2025. Did RMS voltage at the same
+    station from 07:10 to 07:12 UTC (start inclusive, end exclusive) on 27 March 2025. Did RMS voltage at the same
     meter change in a related way during the following five minutes?
     Correlate changes between consecutive measurements of active power and RMS voltage.
     For each phase,
     return the whole-second delay with the strongest inverse correlation and the correlation
     value. Choose the earliest delay if tied.
+    Consider delays from 1 to 300 seconds, both inclusive.
     Display a table with phase, delay in integer seconds, and unrounded correlation,
     ordered by phase (L1, L2, L3).
   metadata:
@@ -660,6 +668,7 @@ cases:
     from its 1–7 March baseline by at least 50%? Assess each phase separately, using
     the mean of the seven baseline days. Return date, quantity, phase, and daily-to-baseline
     factor, rounded to four decimal places and ordered by date, quantity, and phase.
+    Both date ranges include their first and last dates. Assign a ten-minute interval ending at midnight to the preceding UTC date.
     Display a table using YYYY-MM-DD dates, 'voltage' or 'current' for quantity,
     and 'L1', 'L2', or 'L3' for phase.
   metadata:
@@ -671,7 +680,7 @@ cases:
     ordered: true
   evaluators: []
 - name: task_49
-  inputs: During 24–30 March 2025 (UTC), how closely did the recorded fundamental
+  inputs: During 24–30 March 2025 (UTC, both dates inclusive), how closely did the recorded fundamental
     apparent power at Kampusareena’s EV charging station agree with its theoretical
     value? For each phase, report the mean absolute discrepancy in volt-amperes, rounded
     to four decimal places. Use all finite observations, including zeros, without
@@ -686,7 +695,7 @@ cases:
     ordered: true
   evaluators: []
 - name: task_50
-  inputs: During 24–30 March 2025 (UTC), which meters in Kampusareena use a different
+  inputs: During 24–30 March 2025 (UTC, both dates inclusive), which meters in Kampusareena use a different
     energy-flow sign convention from the majority? Return only the meter identifiers,
     in alphabetical order.
     Display the identifiers as a single-column table.
@@ -700,7 +709,7 @@ cases:
   evaluators: []
 - name: task_51
   inputs: Each transformer supplying tenants and maintenance in Kampusareena has a
-    nominal current of 1443.4 A. During 10–16 March 2025 (UTC), when was each transformer’s
+    nominal current of 1443.4 A. During 10–16 March 2025 (UTC, both dates inclusive), when was each transformer’s
     current highest after accounting for harmonic effects? For each transformer, return
     the timestamp and phase of the maximum, the equivalent current, and its signed
     difference from nominal current in amperes to one decimal place. Include all ties
@@ -730,7 +739,7 @@ cases:
     ordered: true
   evaluators: []
 - name: task_53
-  inputs: During 1–7 March 2025 (UTC), at which Electrix meter and phase was voltage
+  inputs: During 1–7 March 2025 (UTC, both dates inclusive), at which Electrix meter and phase was voltage
     distortion outside the recorded harmonics most evident? Return the meter, phase,
     and mean absolute discrepancy in volts.
     Display a single-row table with the device identifier, phase, and unrounded
@@ -745,8 +754,8 @@ cases:
   evaluators: []
 - name: task_54
   inputs: What time lag best aligns the frequency readings at Kampusareena’s EV charging
-    station and Marjamäki’s solar power plant 01 during 24–26 March 2025 (UTC)? Consider
-    lags from −10 to +10 seconds. Report the lag in seconds and the corresponding
+    station and Marjamäki’s solar power plant 01 during 24–26 March 2025 (UTC, both dates inclusive)? Consider
+    lags from −10 to +10 seconds, both inclusive. Report the lag in seconds and the corresponding
     correlation to six decimal places, with positive lag meaning Marjamäki follows
     Kampusareena.
     Display a single-row table with an integer lag and the six-decimal correlation.
@@ -762,6 +771,7 @@ cases:
   inputs: At the TTY Lempäälä 1 EV charging station on 24 March 2025 (UTC), what was
     the daily mean of the 10-minute voltage THD for each phase? Return the phase and
     mean magnitude in volts, rounded to four decimal places and ordered by phase.
+    Select ten-minute intervals ending after 24 March 00:00 UTC and at or before 25 March 00:00 UTC.
     Display one row per phase in a table.
   metadata:
     case_id: 968808f7-503e-4c5a-a859-597dfbac2d56

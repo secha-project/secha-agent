@@ -2,6 +2,9 @@ agent:
   model_provider: openai
   model_name: gpt-6-luna
   request_limit: 50
+  model_request_max_attempts: null
+  model_request_retry_budget_seconds: null
+  model_request_min_interval_seconds: 5
   enabled_capabilities:
     - catalog
     - query
@@ -13,4 +16,4 @@ agent:
 dataset: power-quality-monitoring
 repetitions: 5
 max_concurrency: 4
-task_max_attempts: 3
+task_max_attempts: 1

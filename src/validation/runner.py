@@ -66,7 +66,7 @@ class AgentTask:
     usage_limits: UsageLimits
     capture_messages: bool = False
 
-    def __call__(self, prompt: str) -> str:
+    async def __call__(self, prompt: str) -> str:
         artifacts = ArtifactCollector()
         run_deps = replace(
             self.deps,
@@ -80,7 +80,7 @@ class AgentTask:
             else nullcontext() as messages
         ):
             try:
-                result = self.agent.run_sync(
+                result = await self.agent.run(
                     prompt,
                     deps=run_deps,
                     model=self.model,
@@ -376,12 +376,14 @@ def evaluate(
     partial_report: BenchmarkReport | None = None
     if pending_dataset.cases:
         partial_report = pending_dataset.evaluate_sync(
-            task,
+            # Evals detects coroutine functions, but not async callable objects.
+            # Keep model requests on the cancellable evaluation event loop.
+            task.__call__ if isinstance(task, AgentTask) else task,
             name=run_name,
             max_concurrency=run_config.max_concurrency,
             retry_task=RetryConfig(
                 stop=stop_after_attempt(run_config.task_max_attempts),
-                wait=wait_exponential(multiplier=1, min=1, max=2),
+                wait=wait_exponential(multiplier=15, min=15, max=60),
                 retry=retry_if_exception_type(ModelAPIError),
                 reraise=True,
             ),

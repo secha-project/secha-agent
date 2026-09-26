@@ -22,7 +22,7 @@ class BenchmarkRunConfig(BaseModel):
     dataset: str
     repetitions: int = Field(default=1, ge=1)
     max_concurrency: int = Field(default=4, ge=1)
-    task_max_attempts: int = Field(default=3, ge=1)
+    task_max_attempts: int = Field(default=1, ge=1)
 
     @field_validator("agent", mode="before")
     @classmethod

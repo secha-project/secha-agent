@@ -24,7 +24,7 @@ def normalize_text(value: str) -> str:
 
 @dataclass
 class ValidateTextOutput(Evaluator[str, BenchmarkOutput, CaseMetadata]):
-    """Compare a sole text answer exactly; otherwise require distinct bounded matches."""
+    """Require distinct bounded matches for expected text within the response."""
 
     def evaluate(
         self, ctx: EvaluatorContext[str, BenchmarkOutput, CaseMetadata]
@@ -48,9 +48,6 @@ class ValidateTextOutput(Evaluator[str, BenchmarkOutput, CaseMetadata]):
         ]
         if not all(expected_texts):
             return False
-
-        if len(expected_output) == 1 and len(expected_texts) == 1:
-            return actual_text == expected_texts[0]
 
         # Prefer longer phrases at the same position. A single scan makes matches
         # non-overlapping; Counter preserves repeated expected occurrences.

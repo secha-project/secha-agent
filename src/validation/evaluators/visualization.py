@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from pydantic_ai import Agent, BinaryContent, ModelSettings
 from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIResponsesModelSettings
-from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_evals.evaluators import (
     EvaluationReason,
     Evaluator,
@@ -15,6 +14,7 @@ from pydantic_evals.evaluators import (
 )
 
 from src.agent.config import OpenAIProviderConfig
+from src.agent.model_retry import RequestPacer, RetryingOpenAIProvider
 
 from ..eval_models import BenchmarkOutput, CaseMetadata, VisualizationOutput
 
@@ -22,6 +22,7 @@ _RUBRIC = (
     Path(__file__).with_name("visualization_rubric.md").read_text(encoding="utf-8")
 )
 _DEFAULT_JUDGE_MODEL = "gpt-6-luna"
+_JUDGE_REQUEST_PACER = RequestPacer(min_interval_seconds=5)
 
 
 class VisualizationEvaluation(BaseModel):
@@ -101,7 +102,9 @@ class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]
     artifact_base_path: Path = Path()
     model: Model | str = _DEFAULT_JUDGE_MODEL
     model_settings: ModelSettings = field(
-        default_factory=lambda: OpenAIResponsesModelSettings(openai_reasoning_effort="max")
+        default_factory=lambda: OpenAIResponsesModelSettings(
+            openai_reasoning_effort="max"
+        )
     )
 
     async def evaluate(
@@ -140,8 +143,11 @@ class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]
             provider_config = OpenAIProviderConfig()
             model = OpenAIResponsesModel(
                 model,
-                provider=OpenAIProvider(
+                provider=RetryingOpenAIProvider(
                     api_key=provider_config.api_key.get_secret_value(),
+                    max_attempts=None,
+                    retry_budget_seconds=None,
+                    pacer=_JUDGE_REQUEST_PACER,
                 ),
             )
 

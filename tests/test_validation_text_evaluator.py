@@ -43,25 +43,51 @@ def test_normalization_preserves_identifiers_and_meaningful_punctuation(
         ("EV-charging station", "EV-charging station", True),
         ("EV-charging station", " EV-CHARGING\nstation ", True),
         ("EV-charging station", "EV-charging **station**", True),
-        ("EV-charging station", "It is not an EV-charging station.", False),
-        ("EV-charging station", "individual EV-charger or EV-charging station", False),
+        (
+            "EV-charging station",
+            "**EV-charging station**\n\nThe metadata describes eight AC charging spots.",
+            True,
+        ),
         ("EV-charging station", "individual EV-charger", False),
         ("EV-charging station", "charging station", False),
         ("kWh", "`kWh`", True),
-        ("kWh", "kWh/h", False),
-        ("kWh", "The unit is kWh", False),
+        ("kWh", "The unit is kWh", True),
         ("2025-02-28 to 2025-03-31", "2025-02-28 to 2025-03-31", True),
-        ("2025-02-28 to 2025-03-31", "Not 2025-02-28 to 2025-03-31", False),
+        (
+            "2025-02-28 to 2025-03-31",
+            (
+                "Earliest: 2025-02-28 21:59:59.774 UTC. "
+                "Latest: 2025-03-31 23:59:59.788 UTC.\n\n"
+                "**Answer: 2025-02-28 to 2025-03-31**"
+            ),
+            True,
+        ),
         ("device_21", "device_210", False),
         ("device_21", "", False),
         (" ", "", False),
     ],
 )
-def test_single_text_only_answer_requires_complete_match(
+def test_single_text_answer_allows_surrounding_prose(
     expected, output, accepted
 ) -> None:
     ctx = SimpleNamespace(expected_output=[TextOutput(text=[expected])], output=output)
     assert ValidateTextOutput().evaluate(cast(Any, ctx)) is accepted
+
+
+@pytest.mark.parametrize(
+    ("expected", "output"),
+    [
+        ("EV-charging station", "It is not an EV-charging station."),
+        ("EV-charging station", "individual EV-charger or EV-charging station"),
+        ("kWh", "kWh/h"),
+        ("2025-02-28 to 2025-03-31", "Not 2025-02-28 to 2025-03-31"),
+    ],
+)
+def test_presence_matching_does_not_interpret_surrounding_context(
+    expected, output
+) -> None:
+    ctx = SimpleNamespace(expected_output=[TextOutput(text=[expected])], output=output)
+    assert ValidateTextOutput().evaluate(cast(Any, ctx)) is True
 
 
 @pytest.mark.parametrize(

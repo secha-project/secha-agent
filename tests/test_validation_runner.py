@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -80,7 +81,7 @@ def test_agent_task_uses_fresh_output_state_for_each_run(
     table_output_stores = []
     recorded_metrics: list[tuple[str, int]] = []
 
-    def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
+    async def run(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         context = kwargs["deps"].artifacts
         contexts.append(context)
         table_output_stores.append(kwargs["deps"].table_outputs)
@@ -94,15 +95,15 @@ def test_agent_task_uses_fresh_output_state_for_each_run(
     )
 
     task = AgentTask(
-        agent=cast(Any, SimpleNamespace(run_sync=run_sync)),
+        agent=cast(Any, SimpleNamespace(run=run)),
         deps=deps,
         model=cast(Any, object()),
         model_settings=cast(Any, object()),
         usage_limits=cast(Any, object()),
     )
 
-    assert task("first") == "answer"
-    assert task("second") == "answer"
+    assert asyncio.run(task("first")) == "answer"
+    assert asyncio.run(task("second")) == "answer"
 
     assert contexts[0] is not contexts[1]
     assert template_artifacts not in contexts
@@ -122,7 +123,7 @@ def test_agent_task_writes_only_the_artifacts_from_that_run(
     )
     written: list[tuple[Artifact, ...]] = []
 
-    def run_sync(_prompt: str, **kwargs: Any) -> SimpleNamespace:
+    async def run(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         artifact = make_table_artifact([{"value": 1}])
         kwargs["deps"].artifacts.publish(artifact)
         return SimpleNamespace(output="answer", usage=SimpleNamespace(tool_calls=0))
@@ -133,17 +134,74 @@ def test_agent_task_writes_only_the_artifacts_from_that_run(
         lambda artifacts: written.append(artifacts),
     )
     task = AgentTask(
-        agent=cast(Any, SimpleNamespace(run_sync=run_sync)),
+        agent=cast(Any, SimpleNamespace(run=run)),
         deps=deps,
         model=cast(Any, object()),
         model_settings=cast(Any, object()),
         usage_limits=cast(Any, object()),
     )
 
-    assert task("question") == "answer"
+    assert asyncio.run(task("question")) == "answer"
     assert len(written) == 1
     assert len(written[0]) == 1
     assert isinstance(written[0][0], TableArtifact)
+
+
+def test_concurrent_benchmark_cases_share_one_model_event_loop(monkeypatch, tmp_path):
+    from src.validation.config import BenchmarkRunConfig
+    from src.validation.eval_models import BenchmarkCase, BenchmarkDataset
+
+    monkeypatch.setattr(runner_module, "_experiment_metadata", lambda *_: {})
+    loops = []
+    active = 0
+    peak_active = 0
+
+    async def run(_prompt, **_kwargs):
+        nonlocal active, peak_active
+        loops.append(asyncio.get_running_loop())
+        active += 1
+        peak_active = max(active, peak_active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return SimpleNamespace(output="answer", usage=SimpleNamespace(tool_calls=0))
+
+    task = AgentTask(
+        agent=cast(
+            Any,
+            SimpleNamespace(
+                run=run,
+                run_sync=lambda *args, **kwargs: asyncio.run(run(*args, **kwargs)),
+            ),
+        ),
+        deps=Deps(
+            spark=cast(Any, object()),
+            catalog=cast(Any, object()),
+            schema_name="bronze",
+            table_column_page_size=20,
+        ),
+        model=cast(Any, object()),
+        model_settings={},
+        usage_limits=cast(Any, object()),
+    )
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    report = runner_module.evaluate(
+        BenchmarkDataset(
+            name="test",
+            cases=[
+                BenchmarkCase(name=f"case_{n}", inputs="question") for n in range(4)
+            ],
+        ),
+        task,
+        "test",
+        BenchmarkRunConfig(dataset="test", max_concurrency=4),
+        artifacts,
+        tmp_path / "checkpoint.json",
+    )
+    assert len(report.cases) == 4
+    assert report.failures == []
+    assert len(set(loops)) == 1
+    assert peak_active == 4
 
 
 def test_resume_rejects_invalid_checkpoint_before_external_setup(

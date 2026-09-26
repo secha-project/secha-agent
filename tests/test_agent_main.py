@@ -62,6 +62,7 @@ def test_agent_config_loads_only_the_selected_provider_from_environment(
     ).create_model()
     assert qwen_model.model_name == "Qwen3.8-27B-AIC"
     assert str(qwen_model.client.base_url) == "https://tuni.example"
+    assert qwen_model.client.max_retries == 0
     assert qwen_model.profile["ignore_streamed_leading_whitespace"] is True
     assert not config.create_model().profile.get("ignore_streamed_leading_whitespace")
 
