@@ -12,7 +12,7 @@ a config stem or filename, for example glm-5.3__baseline or its .yaml filename.
   bash scripts/run_benchmarks.sh --skip glm-5.3__baseline
   bash scripts/run_benchmarks.sh --skip glm-5.3__baseline --dry-run
 
-Each run prints a numbered banner and prefixes its output with the config name.
+Each run prints a numbered banner and preserves its live progress display.
 Live runs save separate logs under benchmark-results/batch-logs/. The batch stops
 on the first failed command. --dry-run validates only; it creates no run logs.
 USAGE
@@ -114,11 +114,13 @@ for current_config in "${pending_configs[@]}"; do
   fi
   printf '======================================================================\n\n'
 
-  # -u streams Python output promptly; pipefail retains runner failures through
-  # awk/tee. Prefixes keep the active config visible amid retries and warnings.
-  if "${command[@]}" 2>&1 |
-    awk -v prefix="[$position/$total][$current_config] " '{ print prefix $0; fflush() }' |
-    tee "$log_file"; then
+  # tee makes Python's stdout a pipe. Tell Rich the destination is still a
+  # terminal so its live progress keeps refreshing. Forward raw output: adding
+  # line prefixes would buffer and disrupt cursor updates without newlines.
+  if [[ -t 1 ]]; then
+    command=(env TTY_COMPATIBLE=1 TTY_INTERACTIVE=1 "${command[@]}")
+  fi
+  if "${command[@]}" 2>&1 | tee "$log_file"; then
     elapsed=$((SECONDS - started))
     printf '\n[%d/%d] DONE: %s (%dm %02ds)\n' \
       "$position" "$total" "$current_config" "$((elapsed / 60))" "$((elapsed % 60))"

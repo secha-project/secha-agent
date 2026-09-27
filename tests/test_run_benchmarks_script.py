@@ -2,9 +2,13 @@
 
 import json
 import os
+import select
 import shutil
+import signal
 import subprocess
 import sys
+import textwrap
+import time
 from pathlib import Path
 
 import pytest
@@ -73,12 +77,12 @@ def test_skip_completed_config_and_label_each_run_and_log(batch_workspace):
     assert config_names(calls) == ["beta", "gamma"]
     assert "[1/2] RUNNING: beta" in result.stdout
     assert "[2/2] RUNNING: gamma" in result.stdout
-    assert "[1/2][beta] model output" in result.stdout
-    assert "[2/2][gamma] retry warning" in result.stdout
+    assert result.stdout.count("model output") == 2
+    assert result.stdout.count("retry warning") == 2
     assert "[2/2] DONE: gamma" in result.stdout
     logs = sorted(root.glob("benchmark-results/batch-logs/*/*.log"))
     assert [path.name for path in logs] == ["01_beta.log", "02_gamma.log"]
-    assert "[1/2][beta] retry warning" in logs[0].read_text()
+    assert "retry warning" in logs[0].read_text()
     assert all("-u" in call and "--dry-run" not in call for call in calls)
 
 
@@ -117,3 +121,73 @@ def test_skipping_every_config_is_a_noop(batch_workspace):
     assert "No configurations remain" in result.stdout
     assert calls == []
     assert not (root / "benchmark-results").exists()
+
+
+def test_terminal_shows_rich_progress_before_run_finishes(batch_workspace):
+    root, _ = batch_workspace
+    gate = root / "finish-progress"
+    (root / "bin/uv").write_text(
+        f"#!{sys.executable}\n"
+        + textwrap.dedent("""
+            import os
+            import time
+            from pathlib import Path
+            from rich.progress import Progress, TextColumn
+
+            with Progress(
+                TextColumn("attempts {task.completed}/{task.total}"),
+                auto_refresh=False,
+            ) as progress:
+                task = progress.add_task("attempts", total=2)
+                progress.update(task, advance=1, refresh=True)
+                deadline = time.monotonic() + 10
+                while not Path(os.environ["BATCH_PROGRESS_GATE"]).exists():
+                    if time.monotonic() > deadline:
+                        raise TimeoutError("Progress was not visible before completion")
+                    time.sleep(0.01)
+                progress.update(task, advance=1, refresh=True)
+            """)
+    )
+    master, slave = os.openpty()
+    env = os.environ | {
+        "PATH": f"{root / 'bin'}{os.pathsep}{os.environ['PATH']}",
+        "TERM": "xterm-256color",
+        "TTY_COMPATIBLE": "0",  # The runner must detect its terminal destination.
+        "TTY_INTERACTIVE": "0",
+        "BATCH_PROGRESS_GATE": str(gate),
+    }
+    with subprocess.Popen(
+        [
+            "bash",
+            str(root / "scripts/run_benchmarks.sh"),
+            "--skip",
+            "alpha",
+            "--skip",
+            "gamma",
+        ],
+        cwd=root.parent,
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=slave,
+        stderr=slave,
+        start_new_session=True,
+    ) as process:
+        os.close(slave)
+        output = b""
+        try:
+            deadline = time.monotonic() + 5
+            while b"attempts 1/2" not in output and time.monotonic() < deadline:
+                if select.select([master], [], [], 0.1)[0]:
+                    output += os.read(master, 65536)
+            assert b"attempts 1/2" in output, output.decode(errors="replace")
+            assert process.poll() is None  # An in-flight update, not final output.
+            gate.touch()
+            assert process.wait(timeout=5) == 0
+        finally:
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait(timeout=5)
+            os.close(master)
+    log = next(root.glob("benchmark-results/batch-logs/*/*.log")).read_bytes()
+    assert b"attempts 1/2" in log
+    assert b"attempts 2/2" in log

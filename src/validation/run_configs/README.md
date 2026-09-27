@@ -144,9 +144,10 @@ Repeat `--skip CONFIG` for any other finished configurations. Skips are explicit
 the script does not infer completion from old reports or automatically resume
 partial runs. It preserves the repetition settings in each YAML file.
 
-Numbered banners show the active config, start time and log path. Every output
-line includes the current config name; completion banners include elapsed time.
-Separate per-config logs are saved in `benchmark-results/batch-logs/`.
+Numbered banners show the active config, start time and log path. Each run keeps
+its live progress display when launched in a terminal; completion banners include
+elapsed time. Separate per-config logs are saved in `benchmark-results/batch-logs/`.
+Logs from terminal runs include the progress display's terminal control sequences.
 The script stops if a command fails and can be invoked from any directory.
 
 The base install includes benchmark dependencies. Streamlit and publication
