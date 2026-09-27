@@ -13,6 +13,6 @@ agent:
     - few_shot
 
 dataset: power-quality-monitoring
-repetitions: 5
+repetitions: 3
 max_concurrency: 4
 task_max_attempts: 1

@@ -2,9 +2,10 @@
 
 The 16 experiment configs cover four models and every combination of few-shot
 tool examples and semantic-layer access. Each config uses the complete
-`power-quality-monitoring` dataset, **5 repetitions**, and concurrency **4**.
-With 55 tasks, that
-is 275 scored attempts per config and 4,400 across the matrix.
+`power-quality-monitoring` dataset and concurrency **4**. The completed
+`glm-5.3__baseline` configuration retains **5 repetitions** (275 attempts).
+The remaining 15 configurations use **3 repetitions** each (165 attempts),
+giving **2,475 remaining attempts** and 2,750 across the matrix.
 
 Transient model failures are retried on the individual HTTP request, preserving
 the current conversation and successful tool calls. Matrix configs keep retrying
@@ -90,7 +91,8 @@ Every root has the same four suffixes:
 The full filename is `ROOT__SUFFIX.yaml`, for example
 `gpt-6-sol__few_shot_semantic_layer.yaml`. The generators split at the final
 `__`; keep both factors in one suffix. Matching roots must keep the same model,
-dataset, tasks, repetitions, and suffix set for comparisons.
+dataset, tasks, and suffix set for comparisons. Repetition counts are recorded
+per run; use k ≤ 3 when comparing pass@k across this matrix.
 
 All variants enable `catalog`, `query`, `table_outputs`, and `visualization`.
 The `few_shot` capability adds two inventory examples to each active tool's
@@ -131,6 +133,20 @@ bash scripts/run_benchmarks.sh --dry-run
 ```
 
 Run every YAML config sequentially with `bash scripts/run_benchmarks.sh`.
+To run the remaining 15 configs after GLM baseline finishes:
+
+```bash
+bash scripts/run_benchmarks.sh --skip glm-5.3__baseline
+```
+
+Add `--dry-run` to validate that queue without model/database calls or new logs.
+Repeat `--skip CONFIG` for any other finished configurations. Skips are explicit;
+the script does not infer completion from old reports or automatically resume
+partial runs. It preserves the repetition settings in each YAML file.
+
+Numbered banners show the active config, start time and log path. Every output
+line includes the current config name; completion banners include elapsed time.
+Separate per-config logs are saved in `benchmark-results/batch-logs/`.
 The script stops if a command fails and can be invoked from any directory.
 
 The base install includes benchmark dependencies. Streamlit and publication
