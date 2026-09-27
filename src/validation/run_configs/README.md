@@ -155,6 +155,18 @@ these logs. The terminal still displays live progress and diagnostic output.
 Standalone runs can opt in with `--progress-log PATH`.
 The script stops if a command fails and can be invoked from any directory.
 
+To view the latest status log in a browser, run in a separate terminal:
+
+```bash
+python3 scripts/serve_benchmark_logs.py
+```
+
+Open `http://localhost:8501`. The page refreshes every five seconds and follows the
+most recently updated run log automatically. Pass a log path to watch one specific
+file. Add `--host 0.0.0.0` to make the viewer reachable from another machine; the
+viewer has no authentication. It uses only Python's standard library, shows up to
+200 recent lines, and does not write HTTP access logs.
+
 The base install includes benchmark dependencies. Streamlit and publication
 plotting are optional (`--group app` and `--group plots` respectively). See the
 [installation profiles](../../../README.md#installation-profiles) for cache
