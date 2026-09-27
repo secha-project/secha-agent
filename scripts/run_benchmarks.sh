@@ -13,8 +13,9 @@ a config stem or filename, for example glm-5.3__baseline or its .yaml filename.
   bash scripts/run_benchmarks.sh --skip glm-5.3__baseline --dry-run
 
 Each run prints a numbered banner and preserves its live progress display.
-Live runs save separate logs under benchmark-results/batch-logs/. The batch stops
-on the first failed command. --dry-run validates only; it creates no run logs.
+Live runs save compact status logs under benchmark-results/batch-logs/, with
+progress once per minute. The batch stops on the first failed command.
+--dry-run validates only; it creates no run logs.
 USAGE
 }
 
@@ -90,7 +91,14 @@ fi
 batch_started=$SECONDS
 position=0
 current_config=""
-trap 'printf "\nInterrupted while running %s. Batch stopped.\n" "$current_config" >&2; exit 130' INT
+on_interrupt() {
+  printf '\nInterrupted while running %s. Batch stopped.\n' "$current_config" >&2
+  if [[ -n "${log_file:-}" && "$log_file" != /dev/null ]]; then
+    printf '[%d/%d] INTERRUPTED: %s\n' "$position" "$total" "$current_config" >> "$log_file"
+  fi
+  exit 130
+}
+trap on_interrupt INT
 
 for current_config in "${pending_configs[@]}"; do
   position=$((position + 1))
@@ -104,6 +112,8 @@ for current_config in "${pending_configs[@]}"; do
     command+=(--dry-run)
   else
     printf -v log_file '%s/%02d_%s.log' "$logs_dir" "$position" "$current_config"
+    command+=(--progress-log "$log_file")
+    printf '[%d/%d] RUNNING: %s\n' "$position" "$total" "$current_config" >> "$log_file"
   fi
 
   printf '\n======================================================================\n'
@@ -114,21 +124,23 @@ for current_config in "${pending_configs[@]}"; do
   fi
   printf '======================================================================\n\n'
 
-  # tee makes Python's stdout a pipe. Tell Rich the destination is still a
-  # terminal so its live progress keeps refreshing. Forward raw output: adding
-  # line prefixes would buffer and disrupt cursor updates without newlines.
-  if [[ -t 1 ]]; then
-    command=(env TTY_COMPATIBLE=1 TTY_INTERACTIVE=1 "${command[@]}")
-  fi
-  if "${command[@]}" 2>&1 | tee "$log_file"; then
+  # Keep stdout/stderr attached to the terminal for live progress. The runner
+  # writes periodic checkpoint counts separately, without recording redraws.
+  if "${command[@]}"; then
     elapsed=$((SECONDS - started))
     printf '\n[%d/%d] DONE: %s (%dm %02ds)\n' \
       "$position" "$total" "$current_config" "$((elapsed / 60))" "$((elapsed % 60))"
+    if [[ "$dry_run" -eq 0 ]]; then
+      printf '[%d/%d] DONE: %s (%ds)\n' \
+        "$position" "$total" "$current_config" "$elapsed" >> "$log_file"
+    fi
   else
     status=$?
     printf '\n[%d/%d] FAILED: %s (exit %d). Batch stopped.\n' \
       "$position" "$total" "$current_config" "$status" >&2
     if [[ "$dry_run" -eq 0 ]]; then
+      printf '[%d/%d] STOPPED: %s (exit %d)\n' \
+        "$position" "$total" "$current_config" "$status" >> "$log_file"
       printf 'Inspect log: %s/%s\n' "$PWD" "$log_file" >&2
     fi
     exit "$status"

@@ -29,6 +29,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Validate configuration, prompts, dataset, and files without external calls.",
     )
     parser.add_argument(
+        "--progress-log",
+        type=Path,
+        help="Save run status and checkpoint progress once per minute to this file.",
+    )
+    parser.add_argument(
         "--redo",
         nargs="+",
         default=(),
@@ -99,6 +104,7 @@ def main(argv: list[str] | None = None) -> None:
         run_config,
         resume_directory=args.resume,
         redo_tasks=args.redo,
+        progress_log=args.progress_log,
     )
 
 

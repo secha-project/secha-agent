@@ -45,6 +45,7 @@ from src.validation.evaluators import (
     ValidateVisualizationQuality,
 )
 from src.validation.lifecycle import LifecycleFactory, write_evaluation_artifacts
+from src.validation.progress_log import ProgressLog
 from src.validation.reporting import BenchmarkReport, save_report
 
 CUSTOM_EVALUATOR_TYPES = (
@@ -409,6 +410,7 @@ def run_benchmark(
     run_config: BenchmarkRunConfig,
     resume_directory: Path | None = None,
     redo_tasks: Collection[str] = (),
+    progress_log: Path | None = None,
 ) -> Path:
     if redo_tasks and resume_directory is None:
         raise ValueError("redo_tasks requires resume_directory")
@@ -448,37 +450,47 @@ def run_benchmark(
     else:
         run_directory = create_run_directory(run_name, run_config.dataset)
 
-    print(f"Benchmark run directory: {run_directory}")
-    configure_observability(run_config.agent)
+    with (
+        ProgressLog(
+            progress_log,
+            run_name,
+            run_directory,
+            len(dataset.cases) * run_config.repetitions,
+        )
+        if progress_log is not None
+        else nullcontext()
+    ):
+        print(f"Benchmark run directory: {run_directory}")
+        configure_observability(run_config.agent)
 
-    task = AgentTask(
-        agent=create_agent(run_config.agent.enabled_capabilities),
-        deps=create_dependencies(run_config.agent),
-        model=run_config.agent.create_model(),
-        model_settings=(
-            ModelSettings(temperature=run_config.agent.temperature)
-            if run_config.agent.temperature is not None
-            else ModelSettings()
-        ),
-        usage_limits=UsageLimits(request_limit=run_config.agent.request_limit),
-    )
-    report = evaluate(
-        dataset,
-        task,
-        run_name,
-        run_config,
-        run_directory / "artifacts",
-        run_directory / "checkpoint.json",
-        redo_tasks=redo_tasks,
-        artifact_source_dir=artifact_source_dir,
-    )
+        task = AgentTask(
+            agent=create_agent(run_config.agent.enabled_capabilities),
+            deps=create_dependencies(run_config.agent),
+            model=run_config.agent.create_model(),
+            model_settings=(
+                ModelSettings(temperature=run_config.agent.temperature)
+                if run_config.agent.temperature is not None
+                else ModelSettings()
+            ),
+            usage_limits=UsageLimits(request_limit=run_config.agent.request_limit),
+        )
+        report = evaluate(
+            dataset,
+            task,
+            run_name,
+            run_config,
+            run_directory / "artifacts",
+            run_directory / "checkpoint.json",
+            redo_tasks=redo_tasks,
+            artifact_source_dir=artifact_source_dir,
+        )
 
-    report.print(
-        include_input=True,
-        include_output=True,
-        include_expected_output=True,
-        include_durations=False,
-    )
-    result_path = save_report(report, run_directory / "report.json")
-    print(f"\nSaved benchmark results to {result_path}")
-    return result_path
+        report.print(
+            include_input=True,
+            include_output=True,
+            include_expected_output=True,
+            include_durations=False,
+        )
+        result_path = save_report(report, run_directory / "report.json")
+        print(f"\nSaved benchmark results to {result_path}")
+        return result_path

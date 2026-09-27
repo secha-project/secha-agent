@@ -11,7 +11,9 @@ RUN_CONFIG = "gpt-6-sol__baseline"
 
 
 def test_dry_run_validates_inputs_without_external_calls_or_results(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
 ) -> None:
     monkeypatch.setattr(models, "ALLOW_MODEL_REQUESTS", False)
     forbidden = Mock(side_effect=AssertionError("External setup during dry run"))
@@ -21,13 +23,23 @@ def test_dry_run_validates_inputs_without_external_calls_or_results(
     monkeypatch.setattr("src.validation.runner.create_dependencies", forbidden)
     monkeypatch.setattr("src.validation.runner.configure_observability", forbidden)
 
-    cli.main(["--config", RUN_CONFIG, "--dry-run"])
+    log = tmp_path / "progress.log"
+    cli.main(["--config", RUN_CONFIG, "--dry-run", "--progress-log", str(log)])
 
     output = capsys.readouterr().out
     assert f"Dry run OK: {RUN_CONFIG}" in output
     assert "reference files checked" in output
     assert "no benchmark results written" in output
     forbidden.assert_not_called()
+    assert not log.exists()
+
+
+def test_cli_passes_progress_log_to_runner(monkeypatch, tmp_path):
+    run = Mock()
+    monkeypatch.setattr(cli, "run_benchmark", run)
+    log = tmp_path / "progress.log"
+    cli.main(["--config", RUN_CONFIG, "--progress-log", str(log)])
+    assert run.call_args.kwargs["progress_log"] == log
 
 
 def test_dry_run_rejects_missing_reference_files(

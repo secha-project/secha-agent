@@ -78,20 +78,25 @@ def test_skip_completed_config_and_label_each_run_and_log(batch_workspace):
     assert "[1/2] RUNNING: beta" in result.stdout
     assert "[2/2] RUNNING: gamma" in result.stdout
     assert result.stdout.count("model output") == 2
-    assert result.stdout.count("retry warning") == 2
+    assert result.stderr.count("retry warning") == 2
     assert "[2/2] DONE: gamma" in result.stdout
     logs = sorted(root.glob("benchmark-results/batch-logs/*/*.log"))
     assert [path.name for path in logs] == ["01_beta.log", "02_gamma.log"]
-    assert "retry warning" in logs[0].read_text()
+    assert "[1/2] RUNNING: beta" in logs[0].read_text()
+    assert "[1/2] DONE: beta" in logs[0].read_text()
+    assert "model output" not in logs[0].read_text()
+    assert all("--progress-log" in call for call in calls)
     assert all("-u" in call and "--dry-run" not in call for call in calls)
 
 
 def test_failed_command_stops_queue_and_preserves_exit_code(batch_workspace):
-    _, run = batch_workspace
+    root, run = batch_workspace
     result, calls = run(fail="beta")
     assert result.returncode == 23
     assert config_names(calls) == ["alpha", "beta"]
     assert "[2/3] FAILED: beta (exit 23)" in result.stderr
+    log = next(root.glob("benchmark-results/batch-logs/*/02_beta.log"))
+    assert "STOPPED: beta (exit 23)" in log.read_text()
 
 
 @pytest.mark.parametrize(
@@ -110,6 +115,7 @@ def test_dry_run_supports_repeated_skips_without_creating_logs(batch_workspace):
     assert result.returncode == 0, result.stderr
     assert config_names(calls) == ["beta"]
     assert "--dry-run" in calls[0]
+    assert "--progress-log" not in calls[0]
     assert "[1/1] VALIDATING: beta" in result.stdout
     assert not (root / "benchmark-results").exists()
 
@@ -123,7 +129,8 @@ def test_skipping_every_config_is_a_noop(batch_workspace):
     assert not (root / "benchmark-results").exists()
 
 
-def test_terminal_shows_rich_progress_before_run_finishes(batch_workspace):
+@pytest.mark.parametrize("interrupt", [False, True])
+def test_terminal_shows_rich_progress_before_run_finishes(batch_workspace, interrupt):
     root, _ = batch_workspace
     gate = root / "finish-progress"
     (root / "bin/uv").write_text(
@@ -149,11 +156,13 @@ def test_terminal_shows_rich_progress_before_run_finishes(batch_workspace):
             """)
     )
     master, slave = os.openpty()
-    env = os.environ | {
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {"TTY_COMPATIBLE", "TTY_INTERACTIVE", "FORCE_COLOR"}
+    } | {
         "PATH": f"{root / 'bin'}{os.pathsep}{os.environ['PATH']}",
         "TERM": "xterm-256color",
-        "TTY_COMPATIBLE": "0",  # The runner must detect its terminal destination.
-        "TTY_INTERACTIVE": "0",
         "BATCH_PROGRESS_GATE": str(gate),
     }
     with subprocess.Popen(
@@ -181,13 +190,18 @@ def test_terminal_shows_rich_progress_before_run_finishes(batch_workspace):
                     output += os.read(master, 65536)
             assert b"attempts 1/2" in output, output.decode(errors="replace")
             assert process.poll() is None  # An in-flight update, not final output.
-            gate.touch()
-            assert process.wait(timeout=5) == 0
+            if interrupt:
+                os.killpg(process.pid, signal.SIGINT)
+            else:
+                gate.touch()
+            assert process.wait(timeout=5) == (130 if interrupt else 0)
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGKILL)
                 process.wait(timeout=5)
             os.close(master)
     log = next(root.glob("benchmark-results/batch-logs/*/*.log")).read_bytes()
-    assert b"attempts 1/2" in log
-    assert b"attempts 2/2" in log
+    assert b"RUNNING: beta" in log
+    assert (b"INTERRUPTED: beta" if interrupt else b"DONE: beta") in log
+    assert b"attempts" not in log
+    assert b"\x1b" not in log

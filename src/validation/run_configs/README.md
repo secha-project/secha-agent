@@ -147,7 +147,12 @@ partial runs. It preserves the repetition settings in each YAML file.
 Numbered banners show the active config, start time and log path. Each run keeps
 its live progress display when launched in a terminal; completion banners include
 elapsed time. Separate per-config logs are saved in `benchmark-results/batch-logs/`.
-Logs from terminal runs include the progress display's terminal control sequences.
+Logs contain run names and result directories, checkpoint counts once per minute,
+and finish/failure/interruption status. Completed counts include execution failures,
+which are also counted separately; they are not passing-score counts. Terminal
+redraws, full model output, report tables, and repeated warnings are not copied into
+these logs. The terminal still displays live progress and diagnostic output.
+Standalone runs can opt in with `--progress-log PATH`.
 The script stops if a command fails and can be invoked from any directory.
 
 The base install includes benchmark dependencies. Streamlit and publication
