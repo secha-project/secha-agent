@@ -3,6 +3,7 @@ from typing import Any, cast
 
 import pytest
 from pydantic_evals.evaluators import ReportEvaluatorContext
+from pydantic_evals.reporting import ReportCase, ReportCaseFailure
 
 import src.validation.evaluators.report as report_module
 from src.validation.eval_models import BenchmarkOutput, CaseMetadata
@@ -424,6 +425,99 @@ def test_missing_usage_is_unavailable_instead_of_free(include_valid_attempt):
     assert values["Attempts with usage"] == int(include_valid_attempt)
     category = PerCategoryTokenUsageAndCostEvaluator().evaluate(ctx).rows[0]
     assert category[4:8] == [None, None, None, None]
+
+
+@pytest.mark.parametrize("include_valid_attempt", [False, True])
+@pytest.mark.parametrize("configured_pricing", [False, True])
+def test_cost_summaries_handle_real_case_failures(
+    include_valid_attempt, configured_pricing, monkeypatch
+):
+    monkeypatch.setattr(
+        report_module,
+        "calc_price",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            total_price=0.02,
+            provider=SimpleNamespace(id="test"),
+            model=SimpleNamespace(id="test-model"),
+        ),
+    )
+    failure = ReportCaseFailure(
+        name="failed",
+        inputs="question",
+        metadata=SimpleNamespace(category=SimpleNamespace(value="affected")),
+        expected_output=None,
+        error_message="Request limit exceeded",
+        error_stacktrace="traceback",
+    )
+    cases = []
+    if include_valid_attempt:
+        for category in ("affected", "complete"):
+            cases.append(
+                ReportCase(
+                    name=category,
+                    inputs="question",
+                    metadata=SimpleNamespace(category=SimpleNamespace(value=category)),
+                    expected_output=None,
+                    output="answer",
+                    metrics={
+                        "requests": 1,
+                        "tool_calls": 2,
+                        "input_tokens": 100,
+                        "output_tokens": 10,
+                        "cost": 0.01,
+                    },
+                    attributes={},
+                    scores={},
+                    labels={},
+                    assertions={},
+                    task_duration=1.0,
+                    total_duration=1.0,
+                )
+            )
+    ctx = SimpleNamespace(
+        report=SimpleNamespace(
+            cases=cases,
+            failures=[failure],
+            experiment_metadata={
+                "agent": {
+                    "pricing": {"provider": "test", "model_name": "test-model"}
+                }
+            }
+            if configured_pricing
+            else {},
+        )
+    )
+
+    values = {row[0]: row[1] for row in TokenUsageAndCostEvaluator().evaluate(ctx).rows}
+    assert values["Estimated cost"] is None
+    assert values["Pricing source"] == "Unavailable (missing token usage)"
+    assert values["Input tokens"] is None
+    assert values["Output tokens"] is None
+    assert values["Total tokens"] is None
+    assert values["Attempts with usage"] == len(cases)
+
+    categories = {
+        row[0]: row[1:]
+        for row in PerCategoryTokenUsageAndCostEvaluator().evaluate(ctx).rows
+    }
+    assert categories["affected"] == [
+        int(include_valid_attempt),
+        int(include_valid_attempt),
+        2 * int(include_valid_attempt),
+        None,
+        None,
+        None,
+        None,
+        "Unavailable (missing token usage)",
+    ]
+    if include_valid_attempt:
+        assert categories["complete"] == [
+            1, 1, 2, 100, 10, 110,
+            0.02 if configured_pricing else 0.01,
+            "test:test-model" if configured_pricing else "Recorded request prices",
+        ]
+    else:
+        assert set(categories) == {"affected"}
 
 
 def test_gpt_sol_cost_includes_cache_writes_without_double_counting_reasoning():

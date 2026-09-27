@@ -196,10 +196,15 @@ def _pricing_reference(
     return model_name, provider, False
 
 
+def _case_metrics(case: Any) -> dict[str, int | float]:
+    # ReportCaseFailure has no metrics, even if requests ran before it failed.
+    return getattr(case, "metrics", {})
+
+
 def _metric_totals(cases: list[Any]) -> dict[str, int | float]:
     totals: dict[str, int | float] = {}
     for case in cases:
-        for name, value in case.metrics.items():
+        for name, value in _case_metrics(case).items():
             totals[name] = totals.get(name, 0) + value
     return totals
 
@@ -207,7 +212,8 @@ def _metric_totals(cases: list[Any]) -> dict[str, int | float]:
 def _has_token_usage(case: Any) -> bool:
     # A request/reasoning count alone does not establish input/output usage.
     # Older Pydantic AI versions silently lost both totals on extraction errors.
-    return "input_tokens" in case.metrics or "output_tokens" in case.metrics
+    metrics = _case_metrics(case)
+    return "input_tokens" in metrics or "output_tokens" in metrics
 
 
 def _estimate_cost(
@@ -217,7 +223,7 @@ def _estimate_cost(
     totals = _metric_totals(cases)
     explicitly_configured = pricing_reference is not None and pricing_reference[2]
     recorded_cost_complete = bool(cases) and all(
-        "cost" in case.metrics for case in cases
+        "cost" in _case_metrics(case) for case in cases
     )
     if recorded_cost_complete and not explicitly_configured:
         return float(totals["cost"]), "Recorded request prices"
@@ -231,7 +237,7 @@ def _estimate_cost(
         case_costs: list[float] = []
         price = None
         for case in cases:
-            metrics = case.metrics
+            metrics = _case_metrics(case)
             usage = RequestUsage(
                 input_tokens=int(metrics.get("input_tokens", 0)),
                 output_tokens=int(metrics.get("output_tokens", 0)),
