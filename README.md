@@ -193,6 +193,23 @@ uv run --locked --no-dev python -m src.validation.run_benchmark \
   --redo task_6 task_8
 ```
 
+Report cost and usage fields retain the same schema and represent **subtotals of
+recorded usage**. In `results.overall.usage` and each category's `summary`,
+`input_tokens`, `output_tokens`, `total_tokens`, and `estimated_cost_usd` cover
+attempts with recorded input or output token usage. A completed attempt counts
+even if its correctness assertions fail. Execution failures without metrics and
+other attempts missing token usage are excluded from these subtotals.
+
+Compare `results.overall.usage.attempts_with_usage` with
+`results.overall.attempts`, or a category's `summary.attempts_with_usage` with its
+`summary.attempts`, to determine coverage. A smaller usage count means the cost
+excludes some attempts; it does not mean those attempts were free. If no attempts
+have token usage, the input/output/total token fields and cost are `null`. Cost
+also remains `null` if pricing is unavailable; `pricing_source` explains the
+pricing basis. Requests, tool calls, and additional token metrics sum their
+available recorded values and may likewise be incomplete. Use Phoenix traces
+to recover usage absent from the saved case results when a full-run cost is needed.
+
 To generate the grouped ablation pass-rate figure, name related run configs
 `ROOT__ABLATION.yaml`, for example `gpt-6-sol__baseline.yaml` and
 `gpt-6-sol__semantic_layer.yaml`. The suffixes are discovered from completed

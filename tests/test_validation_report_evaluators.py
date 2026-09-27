@@ -385,7 +385,7 @@ def test_token_usage_and_cost_summary_uses_configured_pricing(
 
 
 @pytest.mark.parametrize("include_valid_attempt", [False, True])
-def test_missing_usage_is_unavailable_instead_of_free(include_valid_attempt):
+def test_missing_usage_does_not_hide_available_subtotals(include_valid_attempt):
     cases = [
         SimpleNamespace(
             metrics={"requests": 7, "reasoning_tokens": 225},
@@ -417,14 +417,20 @@ def test_missing_usage_is_unavailable_instead_of_free(include_valid_attempt):
         )
     )
     values = {row[0]: row[1] for row in TokenUsageAndCostEvaluator().evaluate(ctx).rows}
-    assert values["Estimated cost"] is None
-    assert values["Pricing source"] == "Unavailable (missing token usage)"
-    assert values["Input tokens"] is None
-    assert values["Output tokens"] is None
-    assert values["Total tokens"] is None
+    assert values["Estimated cost"] == (0.01 if include_valid_attempt else None)
+    assert values["Pricing source"] == (
+        "Recorded request prices"
+        if include_valid_attempt
+        else "Unavailable (missing token usage)"
+    )
+    assert values["Input tokens"] == (100 if include_valid_attempt else None)
+    assert values["Output tokens"] == (10 if include_valid_attempt else None)
+    assert values["Total tokens"] == (110 if include_valid_attempt else None)
     assert values["Attempts with usage"] == int(include_valid_attempt)
     category = PerCategoryTokenUsageAndCostEvaluator().evaluate(ctx).rows[0]
-    assert category[4:8] == [None, None, None, None]
+    assert category[4:8] == (
+        [100, 10, 110, 0.01] if include_valid_attempt else [None, None, None, None]
+    )
 
 
 @pytest.mark.parametrize("include_valid_attempt", [False, True])
@@ -489,11 +495,19 @@ def test_cost_summaries_handle_real_case_failures(
     )
 
     values = {row[0]: row[1] for row in TokenUsageAndCostEvaluator().evaluate(ctx).rows}
-    assert values["Estimated cost"] is None
-    assert values["Pricing source"] == "Unavailable (missing token usage)"
-    assert values["Input tokens"] is None
-    assert values["Output tokens"] is None
-    assert values["Total tokens"] is None
+    cost_per_attempt = 0.02 if configured_pricing else 0.01
+    pricing_source = (
+        "test:test-model" if configured_pricing else "Recorded request prices"
+    )
+    assert values["Estimated cost"] == (
+        2 * cost_per_attempt if include_valid_attempt else None
+    )
+    assert values["Pricing source"] == (
+        pricing_source if include_valid_attempt else "Unavailable (missing token usage)"
+    )
+    assert values["Input tokens"] == (200 if include_valid_attempt else None)
+    assert values["Output tokens"] == (20 if include_valid_attempt else None)
+    assert values["Total tokens"] == (220 if include_valid_attempt else None)
     assert values["Attempts with usage"] == len(cases)
 
     categories = {
@@ -504,11 +518,11 @@ def test_cost_summaries_handle_real_case_failures(
         int(include_valid_attempt),
         int(include_valid_attempt),
         2 * int(include_valid_attempt),
-        None,
-        None,
-        None,
-        None,
-        "Unavailable (missing token usage)",
+        100 if include_valid_attempt else None,
+        10 if include_valid_attempt else None,
+        110 if include_valid_attempt else None,
+        cost_per_attempt if include_valid_attempt else None,
+        pricing_source if include_valid_attempt else "Unavailable (missing token usage)",
     ]
     if include_valid_attempt:
         assert categories["complete"] == [
