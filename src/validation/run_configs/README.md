@@ -150,3 +150,22 @@ finite cost for every selected model. Set an explicitly chosen
 `agent.pricing: {provider: ..., model_name: ...}` reference consistently across
 all four Qwen configs if using a hosted-model cost proxy; that proxy would not
 represent measured on-premises cost.
+
+## Usage accounting
+
+Use the locked Pydantic AI/Evals 2.17.0 dependencies or newer compatible versions.
+Older Pydantic AI versions reject the `output_reasoning_tokens` field extracted
+by genai-prices 0.1.x and can silently replace all token counts with zeros.
+The dependency floor prevents that incompatibility; offline regression tests
+cover reasoning usage, cache reads/writes, and the API-to-report path.
+
+After syncing dependencies, restart running benchmark processes to load the fix.
+Reports show unavailable (`null`) cost and token totals when an attempt lacks
+input/output usage, rather than treating missing data as free. Other measured
+metrics and benchmark scores remain available.
+
+Existing checkpoints retain their original measurements on resume. Their usage
+can be repaired from saved raw provider responses or another authoritative usage
+record; zero-only traces cannot reconstruct the lost token counts. The Sol task
+24 cost pilot retains its raw responses and has been repaired with original
+report/checkpoint backups.

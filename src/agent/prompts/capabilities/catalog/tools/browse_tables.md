@@ -10,11 +10,23 @@ search row values; after selecting a table, use ``find_columns`` or
 Examples:
 
 - User: "Which inventory tables are available?"
-  Call: `browse_tables({})`.
+  Tool: `browse_tables`
+  Arguments:
+
+  ```json
+  {}
+  ```
+
   If the result lists `demo.inventory.items` and `demo.inventory.shipments`,
   summarize those returned names and descriptions.
 - User: "Find the table containing item categories."
-  Call: `browse_tables({})`.
+  Tool: `browse_tables`
+  Arguments:
+
+  ```json
+  {}
+  ```
+
   If `demo.inventory.items` is a relevant returned table, inspect its columns
   next with `find_columns`; do not infer columns from its table name alone.
 {% endif %}

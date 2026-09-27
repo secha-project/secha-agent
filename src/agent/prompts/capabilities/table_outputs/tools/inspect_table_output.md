@@ -12,11 +12,23 @@ Examples:
 - User: "What is the quantity on the twelfth row of that result?"
   Context: an ordered query returned `output_ref = {"output_id": "example-items"}`;
   its preview shows only the first ten of twenty rows and includes `quantity`.
-  Call: `inspect_table_output({"ref": {"output_id": "example-items"}, "start_row": 12, "end_row": 12, "column_names": ["quantity"]})`.
+  Tool: `inspect_table_output`
+  Arguments:
+
+  ```json
+  {"ref": {"output_id": "example-items"}, "start_row": 12, "end_row": 12, "column_names": ["quantity"]}
+  ```
+
   Answer from the returned row.
 - User: "Explain the item IDs and quantities in the saved result."
   Context: a saved output has reference `{"output_id": "example-stock"}` and
   columns `item_id` and `quantity`, but the current preview omitted `quantity`.
-  Call: `inspect_table_output({"ref": {"output_id": "example-stock"}, "column_names": ["item_id", "quantity"]})`.
+  Tool: `inspect_table_output`
+  Arguments:
+
+  ```json
+  {"ref": {"output_id": "example-stock"}, "column_names": ["item_id", "quantity"]}
+  ```
+
   Use the returned preview to explain the values and state any preview limit.
 {% endif %}

@@ -381,3 +381,62 @@ def test_token_usage_and_cost_summary_uses_configured_pricing(
     assert [call["usage"].input_tokens for call in captured] == [100, 50, 100, 50]
     assert [call["usage"].output_tokens for call in captured] == [20, 10, 20, 10]
     assert [call["usage"].cache_read_tokens for call in captured] == [10, 0, 10, 0]
+
+
+@pytest.mark.parametrize("include_valid_attempt", [False, True])
+def test_missing_usage_is_unavailable_instead_of_free(include_valid_attempt):
+    cases = [
+        SimpleNamespace(
+            metrics={"requests": 7, "reasoning_tokens": 225},
+            metadata=SimpleNamespace(category=SimpleNamespace(value="group")),
+        )
+    ]
+    if include_valid_attempt:
+        cases.append(
+            SimpleNamespace(
+                metrics={
+                    "requests": 1,
+                    "input_tokens": 100,
+                    "output_tokens": 10,
+                    "cost": 0.01,
+                },
+                metadata=cases[0].metadata,
+            )
+        )
+    ctx = SimpleNamespace(
+        report=SimpleNamespace(
+            cases=cases,
+            failures=[],
+            experiment_metadata={
+                "agent": {
+                    "model_provider": "openai",
+                    "provider_settings": {"model_name": "gpt-6-sol"},
+                }
+            },
+        )
+    )
+    values = {row[0]: row[1] for row in TokenUsageAndCostEvaluator().evaluate(ctx).rows}
+    assert values["Estimated cost"] is None
+    assert values["Pricing source"] == "Unavailable (missing token usage)"
+    assert values["Input tokens"] is None
+    assert values["Output tokens"] is None
+    assert values["Total tokens"] is None
+    assert values["Attempts with usage"] == int(include_valid_attempt)
+    category = PerCategoryTokenUsageAndCostEvaluator().evaluate(ctx).rows[0]
+    assert category[4:8] == [None, None, None, None]
+
+
+def test_gpt_sol_cost_includes_cache_writes_without_double_counting_reasoning():
+    case = SimpleNamespace(
+        metrics={
+            "requests": 7,
+            "input_tokens": 30648,
+            "output_tokens": 904,
+            "cache_read_tokens": 24624,
+            "cache_write_tokens": 6003,
+            "reasoning_tokens": 225,
+        }
+    )
+    cost, source = report_module._estimate_cost([case], ("gpt-6-sol", "openai", False))
+    assert cost == pytest.approx(0.0290143)
+    assert source == "openai:gpt-6-sol"

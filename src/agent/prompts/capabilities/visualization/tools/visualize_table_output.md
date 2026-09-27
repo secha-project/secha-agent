@@ -33,11 +33,23 @@ Examples:
 - User: "Plot total stock by category."
   Context: an upstream query prepared `category` and numeric `quantity`, sorted
   by quantity, and returned `output_ref = {"output_id": "example-stock"}`.
-  Call: `visualize_table_output({"ref": {"output_id": "example-stock"}, "ggsql": "VISUALISE category AS x, quantity AS y DRAW bar LABEL x => 'Category', y => 'Quantity (items)'", "title": "Stock by category"})`.
+  Tool: `visualize_table_output`
+  Arguments:
+
+  ```json
+  {"ref": {"output_id": "example-stock"}, "ggsql": "VISUALISE category AS x, quantity AS y DRAW bar LABEL x => 'Category', y => 'Quantity (items)'", "title": "Stock by category"}
+  ```
+
   After success, summarize the chart without publishing an unrequested table.
 - User: "Plot daily shipped quantities over time."
   Context: an upstream query aggregated and ordered rows with date column `day`
   and numeric `quantity`, returning `output_ref = {"output_id": "example-daily"}`.
-  Call: `visualize_table_output({"ref": {"output_id": "example-daily"}, "ggsql": "VISUALISE day AS x, quantity AS y DRAW line LABEL x => 'Day', y => 'Quantity (items)'", "title": "Daily shipped quantities"})`.
+  Tool: `visualize_table_output`
+  Arguments:
+
+  ```json
+  {"ref": {"output_id": "example-daily"}, "ggsql": "VISUALISE day AS x, quantity AS y DRAW line LABEL x => 'Day', y => 'Quantity (items)'", "title": "Daily shipped quantities"}
+  ```
+
   Use that saved result directly; all aggregation has already been done.
 {% endif %}

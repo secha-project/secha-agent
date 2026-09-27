@@ -204,14 +204,26 @@ def _metric_totals(cases: list[Any]) -> dict[str, int | float]:
     return totals
 
 
+def _has_token_usage(case: Any) -> bool:
+    # A request/reasoning count alone does not establish input/output usage.
+    # Older Pydantic AI versions silently lost both totals on extraction errors.
+    return "input_tokens" in case.metrics or "output_tokens" in case.metrics
+
+
 def _estimate_cost(
     cases: list[Any],
     pricing_reference: tuple[str, str | None, bool] | None,
 ) -> tuple[float | None, str]:
     totals = _metric_totals(cases)
     explicitly_configured = pricing_reference is not None and pricing_reference[2]
-    if "cost" in totals and not explicitly_configured:
+    recorded_cost_complete = bool(cases) and all(
+        "cost" in case.metrics for case in cases
+    )
+    if recorded_cost_complete and not explicitly_configured:
         return float(totals["cost"]), "Recorded request prices"
+
+    if any(not _has_token_usage(case) for case in cases):
+        return None, "Unavailable (missing token usage)"
 
     pricing_source = "Unavailable"
     if pricing_reference is not None:
@@ -236,14 +248,13 @@ def _estimate_cost(
             if price is not None:
                 prefix = (
                     "Proxy "
-                    if (provider, model_name)
-                    == ("cloudflare", "@cf/qwen/qwen3.8-27b")
+                    if (provider, model_name) == ("cloudflare", "@cf/qwen/qwen3.8-27b")
                     else ""
                 )
                 pricing_source = f"{prefix}{price.provider.id}:{price.model.id}"
             return sum(case_costs), pricing_source
 
-    if "cost" in totals:
+    if recorded_cost_complete:
         return float(totals["cost"]), "Recorded request prices"
     return None, pricing_source
 
@@ -258,12 +269,8 @@ class TokenUsageAndCostEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetad
     ) -> TableResult:
         cases = list(ctx.report.cases) + list(getattr(ctx.report, "failures", []))
         totals = _metric_totals(cases)
-        cases_with_usage = 0
-        for case in cases:
-            if any(
-                name == "requests" or name.endswith("_tokens") for name in case.metrics
-            ):
-                cases_with_usage += 1
+        cases_with_usage = sum(_has_token_usage(case) for case in cases)
+        usage_complete = cases_with_usage == len(cases)
 
         token_metrics = {
             name: value for name, value in totals.items() if name.endswith("_tokens")
@@ -273,9 +280,13 @@ class TokenUsageAndCostEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetad
         rows: list[list[str | int | float | bool | None]] = [
             ["Requests", int(totals.get("requests", 0)), "requests"],
             ["Tool calls", int(totals.get("tool_calls", 0)), "calls"],
-            ["Input tokens", input_tokens, "tokens"],
-            ["Output tokens", output_tokens, "tokens"],
-            ["Total tokens", input_tokens + output_tokens, "tokens"],
+            ["Input tokens", input_tokens if usage_complete else None, "tokens"],
+            ["Output tokens", output_tokens if usage_complete else None, "tokens"],
+            [
+                "Total tokens",
+                input_tokens + output_tokens if usage_complete else None,
+                "tokens",
+            ],
         ]
 
         displayed_token_metrics = {"input_tokens", "output_tokens"}
@@ -296,7 +307,8 @@ class TokenUsageAndCostEvaluator(ReportEvaluator[str, BenchmarkOutput, CaseMetad
             title="Token usage and estimated cost",
             description=(
                 "Totals from all attempted case runs. Cost uses the configured pricing "
-                "reference when available, otherwise recorded request prices."
+                "reference when available, otherwise recorded request prices. "
+                "Missing token usage is unavailable, not zero."
             ),
             columns=["Metric", "Value", "Unit"],
             rows=rows,
@@ -323,13 +335,8 @@ class PerCategoryTokenUsageAndCostEvaluator(
         rows: list[list[str | int | float | bool | None]] = []
         for category, cases in sorted(cases_by_category.items()):
             totals = _metric_totals(cases)
-            attempts_with_usage = sum(
-                any(
-                    name == "requests" or name.endswith("_tokens")
-                    for name in case.metrics
-                )
-                for case in cases
-            )
+            attempts_with_usage = sum(_has_token_usage(case) for case in cases)
+            usage_complete = attempts_with_usage == len(cases)
             input_tokens = int(totals.get("input_tokens", 0))
             output_tokens = int(totals.get("output_tokens", 0))
             estimated_cost, pricing_source = _estimate_cost(cases, pricing_reference)
@@ -339,9 +346,9 @@ class PerCategoryTokenUsageAndCostEvaluator(
                     attempts_with_usage,
                     int(totals.get("requests", 0)),
                     int(totals.get("tool_calls", 0)),
-                    input_tokens,
-                    output_tokens,
-                    input_tokens + output_tokens,
+                    input_tokens if usage_complete else None,
+                    output_tokens if usage_complete else None,
+                    input_tokens + output_tokens if usage_complete else None,
                     estimated_cost,
                     pricing_source,
                 ]
@@ -515,7 +522,13 @@ class PerCategoryPassMetricsEvaluator(
         ctx: ReportEvaluatorContext[str, BenchmarkOutput, CaseMetadata],
     ) -> TableResult:
         rows: list[list[str | int | float | bool | None]] = [
-            [metric.category, metric.k, metric.tasks, metric.pass_at_k, metric.pass_power_k]
+            [
+                metric.category,
+                metric.k,
+                metric.tasks,
+                metric.pass_at_k,
+                metric.pass_power_k,
+            ]
             for metric in _category_pass_metrics(_task_results_by_category(ctx.report))
         ]
 

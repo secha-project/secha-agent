@@ -10,11 +10,23 @@ Examples:
 
 - User: "Which field records the number of items in stock?"
   Context: catalog discovery returned `demo.inventory.items`.
-  Call: `find_columns({"table_name": "demo.inventory.items", "keywords": "quantity stock"})`.
+  Tool: `find_columns`
+  Arguments:
+
+  ```json
+  {"table_name": "demo.inventory.items", "keywords": "quantity stock"}
+  ```
+
   If the result identifies `quantity`, report that exact name and its metadata.
 - User: "Find the shipment date column."
   Context: `demo.inventory.shipments` is a known canonical table.
-  Call: `find_columns({"table_name": "demo.inventory.shipments", "keywords": "shipment date"})`.
+  Tool: `find_columns`
+  Arguments:
+
+  ```json
+  {"table_name": "demo.inventory.shipments", "keywords": "shipment date"}
+  ```
+
   Use the returned column identifier in subsequent queries; do not search for
   a particular date value with this tool.
 {% endif %}

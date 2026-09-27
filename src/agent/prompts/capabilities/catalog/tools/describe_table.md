@@ -11,10 +11,22 @@ Examples:
 
 - User: "Describe the item table."
   Context: catalog discovery returned `demo.inventory.items`.
-  Call: `describe_table({"table_name": "demo.inventory.items"})`.
+  Tool: `describe_table`
+  Arguments:
+
+  ```json
+  {"table_name": "demo.inventory.items"}
+  ```
+
   Summarize the returned table description and column metadata.
 - User: "What do item_id and quantity mean?"
   Context: both exact column names were returned for `demo.inventory.items`.
-  Call: `describe_table({"table_name": "demo.inventory.items", "column_names": ["item_id", "quantity"]})`.
+  Tool: `describe_table`
+  Arguments:
+
+  ```json
+  {"table_name": "demo.inventory.items", "column_names": ["item_id", "quantity"]}
+  ```
+
   Explain the returned definitions; if a description is missing, say so.
 {% endif %}

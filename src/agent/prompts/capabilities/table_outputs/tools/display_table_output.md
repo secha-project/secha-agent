@@ -11,10 +11,22 @@ Examples:
 
 - User: "Show me the five item records."
   Context: the matching query returned `output_ref = {"output_id": "example-items"}`.
-  Call: `display_table_output({"ref": {"output_id": "example-items"}})`.
+  Tool: `display_table_output`
+  Arguments:
+
+  ```json
+  {"ref": {"output_id": "example-items"}}
+  ```
+
   After publication succeeds, briefly confirm that the table is available.
 - User: "Make that shipment result available for download and explain it."
   Context: the saved shipment result has reference `{"output_id": "example-shipments"}`.
-  Call: `display_table_output({"ref": {"output_id": "example-shipments"}})`.
+  Tool: `display_table_output`
+  Arguments:
+
+  ```json
+  {"ref": {"output_id": "example-shipments"}}
+  ```
+
   Then give the requested explanation using the observed result.
 {% endif %}
