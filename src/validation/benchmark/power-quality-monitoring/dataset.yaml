@@ -220,7 +220,7 @@ cases:
     - 0.0276
   evaluators: []
 - name: task_18
-  inputs: Which device from the electric dataset had the lowest recorded frequency
+  inputs: Which device from the Electrix dataset had the lowest recorded frequency
     in March 1st 2025? Include the frequency value and when it happened.
     Return the exact device identifier, frequency as a number in Hz, and UTC time
     in HH:MM format.
@@ -412,6 +412,7 @@ cases:
 - name: task_31
   inputs: What was the energy consumed by the tenants of the Kampusareena building
     on March 1st 2025 (UTC)? Answer in kWh.
+    Use the first and last measurements recorded within that UTC day as the interval endpoints.
     Return the numeric kWh value to two decimal places.
   metadata:
     case_id: 0896553a-bd63-41df-97de-dc79f579024d
@@ -419,10 +420,10 @@ cases:
     category: semantic integration
   expected_output:
   - value:
-    - 1930.1304
+    - 1930.1136
   evaluators: []
 - name: task_32
-  inputs: At TTY Lempäälä, what is the correlation between the charging power and
+  inputs: At TTY Lempäälä, what is the correlation between the total three-phase active charging power and
     voltage distortion across the three phases on March 2, 2025 between 12:00 and
     17:00 UTC (start inclusive, end exclusive).
     Return three decimal coefficients in L1, L2, L3 order, rounded to six decimal

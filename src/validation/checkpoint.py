@@ -116,14 +116,25 @@ class EvaluationCheckpoint:
                         relocated.append(item)
                         continue
                     path = Path(item).resolve()
-                    if not path.is_relative_to(source_dir):
+                    if path.is_relative_to(source_dir):
+                        relative_path = path.relative_to(source_dir)
+                    elif (
+                        path.parent.name == source_dir.name
+                        and path.parent.parent.name == source_dir.parent.name
+                        and (source_dir / path.name).is_file()
+                    ):
+                        # Imported runs can retain absolute paths from another host.
+                        relative_path = Path(path.name)
+                    else:
                         relocated.append(item)
                         continue
-                    relocated.append(str(destination_dir / path.relative_to(source_dir)))
+                    relocated.append(str(destination_dir / relative_path))
                     value_changed = True
 
                 if value_changed:
-                    attributes[key] = relocated if isinstance(value, list) else relocated[0]
+                    attributes[key] = (
+                        relocated if isinstance(value, list) else relocated[0]
+                    )
                     changed = True
 
         if changed:

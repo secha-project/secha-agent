@@ -3,6 +3,7 @@
 Run configs must be named ROOT__ABLATION, for example model-a__baseline.
 
 Usage: python -m scripts.generate_pass_rate_cost_figure --ablation baseline -m 20
+       python -m scripts.generate_pass_rate_cost_figure --best-ablation -m 15
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from plotnine import (
     element_line,
     element_rect,
     element_text,
-    geom_linerange,
+    geom_errorbar,
     geom_point,
     geom_text,
     ggplot,
@@ -34,10 +35,24 @@ from plotnine import (
 
 from scripts.bootstrap_pass_rate import bootstrap_pass_rate, load_task_scores
 from scripts.generate_ablation_figure import split_ablation_name
+from scripts.generate_pass_rate_table import (
+    BEST_MODEL_ORDER,
+    select_best_ablation_runs,
+)
 from scripts.load_benchmark_runs import (
     DEFAULT_RESULTS_DIR,
     BenchmarkRun,
+    _load_run,
     load_benchmark_runs,
+)
+from scripts.report_figure_style import (
+    DEFAULT_TYPOGRAPHY,
+    ReportTypography,
+    add_figure_arguments,
+    copy_figure_to_thesis,
+    figure_dimensions,
+    typography_from_args,
+    typography_theme,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -92,6 +107,25 @@ def _total_cost_usd(run: BenchmarkRun) -> float:
     return float(cost)
 
 
+def replace_run_reports(
+    runs: Sequence[BenchmarkRun], paths: Sequence[Path]
+) -> list[BenchmarkRun]:
+    """Use explicitly selected report versions without counting a run twice."""
+    overrides: dict[tuple[str, str], BenchmarkRun] = {}
+    available = {(run.dataset, run.name) for run in runs}
+    for path in paths:
+        run = _load_run(path)
+        if run is None:
+            raise ValueError(f"Invalid or incomplete report override: {path}")
+        key = (run.dataset, run.name)
+        if key not in available:
+            raise ValueError(f"Report override has no matching loaded run: {path}")
+        if key in overrides:
+            raise ValueError(f"Multiple report overrides for {run.name!r}")
+        overrides[key] = run
+    return [overrides.get((run.dataset, run.name), run) for run in runs]
+
+
 def pass_rate_cost_data(
     runs: dict[str, BenchmarkRun],
     *,
@@ -101,6 +135,10 @@ def pass_rate_cost_data(
     seed: int = 0,
 ) -> pd.DataFrame:
     """Return total cost and average pass@1 per model/config."""
+    if not runs:
+        raise ValueError("No completed runs selected")
+    if len({(run.dataset, run.repetitions) for run in runs.values()}) != 1:
+        raise ValueError("Compared runs must use the same dataset and repetitions")
     task_categories: dict[str, str] | None = None
     records: list[dict[str, str | float]] = []
     for root, run in runs.items():
@@ -131,13 +169,16 @@ def pass_rate_cost_data(
     return data
 
 
-def make_pass_rate_cost_figure(data: pd.DataFrame) -> ggplot:
+def make_pass_rate_cost_figure(
+    data: pd.DataFrame, *, typography: ReportTypography = DEFAULT_TYPOGRAPHY
+) -> ggplot:
     """Build a scatter plot with vertical pass@1 confidence intervals."""
     roots = list(data["root"].cat.categories)
     if len(roots) > len(COLORS):
         raise ValueError(f"Figure supports at most {len(COLORS)} model/config points")
-    colors = dict(zip(roots, COLORS, strict=False))
-    markers = dict(zip(roots, MARKERS, strict=False))
+    # Keep model colors and shapes consistent with the per-ablation figures.
+    colors = dict(zip(sorted(roots), COLORS, strict=False))
+    markers = dict(zip(sorted(roots), MARKERS, strict=False))
     minimum_cost = float(data["total_cost_usd"].min())
     maximum_cost = float(data["total_cost_usd"].max())
     cost_span = max(maximum_cost - minimum_cost, maximum_cost * 0.2, 1e-6)
@@ -146,14 +187,17 @@ def make_pass_rate_cost_figure(data: pd.DataFrame) -> ggplot:
             data,
             aes(x="total_cost_usd", y="pass_rate", color="root", shape="root"),
         )
-        + geom_linerange(aes(ymin="lower", ymax="upper"), size=0.6)
+        + geom_errorbar(
+            aes(ymin="lower", ymax="upper"), width=0.025 * cost_span, size=0.6
+        )
         + geom_point(size=3.2)
         + geom_text(
             aes(label="root"),
             nudge_x=0.025 * cost_span,
             ha="left",
             va="center",
-            size=11,
+            size=typography.points,
+            family=typography.font_family,
             color="black",
             fontweight="normal",
             show_legend=False,
@@ -180,25 +224,49 @@ def make_pass_rate_cost_figure(data: pd.DataFrame) -> ggplot:
             axis_ticks_length=4,
             legend_position="none",
         )
+        + typography_theme(typography)
     )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
-    parser.add_argument("--ablation", required=True, help="Run-config suffix after '__'")
+    parser.add_argument(
+        "--report-override", type=Path, action="append", default=[],
+        help="Use this saved report version for its run; may be repeated",
+    )
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--ablation", help="Run-config suffix after '__'")
+    selection.add_argument(
+        "--best-ablation", action="store_true",
+        help="Select each model's highest category-balanced overall pass@1 ablation",
+    )
     parser.add_argument(
         "--output",
         type=Path,
-        help="PDF path; defaults to output/pdf/pass_rate_vs_cost_<ablation>.pdf",
+        help="PDF path; defaults to output/pdf/pass_rate_vs_cost_<ablation|best>.pdf",
     )
     parser.add_argument("-m", "--tasks-per-category", type=int, required=True)
     parser.add_argument("--bootstrap-samples", type=int, default=10_000)
     parser.add_argument("--confidence-level", type=float, default=0.95)
     parser.add_argument("--seed", type=int, default=0)
+    add_figure_arguments(parser)
     args = parser.parse_args()
+    typography = typography_from_args(args)
 
-    runs = select_ablation_runs(load_benchmark_runs(args.results_dir), args.ablation)
+    completed = replace_run_reports(
+        load_benchmark_runs(args.results_dir), args.report_override
+    )
+    if args.best_ablation:
+        selected = select_best_ablation_runs(completed)
+        model_rank = {name: index for index, name in enumerate(BEST_MODEL_ORDER)}
+        selected.sort(key=lambda run: (
+            model_rank.get(run.name.rpartition("__")[0], len(BEST_MODEL_ORDER)),
+            run.name,
+        ))
+        runs = {run.name.rpartition("__")[0]: run for run in selected}
+    else:
+        runs = select_ablation_runs(completed, args.ablation)
     data = pass_rate_cost_data(
         runs,
         tasks_per_category=args.tasks_per_category,
@@ -206,11 +274,14 @@ def main() -> None:
         confidence_level=args.confidence_level,
         seed=args.seed,
     )
-    output = args.output or DEFAULT_OUTPUT_DIR / f"pass_rate_vs_cost_{args.ablation}.pdf"
+    suffix = "best" if args.best_ablation else args.ablation
+    output = args.output or DEFAULT_OUTPUT_DIR / f"pass_rate_vs_cost_{suffix}.pdf"
     output.parent.mkdir(parents=True, exist_ok=True)
-    width = max(6.8, 1.1 * len(runs) + 3.5)
-    make_pass_rate_cost_figure(data).save(output, width=width, height=4.5, verbose=False)
+    width, height = figure_dimensions(args, width_mm=120, height_mm=90)
+    make_pass_rate_cost_figure(data, typography=typography).save(output, width=width, height=height, verbose=False)
     print(f"Wrote {output}")
+    if args.copy_to_thesis:
+        copy_figure_to_thesis(output, args.thesis_dir)
 
 
 if __name__ == "__main__":

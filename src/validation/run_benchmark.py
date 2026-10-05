@@ -3,7 +3,11 @@ from pathlib import Path
 
 from src.agent.agent import create_agent
 from src.validation.config import BENCHMARKS_DIR, BenchmarkRunConfig, load_run_config
-from src.validation.eval_models import TableOutput, VisualizationOutput
+from src.validation.eval_models import (
+    BenchmarkDataset,
+    TableOutput,
+    VisualizationOutput,
+)
 from src.validation.runner import load_dataset, run_benchmark
 
 
@@ -33,7 +37,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         help="Save run status and checkpoint progress once per minute to this file.",
     )
-    parser.add_argument(
+    redo = parser.add_mutually_exclusive_group()
+    redo.add_argument(
         "--redo",
         nargs="+",
         default=(),
@@ -43,13 +48,38 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Requires --resume."
         ),
     )
+    redo.add_argument(
+        "--redo-tables",
+        action="store_true",
+        help=(
+            "Redo every task with an expected table output, including all repetitions. "
+            "Requires --resume, except when checking the selection with --dry-run."
+        ),
+    )
     args = parser.parse_args(argv)
     if args.redo and args.resume is None:
         parser.error("--redo requires --resume")
+    if args.redo_tables and args.resume is None and not args.dry_run:
+        parser.error("--redo-tables requires --resume or --dry-run")
     return args
 
 
-def dry_run(run_name: str, run_config: BenchmarkRunConfig) -> None:
+def table_task_names(dataset: BenchmarkDataset) -> list[str]:
+    return [
+        case.name
+        for case in dataset.cases
+        if case.name is not None
+        and isinstance(case.expected_output, list)
+        and any(isinstance(item, TableOutput) for item in case.expected_output)
+    ]
+
+
+def dry_run(
+    run_name: str,
+    run_config: BenchmarkRunConfig,
+    *,
+    redo_tables: bool = False,
+) -> None:
     """Validate local inputs without evaluating tasks or creating run artifacts."""
     provider = run_config.agent.load_provider()
     create_agent(run_config.agent.enabled_capabilities)
@@ -90,6 +120,15 @@ def dry_run(run_name: str, run_config: BenchmarkRunConfig) -> None:
         f"{len(dataset.cases) * run_config.repetitions} attempts; "
         f"{len(paths)} reference files checked"
     )
+    if redo_tables:
+        tasks = table_task_names(dataset)
+        if not tasks:
+            raise ValueError("The benchmark dataset has no table-output tasks")
+        print(
+            f"Table redo: {len(tasks)} tasks x {run_config.repetitions} repetitions "
+            f"= {len(tasks) * run_config.repetitions} new attempts."
+        )
+        print(f"Tasks: {', '.join(tasks)}")
     print("No model, database, or evaluator calls; no benchmark results written.")
 
 
@@ -97,13 +136,18 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     run_name, run_config = load_run_config(args.config)
     if args.dry_run:
-        dry_run(run_name, run_config)
+        dry_run(run_name, run_config, redo_tables=args.redo_tables)
         return
+    redo_tasks = args.redo
+    if args.redo_tables:
+        redo_tasks = table_task_names(load_dataset(run_config.dataset))
+        if not redo_tasks:
+            raise ValueError("The benchmark dataset has no table-output tasks")
     run_benchmark(
         run_name,
         run_config,
         resume_directory=args.resume,
-        redo_tasks=args.redo,
+        redo_tasks=redo_tasks,
         progress_log=args.progress_log,
     )
 

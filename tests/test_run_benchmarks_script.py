@@ -129,6 +129,83 @@ def test_skipping_every_config_is_a_noop(batch_workspace):
     assert not (root / "benchmark-results").exists()
 
 
+QWEN_SOURCES = {
+    "qwen3.8-27b__baseline": "2026-09-28_03-23",
+    "qwen3.8-27b__few_shot": "2026-09-28_17-43",
+    "qwen3.8-27b__few_shot_semantic_layer": "2026-09-28_10-35",
+    "qwen3.8-27b__semantic_layer": "2026-09-29_08-28",
+}
+
+
+def add_qwen_sources(root):
+    paths = {}
+    for config, timestamp in QWEN_SOURCES.items():
+        (root / "src/validation/run_configs" / f"{config}.yaml").write_text(
+            "repetitions: 3\n"
+        )
+        source = (
+            root
+            / "benchmark-results/power-quality-monitoring"
+            / f"{config}_{timestamp}"
+        )
+        (source / "artifacts").mkdir(parents=True)
+        (source / "checkpoint.json").write_text("original checkpoint")
+        (source / "artifacts/retained.png").write_bytes(b"original image")
+        paths[config] = source
+    return paths
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_qwen_table_redo_selects_four_original_sources_and_preserves_them(
+    batch_workspace, dry_run
+):
+    root, run = batch_workspace
+    sources = add_qwen_sources(root)
+    before = {
+        path: path.read_bytes()
+        for source in sources.values()
+        for path in source.rglob("*")
+        if path.is_file()
+    }
+    args = ["--redo-qwen-tables", *(["--dry-run"] if dry_run else [])]
+    result, calls = run(*args)
+    assert result.returncode == 0, result.stderr
+    assert config_names(calls) == list(QWEN_SOURCES)
+    for call in calls:
+        name = call[call.index("--config") + 1]
+        assert "--redo-tables" in call
+        assert ("--dry-run" in call) == dry_run
+        if dry_run:
+            assert "--resume" not in call
+        else:
+            assert call[call.index("--resume") + 1] == str(
+                sources[name].relative_to(root)
+            )
+    assert all(path.read_bytes() == content for path, content in before.items())
+    if dry_run:
+        assert not (root / "benchmark-results/batch-logs").exists()
+
+
+def test_qwen_table_redo_rejects_missing_source_before_starting_any_run(
+    batch_workspace,
+):
+    root, run = batch_workspace
+    sources = add_qwen_sources(root)
+    sources["qwen3.8-27b__semantic_layer"].joinpath("checkpoint.json").unlink()
+    result, calls = run("--redo-qwen-tables")
+    assert result.returncode == 2
+    assert "Missing original checkpoint or artifacts" in result.stderr
+    assert calls == []
+
+
+def test_qwen_table_redo_can_skip_finished_ablations(batch_workspace):
+    root, run = batch_workspace
+    add_qwen_sources(root)
+    result, calls = run("--redo-qwen-tables", "--skip", "qwen3.8-27b__baseline")
+    assert result.returncode == 0, result.stderr
+    assert config_names(calls) == list(QWEN_SOURCES)[1:]
+
+
 @pytest.mark.parametrize("interrupt", [False, True])
 def test_terminal_shows_rich_progress_before_run_finishes(batch_workspace, interrupt):
     root, _ = batch_workspace

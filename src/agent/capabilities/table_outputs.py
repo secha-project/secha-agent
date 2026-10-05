@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 
 from pydantic_ai import ModelRetry, RunContext, ToolReturn
 from pydantic_ai.capabilities import Capability
+from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.toolsets import FunctionToolset
 
 from ..deps import Deps
@@ -38,6 +40,7 @@ def build(
             selected,
             overrides=prompt_overrides,
         ),
+        prepare=_prepare_display_table_output,
         sequential=True,
     )
     return Capability(
@@ -47,6 +50,22 @@ def build(
             f"capabilities/{NAME}/instructions.md", selected, overrides=prompt_overrides
         ),
         toolsets=[toolset],
+    )
+
+
+async def _prepare_display_table_output(
+    _ctx: RunContext[Deps], tool_def: ToolDefinition
+) -> ToolDefinition:
+    # Pydantic AI flattens single-model arguments; keep ref nested like the
+    # inspection and visualization tools and the existing publication examples.
+    return replace(
+        tool_def,
+        parameters_json_schema={
+            "type": "object",
+            "properties": {"ref": tool_def.parameters_json_schema},
+            "required": ["ref"],
+            "additionalProperties": False,
+        },
     )
 
 

@@ -12,6 +12,9 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_RESULTS_DIR = Path(__file__).resolve().parents[1] / "benchmark-results"
+USAGE_EVALUATORS = frozenset(
+    {"TokenUsageAndCostEvaluator", "PerCategoryTokenUsageAndCostEvaluator"}
+)
 
 
 @dataclass(frozen=True)
@@ -35,7 +38,17 @@ def _load_run(path: Path) -> BenchmarkRun | None:
         report = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError):
         return None
-    if not isinstance(report, dict) or report.get("report_evaluator_failures") != []:
+    if not isinstance(report, dict):
+        return None
+    evaluator_failures = report.get("report_evaluator_failures")
+    # Missing usage analyses do not invalidate completed attempts or their scores.
+    # Scoring/unknown evaluator failures still prevent accepting the report.
+    if not isinstance(evaluator_failures, list) or any(
+        not isinstance(failure, dict)
+        or not isinstance(failure.get("name"), str)
+        or failure["name"] not in USAGE_EVALUATORS
+        for failure in evaluator_failures
+    ):
         return None
 
     metadata = report.get("experiment_metadata")
@@ -107,7 +120,7 @@ def _load_run(path: Path) -> BenchmarkRun | None:
 
 
 def load_benchmark_runs(results_dir: Path = DEFAULT_RESULTS_DIR) -> list[BenchmarkRun]:
-    """Load complete reports; failed task attempts remain part of their run."""
+    """Load complete scored reports, retaining failed attempts and usage errors."""
     runs: list[BenchmarkRun] = []
     for path in sorted(results_dir.glob("*/*/report.json")):
         run = _load_run(path)

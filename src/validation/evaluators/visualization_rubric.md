@@ -13,7 +13,7 @@ Score each criterion as either true or false. A generated plot does not need to 
   - true if the visible values, data scope, and transformations agree with the task and the reference, subject to the task taking priority in a visible conflict (e.g. both plots show the average with the requested grouping)
   - false otherwise, including values assigned to the wrong categories, different aggregations, or incorrect grouping (e.g. median instead of average, or year-month instead of year)
 - **aesthetics_correct: (e.g. colors, titles, legends, etc.)**
-  - true if labels, titles, legends, and colors are well placed and legible. Their exact wording, colors, and style do not need to match the ground truth when the differences do not affect interpretation or correctness
+  - true if labels, titles, legends, and colors are well placed and legible. Their exact wording, colors, and style do not need to match the ground truth when the differences do not affect interpretation or correctness. Labels need not restate transformations, especially when the reference omits them.
   - false otherwise, when the presentation is missing necessary context, illegible, misleading, or otherwise affects interpretation
 
 Provide a short and concise rationale for the scoring.

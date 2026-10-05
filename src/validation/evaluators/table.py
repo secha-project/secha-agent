@@ -1,5 +1,9 @@
+import json
 import re
+from collections import Counter
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from math import isfinite
 from numbers import Real
 from pathlib import Path
 
@@ -16,8 +20,78 @@ from ._numeric import numbers_match
 _MISSING = object()
 _ISO_TIMESTAMP = re.compile(
     r"\d{4}-\d{2}-\d{2}"
-    r"(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})?)?"
+    r"(?:[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?"
+    r"(?:Z|[+-]\d{2}:\d{2}| UTC)?)?"
 )
+_EXPLICIT_PRECISION = re.compile(
+    r"\bunrounded\b|\b(?:full|original)\s+precision\b"
+    r"|\b(?:without|no)\s+rounding\b|\b(?:do not|don't)\s+round\b"
+    r"|\b(?:decimal|significant)\s+(?:places?|figures?|digits?)\b"
+    r"|\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)[ -]decimals?\b",
+    re.IGNORECASE,
+)
+
+# Field identities preserve units and phase order. They never depend on values:
+# searching for whichever permutation passes would hide incorrectly labeled data.
+_COLUMN_ALIAS_GROUPS = (
+    ("timestamp", "timestamp_utc", "time_utc", "measurement_time_utc"),
+    ("pw", "power_w", "active_power_w", "measurement_power_w"),
+    ("device_name", "device_identifier", "solar_power_plant"),
+    ("description", "catalog_description"),
+    ("freq", "frequency_hz"),
+    ("start_utc", "first_timestamp", "first_ts"),
+    ("end_utc", "last_timestamp", "last_ts"),
+    ("duration_seconds", "duration_s", "elapsed_duration_s"),
+    (
+        "mean_opposing_w",
+        "mean_abs_w",
+        "mean_mag_w",
+        "mean_nf_magnitude_w",
+        "mean_nonfundamental_mag_w",
+        "mean_nonfundamental_w",
+    ),
+    (
+        "peak_opposing_w",
+        "peak_abs_w",
+        "peak_mag_w",
+        "peak_nf_magnitude_w",
+        "peak_nonfundamental_mag_w",
+        "peak_nonfundamental_w",
+    ),
+    ("mean_absolute_discrepancy_va", "mean_abs_discrepancy_va"),
+    ("measurement_date", "utc_date"),
+    ("morning_mean_power_kw", "mean_power_06_10_kw"),
+    ("evening_mean_power_kw", "mean_power_16_20_kw"),
+    ("absolute_difference_kw", "abs_diff_kw"),
+    ("hour_start", "hour_utc"),
+    ("mean_positive_charging_power_kw", "mean_positive_power_kw"),
+    ("spot_price_eur_per_mwh", "fi_spot_price_eur_mwh"),
+    ("l1", "phase_one"),
+    ("l2", "phase_two"),
+    ("l3", "phase_three"),
+)
+_COLUMN_ALIASES = {alias: group[0] for group in _COLUMN_ALIAS_GROUPS for alias in group}
+
+
+def _semantic_column_name(name):
+    normalized = re.sub(r"[^a-z0-9]+", "_", str(name).lower()).strip("_")
+    if normalized in _COLUMN_ALIASES:
+        return _COLUMN_ALIASES[normalized]
+    if match := re.fullmatch(r"u(?:l)?([123])([123]?)v", normalized):
+        first, second = match.groups()
+        phase = f"l{first}" + (f"_l{second}" if second else "")
+        return f"voltage_{phase}_v"
+    if match := re.fullmatch(
+        r"(?:(?:phase|supply)_)?voltage_(l[123](?:_l[123])?)_v", normalized
+    ):
+        return f"voltage_{match[1]}_v"
+    if match := re.fullmatch(r"phase_(l[123](?:_l[123])?)_voltage_v", normalized):
+        return f"voltage_{match[1]}_v"
+    if match := re.fullmatch(r"tdul([123])", normalized):
+        return f"voltage_distortion_l{match[1]}_pct"
+    if match := re.fullmatch(r"(?:total_)?voltage_distortion_l([123])_pct", normalized):
+        return f"voltage_distortion_l{match[1]}_pct"
+    return None
 
 
 def _normalize_value(value):
@@ -25,6 +99,8 @@ def _normalize_value(value):
         return _MISSING
     if isinstance(value, str) and _ISO_TIMESTAMP.fullmatch(value):
         try:
+            if value.endswith(" UTC"):
+                value = value[:-4] + "Z"
             timestamp = pd.Timestamp(value)
             # Reference CSVs store timezone-free timestamps in UTC.
             if timestamp.tzinfo is None:
@@ -46,7 +122,7 @@ def _values_match(expected, actual, tolerance):
 
 
 def _column_positions(target_table, candidate_table):
-    """Match names first, then pair remaining aliases in their column order."""
+    """Match exact names, then explicit field aliases, then unknown aliases in order."""
     if (
         len(candidate_table.columns) < len(target_table.columns)
         or not target_table.columns.is_unique
@@ -57,8 +133,34 @@ def _column_positions(target_table, candidate_table):
     positions = {name: index for index, name in enumerate(candidate_table.columns)}
     matched = [positions.get(name) for name in target_table.columns]
     used = {index for index in matched if index is not None}
+    target_keys = [_semantic_column_name(name) for name in target_table.columns]
+    candidate_keys = [_semantic_column_name(name) for name in candidate_table.columns]
+    for target_index, key in enumerate(target_keys):
+        if matched[target_index] is not None or key is None:
+            continue
+        aliases = [
+            index
+            for index, candidate_key in enumerate(candidate_keys)
+            if index not in used and key == candidate_key
+        ]
+        if len(aliases) > 1:
+            return None
+        if aliases:
+            matched[target_index] = aliases[0]
+            used.add(aliases[0])
     remaining = iter(index for index in range(len(positions)) if index not in used)
-    return [index if index is not None else next(remaining) for index in matched]
+    for target_index, index in enumerate(matched):
+        if index is not None:
+            continue
+        index = next(remaining)
+        if (
+            target_keys[target_index] is not None
+            and candidate_keys[index] is not None
+            and target_keys[target_index] != candidate_keys[index]
+        ):
+            return None
+        matched[target_index] = index
+    return matched
 
 
 def _rows_match(expected, actual, tolerance):
@@ -97,27 +199,7 @@ def _has_distinct_row_matches(matches, target_count):
     return True
 
 
-def table_match_modes(
-    target_table,
-    candidate_table,
-    partial=False,
-    tolerance=0.005,
-):
-    """Return whether whole rows match in order and ignoring order, respectively."""
-    positions = _column_positions(target_table, candidate_table)
-    if positions is None or len(candidate_table) > len(target_table):
-        return False, False
-    if not partial and len(candidate_table) != len(target_table):
-        return False, False
-
-    target_rows = [
-        tuple(_normalize_value(value) for value in row)
-        for row in target_table.itertuples(index=False, name=None)
-    ]
-    candidate_rows = [
-        tuple(_normalize_value(value) for value in row)
-        for row in candidate_table.iloc[:, positions].itertuples(index=False, name=None)
-    ]
+def _match_rows(target_rows, candidate_rows, tolerance):
     # An ordered partial match must be a subsequence of complete reference rows.
     remaining = iter(target_rows)
     if all(
@@ -137,11 +219,117 @@ def table_match_modes(
     return False, _has_distinct_row_matches(matches, len(target_rows))
 
 
+def _rounded_column(expected, actual, minimum_significant_digits):
+    """Find one rounding rule that explains every value in a measured column."""
+    values = [value for value in expected + actual if value is not _MISSING]
+    if not values or any(
+        isinstance(value, bool) or not isinstance(value, Real) or not isfinite(value)
+        for value in values
+    ):
+        return None
+    # Integer-valued reference columns include counts, IDs, and whole durations.
+    if all(float(value).is_integer() for value in expected if value is not _MISSING):
+        return None
+    if expected.count(_MISSING) != actual.count(_MISSING):
+        return None
+    target = [
+        Decimal(str(value)) if value is not _MISSING else _MISSING for value in expected
+    ]
+    candidate = [
+        Decimal(str(value)) if value is not _MISSING else _MISSING for value in actual
+    ]
+    candidate_counts = Counter(candidate)
+    rules = [("decimal_places", places) for places in range(16)] + [
+        ("significant_figures", digits)
+        for digits in range(minimum_significant_digits, 16)
+    ]
+    for kind, precision in rules:
+        rounded = []
+        for value in target:
+            if value is _MISSING:
+                rounded.append(value)
+                continue
+            places = (
+                precision
+                if kind == "decimal_places"
+                else precision - value.adjusted() - 1
+            )
+            try:
+                result = value.quantize(
+                    Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP
+                )
+            except InvalidOperation:
+                break
+            if result != value and (
+                result == 0
+                or value.adjusted() + places + 1 < minimum_significant_digits
+            ):
+                break
+            rounded.append(result)
+        else:
+            if rounded != target and Counter(rounded) == candidate_counts:
+                return rounded, candidate
+    return None
+
+
+def _rounded_rows(target_rows, candidate_rows, minimum_significant_digits):
+    """Round fixed columns, then let whole-row matching verify their associations."""
+    if not target_rows or len(target_rows) != len(candidate_rows):
+        return None
+    target = [list(row) for row in target_rows]
+    candidate = [list(row) for row in candidate_rows]
+    changed = False
+    for index in range(len(target[0])):
+        column = _rounded_column(
+            [row[index] for row in target],
+            [row[index] for row in candidate],
+            minimum_significant_digits,
+        )
+        if column is None:
+            continue
+        # Decimal cells compare exactly; no extra tolerance is added after rounding.
+        for rows, values in zip((target, candidate), column, strict=True):
+            for row, value in zip(rows, values, strict=True):
+                row[index] = value
+        changed = True
+    return (target, candidate) if changed else None
+
+
+def table_match_modes(
+    target_table,
+    candidate_table,
+    partial=False,
+    tolerance=0.005,
+    minimum_significant_digits=None,
+):
+    """Return whether whole rows match in order and ignoring order, respectively."""
+    positions = _column_positions(target_table, candidate_table)
+    if positions is None or len(candidate_table) > len(target_table):
+        return False, False
+    if not partial and len(candidate_table) != len(target_table):
+        return False, False
+
+    target_rows = [
+        tuple(_normalize_value(value) for value in row)
+        for row in target_table.itertuples(index=False, name=None)
+    ]
+    candidate_rows = [
+        tuple(_normalize_value(value) for value in row)
+        for row in candidate_table.iloc[:, positions].itertuples(index=False, name=None)
+    ]
+    modes = _match_rows(target_rows, candidate_rows, tolerance)
+    if modes[1] or partial or minimum_significant_digits is None or tolerance == 0:
+        return modes
+    rounded = _rounded_rows(target_rows, candidate_rows, minimum_significant_digits)
+    return _match_rows(*rounded, tolerance) if rounded is not None else modes
+
+
 def classify_table_match(
     target_table,
     candidate_table,
     min_coverage=0.5,
     tolerance=0.005,
+    minimum_significant_digits=None,
 ):
     target_rows = len(target_table)
     candidate_rows = len(candidate_table)
@@ -155,6 +343,7 @@ def classify_table_match(
             candidate_table,
             partial=False,
             tolerance=tolerance,
+            minimum_significant_digits=minimum_significant_digits,
         )
 
         if ordered:
@@ -178,6 +367,7 @@ def classify_table_match(
         candidate_table,
         partial=partial,
         tolerance=tolerance,
+        minimum_significant_digits=minimum_significant_digits,
     )
 
     if ordered:
@@ -200,6 +390,54 @@ def _table_outputs(expected_output):
     return [item for item in expected_output if isinstance(item, TableOutput)]
 
 
+def _alternative_table_paths(target_path):
+    manifest_path = target_path.with_suffix(".alternatives.json")
+    if not manifest_path.is_file():
+        return []
+    manifest = json.loads(manifest_path.read_text())
+    paths = manifest["table_paths"]
+    if not isinstance(paths, list) or not all(
+        isinstance(path, str) and path for path in paths
+    ):
+        raise ValueError(f"Invalid alternative table paths in {manifest_path}")
+    return [target_path.parent / path for path in paths]
+
+
+def _charging_start_watts_as_kw(ctx, target_table, candidate_table):
+    # Task 36's "increase in kW" also permits measured/rolling values labeled W.
+    if str(getattr(getattr(ctx, "metadata", None), "case_id", None)) != (
+        "d5884b41-e3f7-4ef5-bb2e-5c445e9743e1"
+    ) or tuple(target_table.columns) != (
+        "charging_start",
+        "(pw / 1000)",
+        "rolling_avg",
+        "(power_change / 1000)",
+    ):
+        return None
+    fields = []
+    for pattern in (
+        r"measured(?:_value|_power)?_w",
+        r"rolling_(?:average|avg)_w",
+        r"(?:power_)?increase_kw",
+    ):
+        matches = [
+            name
+            for name in candidate_table.columns
+            if re.fullmatch(pattern, str(name).lower())
+        ]
+        if len(matches) != 1:
+            return None
+        fields.append(matches[0])
+    converted = candidate_table.copy()
+    for name in fields[:2]:
+        if not pd.api.types.is_numeric_dtype(converted[name]):
+            return None
+        converted[name] = converted[name] / 1000
+    return converted.rename(
+        columns=dict(zip(fields, target_table.columns[1:], strict=True))
+    )
+
+
 @dataclass
 class ValidateTableIncluded(Evaluator[str, BenchmarkOutput, CaseMetadata]):
     """Check that the agent selected a table to return to the user."""
@@ -220,6 +458,11 @@ class ValidateTableValues(Evaluator[str, BenchmarkOutput, CaseMetadata]):
     artifact_base_path: Path = Path()
     min_coverage: float = 0.5
     tolerance: float = 0.005
+    minimum_significant_digits: int = 2
+
+    def __post_init__(self):
+        if not 2 <= self.minimum_significant_digits <= 15:
+            raise ValueError("Table rounding requires 2 to 15 significant digits")
 
     def evaluate(
         self, ctx: EvaluatorContext[str, BenchmarkOutput, CaseMetadata]
@@ -237,6 +480,12 @@ class ValidateTableValues(Evaluator[str, BenchmarkOutput, CaseMetadata]):
 
         candidate_table = pd.read_csv(csv_path)
         overall_match_type = "exact_match"
+        inputs = getattr(ctx, "inputs", "")
+        rounding = (
+            None
+            if isinstance(inputs, str) and _EXPLICIT_PRECISION.search(inputs)
+            else self.minimum_significant_digits
+        )
 
         for table_output in table_outputs:
             target_path = Path(table_output.table_path)
@@ -249,7 +498,36 @@ class ValidateTableValues(Evaluator[str, BenchmarkOutput, CaseMetadata]):
                 candidate_table,
                 min_coverage=self.min_coverage,
                 tolerance=self.tolerance,
+                minimum_significant_digits=rounding,
             )
+            if match_type == "no_match":
+                converted = _charging_start_watts_as_kw(
+                    ctx, target_table, candidate_table
+                )
+                if converted is not None:
+                    match_type, _ = classify_table_match(
+                        target_table,
+                        converted,
+                        min_coverage=self.min_coverage,
+                        tolerance=self.tolerance,
+                        minimum_significant_digits=rounding,
+                    )
+
+            accepted = {"exact_match"}
+            if not table_output.ordered:
+                accepted.add("match_up_to_ordering")
+            if match_type not in accepted:
+                for alternative_path in _alternative_table_paths(target_path):
+                    alternative_match, _ = classify_table_match(
+                        pd.read_csv(alternative_path),
+                        candidate_table,
+                        min_coverage=self.min_coverage,
+                        tolerance=self.tolerance,
+                        minimum_significant_digits=rounding,
+                    )
+                    if alternative_match in accepted:
+                        match_type = alternative_match
+                        break
 
             if match_type != "exact_match" and not (
                 match_type == "match_up_to_ordering" and not table_output.ordered

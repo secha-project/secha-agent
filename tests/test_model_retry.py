@@ -476,3 +476,31 @@ def test_model_retry_settings_are_recorded_in_metadata(monkeypatch):
     assert metadata["model_request_max_attempts"] == 4
     assert metadata["model_request_retry_budget_seconds"] == 120
     assert metadata["model_request_min_interval_seconds"] == 5
+
+
+@pytest.mark.parametrize("blocked", ["pacing", "request"])
+def test_positive_budget_bounds_pacing_and_inflight_requests(blocked):
+    calls = []
+
+    async def respond(request):
+        calls.append(request)
+        await asyncio.Event().wait()
+        raise AssertionError("unreachable")
+
+    async def run():
+        pacer = RequestPacer()
+        if blocked == "pacing":
+            pacer.defer(60)
+        async with httpx.AsyncClient(
+            transport=ModelRetryTransport(
+                httpx.MockTransport(respond),
+                pacer=pacer,
+                max_attempts=20,
+                retry_budget_seconds=0.02,
+            )
+        ) as client:
+            with pytest.raises(httpx.ReadTimeout, match="budget exhausted"):
+                await asyncio.wait_for(client.post("https://model.invalid"), timeout=1)
+
+    asyncio.run(run())
+    assert len(calls) == (blocked == "request")

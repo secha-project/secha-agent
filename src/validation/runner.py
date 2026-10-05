@@ -166,8 +166,13 @@ def attach_case_evaluators(dataset: BenchmarkDataset, artifact_base_path: Path) 
             )
 
 
-def create_run_directory(run_name: str, dataset_name: str) -> Path:
-    dataset_directory = RESULTS_DIR / dataset_name
+def create_run_directory(
+    run_name: str, dataset_name: str, *, results_dir: Path | None = None
+) -> Path:
+    root = (
+        results_dir.expanduser().resolve() if results_dir is not None else RESULTS_DIR
+    )
+    dataset_directory = root / dataset_name
     dataset_directory.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(UTC).astimezone().strftime("%Y-%m-%d_%H-%M")
     directory_name = f"{run_name}_{timestamp}"

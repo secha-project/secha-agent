@@ -95,7 +95,11 @@ def test_real_visualization_tools_send_inline_object_schemas(config):
     assert len(requests) == 1
     assert requests[0]["thinking"] == {"clear_thinking": False}
     tools = {t["function"]["name"]: t["function"] for t in requests[0]["tools"]}
-    for name in ("inspect_table_output", "visualize_table_output"):
+    for name in (
+        "inspect_table_output",
+        "display_table_output",
+        "visualize_table_output",
+    ):
         schema = tools[name]["parameters"]
         assert "$ref" not in json.dumps(schema)
         assert "$defs" not in json.dumps(schema)

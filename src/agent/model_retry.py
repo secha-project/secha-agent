@@ -80,6 +80,19 @@ class ModelRetryTransport(httpx.AsyncBaseTransport):
         )
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        # Bound pacing waits and in-flight non-streaming reads as well as backoff.
+        # A zero retry budget retains its existing meaning: one initial attempt.
+        if not self.retry_budget_seconds:
+            return await self._request_with_retries(request)
+        try:
+            async with asyncio.timeout(self.retry_budget_seconds):
+                return await self._request_with_retries(request)
+        except TimeoutError as exc:
+            raise httpx.ReadTimeout(
+                "Model request retry budget exhausted", request=request
+            ) from exc
+
+    async def _request_with_retries(self, request: httpx.Request) -> httpx.Response:
         started = time.monotonic()
         attempt = 0
         while True:
@@ -99,10 +112,12 @@ class ModelRetryTransport(httpx.AsyncBaseTransport):
                     # Include non-streaming body read failures in the retry policy.
                     # Never replay an SSE stream after exposing partial output.
                     await response.aread()
-            except httpx.TransportError:
+            except BaseException as exc:
                 if response is not None:
                     await response.aclose()
                     response = None
+                if not isinstance(exc, httpx.TransportError):
+                    raise
                 self.pacer.defer(delay)
                 if self._exhausted(attempt, started, delay):
                     raise

@@ -51,3 +51,31 @@ def test_differently_configured_agents_do_not_contaminate_each_other() -> None:
     assert original
     assert instructions(combined) != original
     assert instructions(standalone) == original
+
+
+@pytest.mark.parametrize("few_shot", [False, True])
+def test_table_tools_advertise_consistent_nested_references(few_shot: bool) -> None:
+    capabilities = {"query", "table_outputs", "visualization"}
+    if few_shot:
+        capabilities.add("few_shot")
+    model = TestModel(call_tools=[], custom_output_text="done")
+    create_agent(capabilities).run_sync(
+        "question", deps=cast(Deps, cast(Any, object())), model=model
+    )
+    parameters = model.last_model_request_parameters
+    assert parameters is not None
+    tools = {tool.name: tool for tool in parameters.function_tools}
+    for name in (
+        "inspect_table_output",
+        "display_table_output",
+        "visualize_table_output",
+    ):
+        schema = tools[name].parameters_json_schema
+        assert "ref" in schema["required"]
+        assert "output_id" not in schema["properties"]
+        ref_schema = schema["properties"]["ref"]
+        if "$ref" in ref_schema:
+            ref_schema = schema["$defs"][ref_schema["$ref"].rsplit("/", 1)[1]]
+        assert ref_schema["type"] == "object"
+        assert ref_schema["required"] == ["output_id"]
+        assert ref_schema["properties"]["output_id"]["type"] == "string"

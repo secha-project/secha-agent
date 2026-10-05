@@ -1,0 +1,4 @@
+{
+  "note": "The question had a small ambiguity which makes both answers correct: meter-reported voltage distortion and reconstructed odd-harmonic distortion.",
+  "table_paths": ["table-reported.csv"]
+}

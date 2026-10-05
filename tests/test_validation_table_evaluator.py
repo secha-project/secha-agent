@@ -1,10 +1,11 @@
+import json
 from types import SimpleNamespace
 from typing import Any, cast
 
 import pandas as pd
 import pytest
 
-from src.validation.eval_models import TableOutput, TextOutput
+from src.validation.eval_models import CaseMetadata, TableOutput, TextOutput
 from src.validation.evaluators.table import (
     ValidateTableIncluded,
     ValidateTableValues,
@@ -33,6 +34,97 @@ def test_column_mapping_uses_names_then_positions(candidate, match_type) -> None
 def test_one_candidate_column_cannot_satisfy_two_expected_columns() -> None:
     target = pd.DataFrame({"a": [1, 2], "b": [1, 2]})
     candidate = pd.DataFrame({"a": [1, 2]})
+    assert classify_table_match(target, candidate) == ("no_match", 1.0)
+
+
+def test_explicit_field_aliases_match_reordered_columns_with_extra_data() -> None:
+    target = pd.DataFrame(
+        {
+            "device_name": ["meter_a", "meter_b"],
+            "timestamp": ["2025-03-01 00:00:00", "2025-03-01 00:01:00"],
+            "ul1v": [230, 231],
+            "ul2v": [232, 233],
+            "freq": [50, 49.9],
+        }
+    )
+    candidate = pd.DataFrame(
+        {
+            "timestamp_utc": ["2025-03-01T00:00Z", "2025-03-01T00:01Z"],
+            "extra": [999, 999],
+            "supply_voltage_l2_v": [232, 233],
+            "frequency_hz": [50, 49.9],
+            "device_identifier": ["meter_a", "meter_b"],
+            "phase_l1_voltage_v": [230, 231],
+        }
+    )
+    assert classify_table_match(target, candidate) == ("exact_match", 1.0)
+
+
+@pytest.mark.parametrize(
+    "time_name,power_name",
+    [
+        ("measurement_time_utc", "power_w"),
+        ("timestamp", "measurement_power_w"),
+    ],
+)
+def test_required_measurements_match_with_device_and_window_details(
+    time_name, power_name
+) -> None:
+    target = pd.DataFrame({"timestamp": ["2025-03-01 00:00:00.172"], "pw": [25.118034]})
+    candidate = pd.DataFrame(
+        {
+            "device_name": ["KampusareenaEVCharging"],
+            time_name: ["2025-03-01T00:00:00.172Z"],
+            power_name: [25.118034],
+            "window_min_w": [25.118034],
+            "window_max_w": [28.537029],
+        }
+    )
+    assert classify_table_match(target, candidate) == ("exact_match", 1.0)
+
+
+def test_alias_mapping_does_not_search_values_to_hide_swapped_phases() -> None:
+    target = pd.DataFrame({"ul1v": [230], "ul2v": [240]})
+    candidate = pd.DataFrame({"voltage_l2_v": [230], "voltage_l1_v": [240]})
+    assert classify_table_match(target, candidate) == ("no_match", 1.0)
+
+
+def test_ambiguous_duplicate_field_aliases_are_rejected() -> None:
+    target = pd.DataFrame({"pw": [10]})
+    candidate = pd.DataFrame({"power_w": [10], "active_power_w": [11]})
+    assert classify_table_match(target, candidate) == ("no_match", 1.0)
+
+
+def test_field_aliases_do_not_convert_units_or_relax_numeric_precision() -> None:
+    target = pd.DataFrame({"pw": [29.174286]})
+    candidate = pd.DataFrame({"power_kw": [0.029174286]})
+    assert classify_table_match(target, candidate) == ("no_match", 1.0)
+    assert classify_table_match(
+        pd.DataFrame({"pw": [0.027344229]}),
+        pd.DataFrame({"power_w": [0.027]}),
+    ) == ("no_match", 1.0)
+
+
+@pytest.mark.parametrize(
+    "actual",
+    [
+        "2025-03-10 09:13 UTC",
+        "2025-03-10T09:13Z",
+        "2025-03-10T11:13+02:00",
+        "2025-03-10 09:13:00 UTC",
+    ],
+)
+def test_equivalent_minute_and_utc_suffix_timestamps(actual) -> None:
+    target = pd.DataFrame({"timestamp": ["2025-03-10 09:13:00"]})
+    assert classify_table_match(target, pd.DataFrame({"timestamp_utc": [actual]})) == (
+        "exact_match",
+        1.0,
+    )
+
+
+def test_minute_timestamp_format_does_not_erase_reference_milliseconds() -> None:
+    target = pd.DataFrame({"timestamp": ["2025-03-10 09:13:00.172"]})
+    candidate = pd.DataFrame({"timestamp_utc": ["2025-03-10 09:13 UTC"]})
     assert classify_table_match(target, candidate) == ("no_match", 1.0)
 
 
@@ -255,3 +347,316 @@ def test_missing_candidate_csv_fails() -> None:
         "ValidateTableValues": False,
         "TableMatchType": "no_match",
     }
+
+
+@pytest.mark.parametrize(
+    "expected,actual",
+    [
+        (0.4033333333333333, 0.40),
+        (0.027344229275521877, 0.027),
+        (27.288971018055552, 27.3),
+        (0.006794343975, 0.0068),
+        (-0.0245, -0.025),
+    ],
+)
+def test_correct_rounding_accepts_the_benchmark_examples(expected, actual):
+    assert classify_table_match(
+        pd.DataFrame({"value": [expected]}),
+        pd.DataFrame({"value": [actual]}),
+        minimum_significant_digits=2,
+    ) == ("exact_match", 1.0)
+
+
+@pytest.mark.parametrize(
+    "expected,actual",
+    [
+        (0.0276, 0.02),
+        (3.9095, 3.8726),
+        (0.9994531, 0.999990),
+        (0.0366666667, 0.04),
+        (0.00123, 0),
+        (314, 310),
+    ],
+)
+def test_rounding_does_not_accept_nearby_values_coarse_results_or_counts(
+    expected, actual
+):
+    assert classify_table_match(
+        pd.DataFrame({"value": [expected]}),
+        pd.DataFrame({"value": [actual]}),
+        minimum_significant_digits=2,
+    ) == ("no_match", 1.0)
+
+
+def test_rounding_requires_consistent_precision_across_the_column():
+    reference = pd.DataFrame({"value": [0.027344, 0.043211]})
+    assert classify_table_match(
+        reference,
+        pd.DataFrame({"value": [0.027, 0.0432]}),
+        minimum_significant_digits=2,
+    ) == ("no_match", 1.0)
+    assert classify_table_match(
+        reference,
+        pd.DataFrame({"value": [0.027, 0.043]}),
+        minimum_significant_digits=2,
+    ) == ("exact_match", 1.0)
+
+
+@pytest.mark.parametrize("significant_figures", [False, True])
+def test_rounding_supports_fixed_decimal_places_or_significant_figures(
+    significant_figures,
+):
+    reference = pd.DataFrame({"value": [0.027344, 12.3456]})
+    actual = [0.0273, 12.3] if significant_figures else [0.027, 12.346]
+    assert classify_table_match(
+        reference,
+        pd.DataFrame({"value": actual}),
+        minimum_significant_digits=2,
+    ) == ("exact_match", 1.0)
+
+
+def test_rounding_does_not_discard_row_associations_order_or_multiplicity():
+    reference = pd.DataFrame({"id": ["a", "b"], "value": [0.027344, 0.043211]})
+    rounded = pd.DataFrame({"id": ["a", "b"], "value": [0.027, 0.043]})
+    assert classify_table_match(
+        reference, rounded.iloc[::-1], minimum_significant_digits=2
+    ) == ("match_up_to_ordering", 1.0)
+    for candidate in (
+        pd.DataFrame({"id": ["a", "b"], "value": [0.043, 0.027]}),
+        rounded.iloc[[0, 0]],
+    ):
+        assert classify_table_match(
+            reference, candidate, minimum_significant_digits=2
+        ) == ("no_match", 1.0)
+    assert (
+        classify_table_match(reference, rounded.iloc[:1], minimum_significant_digits=2)[
+            0
+        ]
+        == "no_match"
+    )
+
+
+def test_rounded_values_compare_exactly_without_a_second_tolerance():
+    reference = pd.DataFrame({"id": ["a", "b"], "value": [0.027344, 0.027444]})
+    swapped = pd.DataFrame({"id": ["a", "b"], "value": [0.0274, 0.0273]})
+    assert classify_table_match(reference, swapped, minimum_significant_digits=2) == (
+        "no_match",
+        1.0,
+    )
+
+
+@pytest.mark.parametrize(
+    "inputs,accepted",
+    [
+        ("Show average consumption in kW.", True),
+        ("Return the value to four decimal places.", False),
+        ("Round to two decimals.", False),
+        ("Return a six-decimal correlation.", False),
+        ("Return two significant figures.", False),
+        ("Show unrounded values.", False),
+        ("Preserve full precision.", False),
+        ("Do not round the values.", False),
+    ],
+)
+def test_csv_rounding_respects_explicit_precision_in_the_question(
+    tmp_path, inputs, accepted
+):
+    (tmp_path / "target.csv").write_text("value\n0.027344229275521877\n")
+    (tmp_path / "candidate.csv").write_text("value\n0.027\n")
+    ctx = SimpleNamespace(
+        inputs=inputs,
+        expected_output=[TableOutput(table_path="target.csv", ordered=True)],
+        attributes={"csv_path": str(tmp_path / "candidate.csv")},
+    )
+    assert (
+        ValidateTableValues(artifact_base_path=tmp_path).evaluate(cast(Any, ctx))[
+            "ValidateTableValues"
+        ]
+        is accepted
+    )
+    assert (
+        ValidateTableValues(artifact_base_path=tmp_path, tolerance=0).evaluate(
+            cast(Any, ctx)
+        )["ValidateTableValues"]
+        is False
+    )
+
+
+@pytest.fixture
+def charging_start_table_context(tmp_path):
+    (tmp_path / "target.csv").write_text(
+        "charging_start,(pw / 1000),rolling_avg,(power_change / 1000)\n"
+        "2025-03-01 01:19:20.615,0.029174286,0.027048353905,0.002125932095\n"
+    )
+    return SimpleNamespace(
+        inputs="Provide the measured value, rolling average, and increase in kW.",
+        metadata=CaseMetadata(
+            case_id="d5884b41-e3f7-4ef5-bb2e-5c445e9743e1",
+            category="semantic integration",
+        ),
+        expected_output=[TableOutput(table_path="target.csv", ordered=True)],
+        attributes={"csv_path": str(tmp_path / "candidate.csv")},
+    )
+
+
+@pytest.mark.parametrize(
+    "header,values,accepted",
+    [
+        (
+            "measured_value_w,rolling_average_w,increase_kw",
+            "29.174286,27.048353905,0.002125932095",
+            True,
+        ),
+        ("measured_value_W,rolling_avg_W,increase_kW", "29.174,27.048,0.002126", True),
+        (
+            "measured_w,rolling_average_w,increase_kw",
+            "29.174286,27.048353905,0.002125932095",
+            True,
+        ),
+        (
+            "measured_value_kw,rolling_average_kw,increase_kw",
+            "0.029174286,0.027048353905,0.002125932095",
+            True,
+        ),
+        ("measured_value,rolling_average,increase_kw", "29.174,27.048,0.002126", False),
+        (
+            "measured_value_kw,rolling_average_kw,increase_kw",
+            "29.174,27.048,0.002126",
+            False,
+        ),
+        ("measured_value_w,rolling_average_w,increase_w", "29.174,27.048,2.126", False),
+        ("measured_value_w,rolling_average_w,increase_kw", "31,27.048,0.002126", False),
+        ("measured_value_w,rolling_average_w,increase_kw", "29.174,26,0.002126", False),
+        (
+            "measured_value_w,rolling_average_w,increase_kw",
+            "29.174,27.048,0.0022",
+            False,
+        ),
+    ],
+)
+def test_charging_start_accepts_explicit_equivalent_units_only(
+    tmp_path, charging_start_table_context, header, values, accepted
+):
+    (tmp_path / "candidate.csv").write_text(
+        f"potential_charging_start_utc,{header}\n2025-03-01 01:19:20.615,{values}\n"
+    )
+    result = ValidateTableValues(artifact_base_path=tmp_path).evaluate(
+        cast(Any, charging_start_table_context)
+    )
+    assert result["ValidateTableValues"] is accepted
+
+
+@pytest.mark.parametrize("different_case", [False, True])
+def test_unit_compatibility_keeps_case_scope_and_exact_event_timestamps(
+    tmp_path, charging_start_table_context, different_case
+):
+    timestamp = "2025-03-01 01:19:20.615" if different_case else "2025-03-01 01:19:20"
+    (tmp_path / "candidate.csv").write_text(
+        "potential_charging_start_utc,measured_value_w,rolling_average_w,increase_kw\n"
+        f"{timestamp},29.174286,27.048353905,0.002125932095\n"
+    )
+    if different_case:
+        charging_start_table_context.metadata = CaseMetadata(
+            case_id="00000000-0000-0000-0000-000000000001",
+            category="semantic integration",
+        )
+    assert (
+        ValidateTableValues(artifact_base_path=tmp_path).evaluate(
+            cast(Any, charging_start_table_context)
+        )["ValidateTableValues"]
+        is False
+    )
+
+
+@pytest.fixture
+def voltage_thd_table_context(tmp_path):
+    references = tmp_path / "artifacts" / "task_55"
+    references.mkdir(parents=True)
+    header = "phase,mean_voltage_harmonic_distortion_v\n"
+    (references / "table.csv").write_text(header + "L1,3.9095\nL2,3.5781\nL3,3.7861\n")
+    (references / "table-reported.csv").write_text(
+        header + "L1,3.8726\nL2,3.5395\nL3,3.7543\n"
+    )
+    (references / "table.alternatives.json").write_text(
+        json.dumps({"table_paths": ["table-reported.csv"]})
+    )
+    return SimpleNamespace(
+        inputs="Return the phase and mean magnitude in volts, rounded to four decimal places and ordered by phase.",
+        metadata=CaseMetadata(
+            case_id="968808f7-503e-4c5a-a859-597dfbac2d56",
+            category="domain knowledge",
+        ),
+        expected_output=[
+            TableOutput(table_path="artifacts/task_55/table.csv", ordered=True)
+        ],
+        attributes={"csv_path": str(tmp_path / "candidate.csv")},
+    )
+
+
+@pytest.mark.parametrize(
+    "rows,accepted",
+    [
+        ("L1,3.9095\nL2,3.5781\nL3,3.7861\n", True),
+        ("L1,3.8726\nL2,3.5395\nL3,3.7543\n", True),
+        ("L1,3.8733\nL2,3.5402\nL3,3.7550\n", True),
+        ("L1,3.9293\nL2,3.5961\nL3,3.8071\n", False),
+        ("L1,3.9095\nL2,3.5395\nL3,3.7543\n", False),
+        ("L1,3.5395\nL2,3.8726\nL3,3.7543\n", False),
+        ("L1,3.8726\nL1,3.8726\nL3,3.7543\n", False),
+        ("L1,3.8726\nL2,3.5395\n", False),
+        ("L3,3.7543\nL2,3.5395\nL1,3.8726\n", False),
+        ("L1,3.9\nL2,3.5\nL3,3.8\n", False),
+        ("L1,1.6\nL2,1.5\nL3,1.6\n", False),
+        ("L1,3.8726\nL2,3.5395\nL3,3.7543\nL4,3.8726\n", False),
+    ],
+)
+def test_voltage_thd_accepts_either_complete_reference_only(
+    tmp_path, voltage_thd_table_context, rows, accepted
+):
+    (tmp_path / "candidate.csv").write_text("phase,mean_thd_v\n" + rows)
+    result = ValidateTableValues(artifact_base_path=tmp_path).evaluate(
+        cast(Any, voltage_thd_table_context)
+    )
+    assert result["ValidateTableValues"] is accepted
+
+
+def test_alternative_reference_preserves_unordered_table_matching(
+    tmp_path, voltage_thd_table_context
+):
+    (tmp_path / "candidate.csv").write_text(
+        "phase,mean_thd_v\nL3,3.7543\nL2,3.5395\nL1,3.8726\n"
+    )
+    voltage_thd_table_context.expected_output[0].ordered = False
+    assert ValidateTableValues(artifact_base_path=tmp_path).evaluate(
+        cast(Any, voltage_thd_table_context)
+    ) == {"ValidateTableValues": True, "TableMatchType": "match_up_to_ordering"}
+
+
+def test_alternative_reference_is_opted_in_by_the_artifact_only(
+    tmp_path, voltage_thd_table_context
+):
+    references = tmp_path / "artifacts" / "task_55"
+    (references / "table.alternatives.json").unlink()
+    (tmp_path / "candidate.csv").write_text(
+        "phase,mean_thd_v\nL1,3.8726\nL2,3.5395\nL3,3.7543\n"
+    )
+    assert (
+        ValidateTableValues(artifact_base_path=tmp_path).evaluate(
+            cast(Any, voltage_thd_table_context)
+        )["ValidateTableValues"]
+        is False
+    )
+
+
+def test_alternative_reference_keeps_the_configured_numeric_tolerance(
+    tmp_path, voltage_thd_table_context
+):
+    (tmp_path / "candidate.csv").write_text(
+        "phase,mean_thd_v\nL1,3.8729\nL2,3.5399\nL3,3.7546\n"
+    )
+    assert (
+        ValidateTableValues(artifact_base_path=tmp_path, tolerance=0).evaluate(
+            cast(Any, voltage_thd_table_context)
+        )["ValidateTableValues"]
+        is False
+    )

@@ -101,6 +101,8 @@ class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]
 
     artifact_base_path: Path = Path()
     model: Model | str = _DEFAULT_JUDGE_MODEL
+    model_request_max_attempts: int | None = None
+    model_request_retry_budget_seconds: float | None = None
     model_settings: ModelSettings = field(
         default_factory=lambda: OpenAIResponsesModelSettings(
             openai_reasoning_effort="max"
@@ -145,8 +147,8 @@ class ValidateVisualizationQuality(Evaluator[str, BenchmarkOutput, CaseMetadata]
                 model,
                 provider=RetryingOpenAIProvider(
                     api_key=provider_config.api_key.get_secret_value(),
-                    max_attempts=None,
-                    retry_budget_seconds=None,
+                    max_attempts=self.model_request_max_attempts,
+                    retry_budget_seconds=self.model_request_retry_budget_seconds,
                     pacer=_JUDGE_REQUEST_PACER,
                 ),
             )

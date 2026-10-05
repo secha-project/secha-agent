@@ -26,6 +26,7 @@ from plotnine import (
     labs,
     position_dodge,
     scale_fill_manual,
+    scale_x_discrete,
     scale_y_continuous,
     theme,
     theme_minimal,
@@ -37,10 +38,26 @@ from scripts.load_benchmark_runs import (
     BenchmarkRun,
     load_benchmark_runs,
 )
+from scripts.report_figure_style import (
+    DEFAULT_TYPOGRAPHY,
+    ReportTypography,
+    add_figure_arguments,
+    copy_figure_to_thesis,
+    figure_dimensions,
+    typography_from_args,
+    typography_theme,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = PROJECT_ROOT / "output/pdf/ablation_pass_rates.pdf"
 COLORS = ("#72b2a2", "#e99778", "#94a3c3", "#d4b46d", "#aa91b5")
+ABLATION_ORDER = (
+    "baseline",
+    "few_shot",
+    "semantic_layer",
+    "few_shot_semantic_layer",
+)
+MODEL_ORDER = ("qwen3.8-27b", "gpt-6-luna", "glm-5.3", "gpt-6-sol")
 
 
 def split_ablation_name(name: str) -> tuple[str, str] | None:
@@ -101,12 +118,17 @@ def ablation_data(
     if len({run.dataset for run in all_runs}) != 1:
         raise ValueError("Figure 1 runs must use the same dataset")
 
+    ablation_rank = {name: index for index, name in enumerate(ABLATION_ORDER)}
     ordered_ablations = sorted(
-        ablations, key=lambda value: (value != "baseline", value)
+        ablations, key=lambda value: (ablation_rank.get(value, len(ABLATION_ORDER)), value)
+    )
+    model_rank = {name: index for index, name in enumerate(MODEL_ORDER)}
+    ordered_roots = sorted(
+        grouped, key=lambda value: (model_rank.get(value, len(MODEL_ORDER)), value)
     )
     task_categories: dict[str, str] | None = None
     records: list[dict[str, str | float]] = []
-    for root in sorted(grouped):
+    for root in ordered_roots:
         for ablation in ordered_ablations:
             run = grouped[root][ablation]
             scores = load_task_scores(run.path)
@@ -136,7 +158,7 @@ def ablation_data(
 
     data = pd.DataFrame.from_records(records)
     data["root"] = pd.Categorical(
-        data["root"], categories=sorted(grouped), ordered=True
+        data["root"], categories=ordered_roots, ordered=True
     )
     data["ablation"] = pd.Categorical(
         data["ablation"], categories=ordered_ablations, ordered=True
@@ -144,11 +166,15 @@ def ablation_data(
     return data
 
 
-def make_ablation_figure(data: pd.DataFrame) -> ggplot:
+def make_ablation_figure(
+    data: pd.DataFrame, *, typography: ReportTypography = DEFAULT_TYPOGRAPHY
+) -> ggplot:
     """Build a grouped bar plot with aligned percentile-bootstrap intervals."""
     ablations = list(data["ablation"].cat.categories)
-    colors = {name: COLORS[index % len(COLORS)] for index, name in enumerate(ablations)}
-    labels = [name.replace("_", " ").replace("-", " ").title() for name in ablations]
+    # Preserve existing colors while changing the bars' and legend's order.
+    color_order = sorted(ablations, key=lambda value: (value != "baseline", value))
+    colors = {name: COLORS[index % len(COLORS)] for index, name in enumerate(color_order)}
+    labels = [name.replace("_", " ").replace("-", " ").title().replace("Few Shot Semantic Layer", "Few Shot\nSemantic Layer") for name in ablations]
     dodge = position_dodge(width=0.8)
     return (
         ggplot(data, aes(x="root", y="pass_rate", fill="ablation"))
@@ -161,6 +187,7 @@ def make_ablation_figure(data: pd.DataFrame) -> ggplot:
             size=0.55,
         )
         + scale_fill_manual(values=colors, breaks=ablations, labels=labels)
+        + scale_x_discrete(labels=lambda values: [name.replace("gpt-6-", "gpt-6\n").replace("qwen3.8-", "qwen3.8\n") for name in values])
         + scale_y_continuous(breaks=[0, 0.2, 0.4, 0.6, 0.8, 1.0], expand=(0, 0))
         + coord_cartesian(ylim=(0, 1))
         + labs(x="", y="Pass@1", fill="Ablation")
@@ -179,6 +206,7 @@ def make_ablation_figure(data: pd.DataFrame) -> ggplot:
             legend_position="right",
             legend_justification_right="top",
         )
+        + typography_theme(typography)
     )
 
 
@@ -196,7 +224,9 @@ def main() -> None:
     parser.add_argument("--bootstrap-samples", type=int, default=10_000)
     parser.add_argument("--confidence-level", type=float, default=0.95)
     parser.add_argument("--seed", type=int, default=0)
+    add_figure_arguments(parser)
     args = parser.parse_args()
+    typography = typography_from_args(args)
 
     data = ablation_data(
         load_benchmark_runs(args.results_dir),
@@ -207,9 +237,11 @@ def main() -> None:
         roots=args.root,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    width = max(6.5, 1.35 * len(data["root"].cat.categories) + 2.4)
-    make_ablation_figure(data).save(args.output, width=width, height=4.2, verbose=False)
+    width, height = figure_dimensions(args, width_mm=150, height_mm=95)
+    make_ablation_figure(data, typography=typography).save(args.output, width=width, height=height, verbose=False)
     print(f"Wrote {args.output}")
+    if args.copy_to_thesis:
+        copy_figure_to_thesis(args.output, args.thesis_dir)
 
 
 if __name__ == "__main__":

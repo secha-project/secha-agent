@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-Usage: bash scripts/run_benchmarks.sh [--dry-run] [--skip CONFIG]...
+Usage: bash scripts/run_benchmarks.sh [--dry-run] [--skip CONFIG]... [--redo-qwen-tables]
 
 Run YAML configurations sequentially, preserving their configured repetitions.
 Repeat --skip to omit configurations you have already completed. CONFIG may be
@@ -11,6 +11,13 @@ a config stem or filename, for example glm-5.3__baseline or its .yaml filename.
 
   bash scripts/run_benchmarks.sh --skip glm-5.3__baseline
   bash scripts/run_benchmarks.sh --skip glm-5.3__baseline --dry-run
+  bash scripts/run_benchmarks.sh --redo-qwen-tables --dry-run
+  bash scripts/run_benchmarks.sh --redo-qwen-tables
+
+--redo-qwen-tables reruns all table-output tasks in the four original Qwen
+ablations. Each redo copies its original checkpoint and artifacts into a new
+run directory, retains other attempts, and generates a full report. The current
+dataset selects 25 tasks x 3 repetitions x 4 ablations = 300 new attempts.
 
 Each run prints a numbered banner and preserves its live progress display.
 Live runs save compact status logs under benchmark-results/batch-logs/, with
@@ -20,10 +27,12 @@ USAGE
 }
 
 dry_run=0
+redo_qwen_tables=0
 skip_configs=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) dry_run=1; shift ;;
+    --redo-qwen-tables) redo_qwen_tables=1; shift ;;
     --skip)
       if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
         echo "--skip requires a config name." >&2
@@ -59,6 +68,9 @@ pending_configs=()
 for config in "${configs[@]}"; do
   config_name=${config##*/}
   config_name=${config_name%.yaml}
+  if [[ "$redo_qwen_tables" -eq 1 && "$config_name" != qwen3.8-27b__* ]]; then
+    continue
+  fi
   skip=0
   for skip_config in "${skip_configs[@]-}"; do
     if [[ "$config_name" == "$skip_config" ]]; then
@@ -77,6 +89,28 @@ total=${#pending_configs[@]}
 if [[ "$total" -eq 0 ]]; then
   echo "No configurations remain after the requested skips."
   exit 0
+fi
+
+redo_source() {
+  # Pin the original runs rather than choosing whichever redo is newest.
+  case "$1" in
+    qwen3.8-27b__baseline) echo "benchmark-results/power-quality-monitoring/qwen3.8-27b__baseline_2026-09-28_03-23" ;;
+    qwen3.8-27b__few_shot) echo "benchmark-results/power-quality-monitoring/qwen3.8-27b__few_shot_2026-09-28_17-43" ;;
+    qwen3.8-27b__few_shot_semantic_layer) echo "benchmark-results/power-quality-monitoring/qwen3.8-27b__few_shot_semantic_layer_2026-09-28_10-35" ;;
+    qwen3.8-27b__semantic_layer) echo "benchmark-results/power-quality-monitoring/qwen3.8-27b__semantic_layer_2026-09-29_08-28" ;;
+    *) echo "No original redo source configured for $1." >&2; return 2 ;;
+  esac
+}
+
+if [[ "$redo_qwen_tables" -eq 1 ]]; then
+  for config_name in "${pending_configs[@]}"; do
+    source_dir=$(redo_source "$config_name")
+    if [[ ! -f "$source_dir/checkpoint.json" || ! -d "$source_dir/artifacts" ]]; then
+      echo "Missing original checkpoint or artifacts: $source_dir" >&2
+      exit 2
+    fi
+  done
+  printf '\nRedoing table tasks only; other attempts are retained.\n'
 fi
 
 printf '\nQueued %d of %d configurations, in this order:\n' "$total" "${#configs[@]}"
@@ -107,6 +141,14 @@ for current_config in "${pending_configs[@]}"; do
   action=RUNNING
   command=(uv run --locked --no-dev --no-cache python -u
     -m src.validation.run_benchmark --config "$current_config")
+  if [[ "$redo_qwen_tables" -eq 1 ]]; then
+    command+=(--redo-tables)
+    source_dir=$(redo_source "$current_config")
+    printf '\nRedo source: %s/%s\n' "$PWD" "$source_dir"
+    if [[ "$dry_run" -eq 0 ]]; then
+      command+=(--resume "$source_dir")
+    fi
+  fi
   if [[ "$dry_run" -eq 1 ]]; then
     action=VALIDATING
     command+=(--dry-run)

@@ -1,0 +1,117 @@
+description: Proposed 22/11/22 split; freeze before examining optimization outcomes.
+dataset: power-quality-monitoring
+allocation_seed: 20261003
+method: Within each category/output-family stratum, choose uniformly from all group
+  assignments satisfying 40/20/40 quotas. Strata and cases follow dataset order.
+groups:
+- - task_12
+  - task_13
+coverage:
+- category: data discovery
+  output_family: text
+  train: 2
+  validation: 1
+  test: 2
+- category: data discovery
+  output_family: numeric_or_mixed
+  train: 2
+  validation: 1
+  test: 2
+- category: data discovery
+  output_family: table
+  train: 2
+  validation: 1
+  test: 2
+- category: data transformations
+  output_family: numeric_or_mixed
+  train: 2
+  validation: 1
+  test: 2
+- category: data transformations
+  output_family: table
+  train: 2
+  validation: 1
+  test: 2
+- category: data transformations
+  output_family: visualization
+  train: 2
+  validation: 1
+  test: 2
+- category: semantic integration
+  output_family: numeric_or_mixed
+  train: 2
+  validation: 1
+  test: 2
+- category: semantic integration
+  output_family: table
+  train: 2
+  validation: 1
+  test: 2
+- category: semantic integration
+  output_family: visualization
+  train: 2
+  validation: 1
+  test: 2
+- category: domain knowledge
+  output_family: table
+  train: 4
+  validation: 2
+  test: 4
+train:
+- task_1
+- task_2
+- task_7
+- task_8
+- task_11
+- task_14
+- task_16
+- task_19
+- task_24
+- task_25
+- task_26
+- task_29
+- task_34
+- task_35
+- task_38
+- task_39
+- task_41
+- task_45
+- task_47
+- task_49
+- task_52
+- task_53
+validation:
+- task_3
+- task_10
+- task_15
+- task_20
+- task_23
+- task_27
+- task_32
+- task_36
+- task_43
+- task_48
+- task_54
+test:
+- task_4
+- task_5
+- task_6
+- task_9
+- task_12
+- task_13
+- task_17
+- task_18
+- task_21
+- task_22
+- task_28
+- task_30
+- task_31
+- task_33
+- task_37
+- task_40
+- task_42
+- task_44
+- task_46
+- task_50
+- task_51
+- task_55

@@ -1,10 +1,11 @@
-"""Plot pass@k and pass^k for all completed runs of one ablation.
+"""Plot pass@k and pass^k for one ablation or each model's best ablation.
 
 Run configs must be named ROOT__ABLATION, for example model-a__baseline.
-Both metrics are shown as stacked plots, each with its own y-axis label,
-on matching 0-1 scales.
+Both metrics are shown side by side on matching 0-1 scales, with a shared
+horizontal model legend below the panels.
 
 Usage: python -m scripts.generate_pass_k_figures --ablation baseline
+       python -m scripts.generate_pass_k_figures --best-ablation
 """
 
 from __future__ import annotations
@@ -22,9 +23,12 @@ from plotnine import (
     element_line,
     element_rect,
     element_text,
+    facet_wrap,
     geom_line,
     geom_point,
     ggplot,
+    guide_legend,
+    guides,
     labs,
     scale_color_manual,
     scale_shape_manual,
@@ -36,10 +40,24 @@ from plotnine import (
 from plotnine.composition import Compose
 
 from scripts.generate_ablation_figure import split_ablation_name
+from scripts.generate_pass_rate_table import (
+    BEST_MODEL_ORDER,
+    select_best_ablation_runs,
+)
 from scripts.load_benchmark_runs import (
     DEFAULT_RESULTS_DIR,
     BenchmarkRun,
     load_benchmark_runs,
+)
+from scripts.report_figure_style import (
+    DEFAULT_TYPOGRAPHY,
+    ReportTypography,
+    add_figure_arguments,
+    copy_figure_to_thesis,
+    figure_dimensions,
+    save_report_figure,
+    typography_from_args,
+    typography_theme,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -121,6 +139,12 @@ def _metric_values(run: BenchmarkRun, key: str) -> dict[int, float]:
 
 def pass_k_data(runs: dict[str, BenchmarkRun]) -> pd.DataFrame:
     """Return tidy saved metrics without converting their 0-1 scale."""
+    if not runs:
+        raise ValueError("No completed runs selected")
+    if len({(run.dataset, run.repetitions) for run in runs.values()}) != 1:
+        raise ValueError("Compared runs must use the same dataset and repetitions")
+    if next(iter(runs.values())).repetitions < 2:
+        raise ValueError("At least two repetitions are needed to draw pass-k curves")
     task_categories: dict[str, str] | None = None
     records: list[dict[str, str | int | float]] = []
     for root, run in runs.items():
@@ -143,13 +167,16 @@ def pass_k_data(runs: dict[str, BenchmarkRun]) -> pd.DataFrame:
     return data
 
 
-def make_pass_k_figure(data: pd.DataFrame) -> Compose:
-    """Stack two separately labeled plots with matching k and score scales."""
+def make_pass_k_figure(
+    data: pd.DataFrame, *, typography: ReportTypography = DEFAULT_TYPOGRAPHY
+) -> Compose:
+    """Place both metrics side by side, each with its own k-axis title."""
     roots = list(data["root"].cat.categories)
     if len(roots) > len(COLORS):
         raise ValueError(f"Figure supports at most {len(COLORS)} model/config lines")
-    colors = dict(zip(roots, COLORS, strict=False))
-    markers = dict(zip(roots, MARKERS, strict=False))
+    # Preserve the existing model colors and shapes when changing legend order.
+    colors = dict(zip(sorted(roots), COLORS, strict=False))
+    markers = dict(zip(sorted(roots), MARKERS, strict=False))
     maximum_k = int(data["k"].max())
     breaks = (
         list(range(1, maximum_k + 1))
@@ -157,7 +184,7 @@ def make_pass_k_figure(data: pd.DataFrame) -> Compose:
         else sorted({1, maximum_k, *range(5, maximum_k + 1, 5)})
     )
 
-    def plot_metric(label: str) -> ggplot:
+    def plot_metric(label: str, legend_roots: list[str]) -> ggplot:
         metric_data = data[data["metric"] == label]
         return (
             ggplot(
@@ -166,16 +193,21 @@ def make_pass_k_figure(data: pd.DataFrame) -> Compose:
             )
             + geom_line(size=0.85)
             + geom_point(data=metric_data[metric_data["k"].isin(breaks)], size=2.5)
-            + scale_color_manual(values=colors)
-            + scale_shape_manual(values=markers)
+            + facet_wrap("metric", nrow=1, labeller=lambda label: label.capitalize())
+            + scale_color_manual(values=colors, breaks=legend_roots)
+            + scale_shape_manual(values=markers, breaks=legend_roots)
             + scale_x_continuous(breaks=breaks, minor_breaks=[])
             + scale_y_continuous(breaks=[0, 0.2, 0.4, 0.6, 0.8, 1.0], expand=(0, 0))
             + coord_cartesian(xlim=(0.8, maximum_k + 0.2), ylim=(0, 1))
             + labs(
                 x="k",
-                y="Pass@k" if label == "pass@k" else "Pass^k",
-                color="Model/config",
-                shape="Model/config",
+                y="Pass rate",
+                color="",
+                shape="",
+            )
+            + guides(
+                color=guide_legend(nrow=1),
+                shape=guide_legend(nrow=1),
             )
             + theme_bw(base_size=11)
             + theme(
@@ -188,40 +220,78 @@ def make_pass_k_figure(data: pd.DataFrame) -> Compose:
                 axis_ticks_length=4,
                 legend_title=element_text(color="#222222", size=12),
                 legend_text=element_text(color="#222222", size=11),
-                legend_position="right",
-                legend_justification_right="top",
+                strip_background=element_blank(),
+                strip_text=element_text(color="#222222"),
+                legend_position="bottom",
+                legend_direction="horizontal",
+                legend_key_width=14,
+                legend_key_height=14,
             )
+            + typography_theme(typography)
+            + theme(legend_title=element_blank())
         )
 
-    top = plot_metric("pass@k") + theme(
-        axis_title_x=element_blank(),
-        axis_text_x=element_blank(),
-        axis_ticks_x=element_blank(),
+    # Join the two legend groups at the panel boundary instead of centering
+    # each group separately, which would leave a wide gap in the model row.
+    midpoint = (len(roots) + 1) // 2
+    left = plot_metric("pass@k", roots[:midpoint]) + theme(
+        legend_justification_bottom="right",
     )
-    bottom = plot_metric("pass^k") + theme(legend_position="none")
-    return top / bottom
+    right = plot_metric("pass^k", roots[midpoint:]) + theme(
+        axis_title_y=element_blank(),
+        axis_text_y=element_blank(),
+        axis_ticks_y=element_blank(),
+        legend_justification_bottom="left",
+    )
+    return left | right
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
-    parser.add_argument(
-        "--ablation", required=True, help="Run-config suffix after '__'"
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--ablation", help="Run-config suffix after '__'")
+    selection.add_argument(
+        "--best-ablation",
+        action="store_true",
+        help="Select each model's highest category-balanced overall pass@1 ablation",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        help="PDF path; defaults to output/pdf/pass_k_<ablation>.pdf",
+        help="PDF path; defaults to output/pdf/pass_k_<ablation|best>.pdf",
     )
+    add_figure_arguments(parser)
     args = parser.parse_args()
+    typography = typography_from_args(args)
 
-    runs = select_ablation_runs(load_benchmark_runs(args.results_dir), args.ablation)
+    completed = load_benchmark_runs(args.results_dir)
+    if args.best_ablation:
+        selected = select_best_ablation_runs(completed)
+        model_rank = {name: index for index, name in enumerate(BEST_MODEL_ORDER)}
+        selected.sort(
+            key=lambda run: (
+                model_rank.get(run.name.rpartition("__")[0], len(BEST_MODEL_ORDER)),
+                run.name,
+            )
+        )
+        runs = {run.name.rpartition("__")[0]: run for run in selected}
+    else:
+        runs = select_ablation_runs(completed, args.ablation)
     data = pass_k_data(runs)
-    output = args.output or DEFAULT_OUTPUT_DIR / f"pass_k_{args.ablation}.pdf"
+    suffix = "best" if args.best_ablation else args.ablation
+    output = args.output or DEFAULT_OUTPUT_DIR / f"pass_k_{suffix}.pdf"
     output.parent.mkdir(parents=True, exist_ok=True)
-    width = max(7.5, 1.15 * len(runs) + 3.0)
-    make_pass_k_figure(data).save(output, width=width, height=7.4, verbose=False)
+    width, height = figure_dimensions(args, width_mm=150, height_mm=80)
+    save_report_figure(
+        make_pass_k_figure(data, typography=typography),
+        output,
+        width=width,
+        height=height,
+    )
     print(f"Wrote {output}")
+    if args.copy_to_thesis:
+        copy_figure_to_thesis(output, args.thesis_dir)
 
 
 if __name__ == "__main__":

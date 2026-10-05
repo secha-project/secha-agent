@@ -178,6 +178,56 @@ def test_statistical_summary_and_stratified_pass_at_one() -> None:
     assert stratified.value == pytest.approx(0.75)
 
 
+@pytest.mark.parametrize(
+    ("correct", "expected_at_k", "expected_power_k"),
+    [
+        (0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]),
+        (1, [1 / 3, 2 / 3, 1.0], [1 / 3, 0.0, 0.0]),
+        (2, [2 / 3, 1.0, 1.0], [2 / 3, 1 / 3, 0.0]),
+    ],
+)
+def test_exhausted_retries_count_as_negative_samples(
+    correct, expected_at_k, expected_power_k
+):
+    metadata = SimpleNamespace(case_id="case-a", category=SimpleNamespace(value="group"))
+    cases = [
+        SimpleNamespace(
+            name=f"task-a-{index}",
+            source_case_name="task-a",
+            metadata=metadata,
+            evaluator_failures=[],
+            assertions={"correct": SimpleNamespace(value=True)},
+        )
+        for index in range(correct)
+    ]
+    failures = [
+        ReportCaseFailure(
+            name=f"task-a-{index}",
+            source_case_name="task-a",
+            inputs="question",
+            metadata=metadata,
+            expected_output=None,
+            error_message="UnexpectedModelBehavior: Tool exceeded max retries count",
+            error_stacktrace="traceback",
+        )
+        for index in range(correct, 3)
+    ]
+    ctx = SimpleNamespace(report=SimpleNamespace(cases=cases, failures=failures))
+    assert PerTaskStatisticalSummaryEvaluator().evaluate(ctx).rows == [
+        ["case-a", "task-a", "group", correct, 3, pytest.approx(correct / 3)]
+    ]
+    assert AverageAccuracyEvaluator().evaluate(ctx).value == pytest.approx(correct / 3)
+    assert StratifiedAveragePassAtOneEvaluator().evaluate(ctx).value == pytest.approx(
+        correct / 3
+    )
+    assert [row[2] for row in AveragePassAtKEvaluator().evaluate(ctx).rows] == pytest.approx(
+        expected_at_k
+    )
+    assert [
+        row[2] for row in AveragePassPowerKEvaluator().evaluate(ctx).rows
+    ] == pytest.approx(expected_power_k)
+
+
 def test_per_category_pass_metrics() -> None:
     passing_assertion = SimpleNamespace(value=True)
     failing_assertion = SimpleNamespace(value=False)

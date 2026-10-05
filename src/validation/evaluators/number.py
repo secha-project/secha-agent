@@ -9,7 +9,12 @@ from ..eval_models import BenchmarkOutput, CaseMetadata, NumberOutput
 from ._numeric import numbers_match
 
 FRACTION_PATTERN = re.compile(r"([+-]?\d+)\s*/\s*([+-]?\d+)")
-NUMBER_PATTERN = re.compile(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?")
+# A decimal part makes grouped thousands unambiguous; integer comma lists keep
+# their existing interpretation (e.g. the three requested values 125,314,697).
+NUMBER_PATTERN = re.compile(
+    r"[+-]?(?:\d{1,3}(?:,\d{3})+\.\d+|\d+(?:\.\d*)?|\.\d+)"
+    r"(?:[eE][+-]?\d+)?"
+)
 PERCENTAGE_PATTERN = re.compile(rf"({NUMBER_PATTERN.pattern})\s*%")
 
 
@@ -31,7 +36,7 @@ def extract_numbers(text: str) -> list[float]:
     remaining_text = FRACTION_PATTERN.sub(lambda match: " " * len(match[0]), text)
 
     for match in PERCENTAGE_PATTERN.finditer(remaining_text):
-        values.append((match.start(), float(match[1]) / 100.0))
+        values.append((match.start(), float(match[1].replace(",", "")) / 100.0))
 
     # Likewise, remove percentages so "50%" produces 0.5, not both 0.5 and 50.
     remaining_text = PERCENTAGE_PATTERN.sub(
@@ -39,7 +44,7 @@ def extract_numbers(text: str) -> list[float]:
     )
 
     for match in NUMBER_PATTERN.finditer(remaining_text):
-        values.append((match.start(), float(match[0])))
+        values.append((match.start(), float(match[0].replace(",", ""))))
 
     return [value for _, value in sorted(values)]
 

@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import time
 from collections.abc import Callable
@@ -10,9 +11,18 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 from pydantic_ai import ModelRetry
+from pydantic_ai.messages import (
+    ModelRequest,
+    ModelResponse,
+    RetryPromptPart,
+    TextPart,
+    ToolCallPart,
+)
+from pydantic_ai.models.function import FunctionModel
 from pyspark.sql.conversion import ArrowTableToRowsConversion
 from pyspark.sql.types import StructType, TimestampNTZType, TimestampType
 
+from src.agent.agent import create_agent
 from src.agent.capabilities.query import query_data
 from src.agent.capabilities.table_outputs import (
     display_table_output,
@@ -190,6 +200,48 @@ def test_display_table_output_creates_a_concrete_artifact() -> None:
 
     assert isinstance(result.metadata, ArtifactRef)
     artifact = deps.artifacts.resolve(result.metadata)
+    assert isinstance(artifact, TableArtifact)
+    assert artifact.row_count == 1
+
+
+@pytest.mark.parametrize("string_ref_first", [False, True])
+def test_display_tool_publishes_nested_ref_and_retries_string_ref(
+    string_ref_first: bool,
+) -> None:
+    deps = make_deps()
+    ref = add_output(deps).model_dump()
+    calls = 0
+
+    def respond(messages, info):
+        nonlocal calls
+        calls += 1
+        tool = next(
+            tool for tool in info.function_tools if tool.name == "display_table_output"
+        )
+        assert set(tool.parameters_json_schema["properties"]) == {"ref"}
+        if string_ref_first and calls == 1:
+            args = {"ref": json.dumps(ref)}
+        elif calls == 1 or (string_ref_first and calls == 2):
+            if string_ref_first:
+                assert isinstance(messages[-1], ModelRequest)
+                assert any(
+                    isinstance(part, RetryPromptPart) for part in messages[-1].parts
+                )
+                assert not deps.artifacts.published
+            args = {"ref": ref}
+        else:
+            return ModelResponse(parts=[TextPart("Published.")])
+        return ModelResponse(
+            parts=[ToolCallPart(tool_name="display_table_output", args=args)]
+        )
+
+    result = create_agent(("query", "table_outputs")).run_sync(
+        "Publish the saved table.", deps=cast(Any, deps), model=FunctionModel(respond)
+    )
+    assert result.output == "Published."
+    assert calls == (3 if string_ref_first else 2)
+    assert len(deps.artifacts.published) == 1
+    artifact = deps.artifacts.published[0]
     assert isinstance(artifact, TableArtifact)
     assert artifact.row_count == 1
 

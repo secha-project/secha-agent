@@ -241,11 +241,18 @@ def test_checkpoint_invalidate_removes_only_selected_attempts(tmp_path: Path) ->
     assert resumed.completed_names == {"task_2 [1/2]"}
 
 
-def test_checkpoint_relocates_artifacts_in_a_copied_run(tmp_path: Path) -> None:
+@pytest.mark.parametrize("imported", [False, True])
+def test_checkpoint_relocates_artifacts_in_a_copied_run(
+    tmp_path: Path, imported: bool
+) -> None:
     source_artifacts = tmp_path / "source" / "artifacts"
     destination_artifacts = tmp_path / "destination" / "artifacts"
     source_artifacts.mkdir(parents=True)
     destination_artifacts.mkdir(parents=True)
+    (source_artifacts / "task_1.csv").write_text("value\n1\n")
+    recorded_artifacts = (
+        Path("/previous/checkout/source/artifacts") if imported else source_artifacts
+    )
     checkpoint_path = tmp_path / "checkpoint.json"
     checkpoint = EvaluationCheckpoint(
         checkpoint_path,
@@ -264,8 +271,8 @@ def test_checkpoint_relocates_artifacts_in_a_copied_run(tmp_path: Path) -> None:
         output="answer",
         metrics={},
         attributes={
-            "artifact_paths": [str(source_artifacts / "task_1.csv")],
-            "csv_path": str(source_artifacts / "task_1.csv"),
+            "artifact_paths": [str(recorded_artifacts / "task_1.csv")],
+            "csv_path": str(recorded_artifacts / "task_1.csv"),
         },
         scores={},
         labels={},

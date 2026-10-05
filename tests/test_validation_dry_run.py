@@ -8,6 +8,15 @@ import src.validation.run_benchmark as cli
 from src.validation.config import load_run_config
 
 RUN_CONFIG = "gpt-6-sol__baseline"
+TABLE_TASKS = [
+    f"task_{number}"
+    for number in [
+        *range(11, 16),
+        *range(21, 26),
+        *range(36, 41),
+        *range(46, 56),
+    ]
+]
 
 
 def test_dry_run_validates_inputs_without_external_calls_or_results(
@@ -56,4 +65,42 @@ def test_dry_run_rejects_missing_reference_files(
 def test_dry_run_rejects_resume_and_redo(other: list[str]) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.parse_args(["--config", RUN_CONFIG, "--dry-run", *other])
+    assert exc.value.code == 2
+
+
+def test_table_redo_dry_run_lists_exact_selection_without_running(monkeypatch, capsys):
+    forbidden = Mock(side_effect=AssertionError("Benchmark started during dry run"))
+    monkeypatch.setattr(cli, "run_benchmark", forbidden)
+    cli.main(["--config", "qwen3.8-27b__baseline", "--dry-run", "--redo-tables"])
+    output = capsys.readouterr().out
+    assert "Table redo: 25 tasks x 3 repetitions = 75 new attempts." in output
+    assert f"Tasks: {', '.join(TABLE_TASKS)}" in output
+    forbidden.assert_not_called()
+
+
+def test_table_redo_passes_all_table_tasks_and_source_to_existing_runner(
+    monkeypatch, tmp_path
+):
+    run = Mock()
+    monkeypatch.setattr(cli, "run_benchmark", run)
+    cli.main(
+        [
+            "--config",
+            "qwen3.8-27b__baseline",
+            "--resume",
+            str(tmp_path),
+            "--redo-tables",
+        ]
+    )
+    assert run.call_args.kwargs["redo_tasks"] == TABLE_TASKS
+    assert run.call_args.kwargs["resume_directory"] == tmp_path
+
+
+@pytest.mark.parametrize(
+    "args",
+    [["--redo-tables"], ["--resume", "run", "--redo", "task_1", "--redo-tables"]],
+)
+def test_table_redo_rejects_missing_source_or_conflicting_selection(args):
+    with pytest.raises(SystemExit) as exc:
+        cli.parse_args(["--config", RUN_CONFIG, *args])
     assert exc.value.code == 2

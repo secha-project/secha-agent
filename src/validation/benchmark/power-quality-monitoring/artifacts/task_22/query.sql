@@ -30,12 +30,7 @@ detector AS (
 
 SELECT
     timestamp,
-    pw,
-    ROUND(
-        100 * ABS(pw_rolling_max - pw_rolling_min)
-            / NULLIF(ABS(pw_rolling_min), 0),
-        2
-    ) AS power_range_pct
+    pw
 FROM detector
 WHERE flagged = 1
 ORDER BY device_name, timestamp

@@ -51,9 +51,9 @@ def _selected_runs(runs: Sequence[BenchmarkRun], ablation: str) -> list[Benchmar
     return selected
 
 
-def _percentage_points(value: float) -> str:
-    rounded = round(100 * value, 1)
-    return "0.0" if rounded == 0 else f"{rounded:+.1f}"
+def _rate_difference(value: float) -> str:
+    rounded = round(value, 3)
+    return "0.000" if rounded == 0 else f"{rounded:+.3f}"
 
 
 def render_pairwise_pass_rate_table(
@@ -65,7 +65,7 @@ def render_pairwise_pass_rate_table(
     confidence_level: float = 0.95,
     seed: int = 0,
 ) -> str:
-    """Render all model pairs as Model 1 minus Model 2, in percentage points."""
+    """Render all model pairs as Model 1 minus Model 2 on the pass-rate scale."""
     selected = _selected_runs(runs, ablation)
     scores_by_name = {run.name: load_task_scores(run.path) for run in selected}
     rows: list[dict[str, str]] = []
@@ -83,9 +83,9 @@ def render_pairwise_pass_rate_table(
             {
                 "first": first.model_name,
                 "second": second.model_name,
-                "difference": _percentage_points(result.estimate),
-                "lower": _percentage_points(lower),
-                "upper": _percentage_points(upper),
+                "difference": _rate_difference(result.estimate),
+                "lower": _rate_difference(lower),
+                "upper": _rate_difference(upper),
             }
         )
 

@@ -11,7 +11,10 @@ LOGS_DIR = Path(__file__).resolve().parents[1] / "benchmark-results" / "batch-lo
 
 def latest_log(directory: Path) -> Path | None:
     candidates = []
-    for path in directory.glob("*/*.log"):
+    for path in [
+        *directory.glob("*/*.log"),
+        *directory.parent.glob("*/gepa-*/progress.log"),
+    ]:
         try:
             candidates.append((path.stat().st_mtime_ns, str(path), path))
         except FileNotFoundError:
@@ -59,7 +62,7 @@ def make_handler(log_file: Path | None, logs_directory: Path = LOGS_DIR):
                     '<meta http-equiv="refresh" content="5">'
                     f"<title>{html.escape(title)}</title></head><body>"
                     f"<h1>{html.escape(title)}</h1>"
-                    "<p>Refreshes every 5 seconds. Progress is saved once per minute. "
+                    "<p>Refreshes every 5 seconds. Run summaries update as work progresses. "
                     'Showing the last 200 lines. <a href="/log">Plain text</a></p>'
                     f"<pre>{html.escape(content)}</pre></body></html>"
                 )

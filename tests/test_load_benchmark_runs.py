@@ -1,10 +1,30 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts.load_benchmark_runs import load_benchmark_runs
 
 
-def test_loads_complete_runs_and_retains_failed_attempts(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "evaluator_failures",
+    [
+        [],
+        [
+            {
+                "name": "TokenUsageAndCostEvaluator",
+                "error_message": "ReportCaseFailure has no metrics",
+            },
+            {
+                "name": "PerCategoryTokenUsageAndCostEvaluator",
+                "error_message": "ReportCaseFailure has no metrics",
+            },
+        ],
+    ],
+)
+def test_loads_complete_runs_and_retains_failed_attempts(
+    tmp_path: Path, evaluator_failures: list[dict[str, str]]
+) -> None:
     results_dir = tmp_path / "benchmark-results"
     completed_path = results_dir / "dataset-a" / "model-a_2026-09-22" / "report.json"
     completed_path.parent.mkdir(parents=True)
@@ -18,7 +38,7 @@ def test_loads_complete_runs_and_retains_failed_attempts(tmp_path: Path) -> None
                 "enabled_capabilities": ["catalog", "query"],
             },
         },
-        "report_evaluator_failures": [],
+        "report_evaluator_failures": evaluator_failures,
         "results": {
             "overall": {"tasks": 1, "attempts": 2},
             "categories": {
@@ -47,6 +67,14 @@ def test_loads_complete_runs_and_retains_failed_attempts(tmp_path: Path) -> None
     legacy_path = results_dir / "dataset-a" / "old-test-run" / "report.json"
     legacy_path.parent.mkdir(parents=True)
     legacy_path.write_text('{"cases": []}', encoding="utf-8")
+
+    scoring_failure_path = results_dir / "dataset-a" / "scoring-error" / "report.json"
+    scoring_failure_path.parent.mkdir(parents=True)
+    scoring_failure_report = json.loads(json.dumps(completed_report))
+    scoring_failure_report["report_evaluator_failures"] = [
+        {"name": "PerTaskStatisticalSummaryEvaluator", "error_message": "bad scores"}
+    ]
+    scoring_failure_path.write_text(json.dumps(scoring_failure_report), encoding="utf-8")
 
     runs = load_benchmark_runs(results_dir)
     assert len(runs) == 1
