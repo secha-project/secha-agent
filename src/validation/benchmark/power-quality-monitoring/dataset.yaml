@@ -488,8 +488,8 @@ cases:
     5% and at least 2 W compared with the 10-minute rolling average of the preceding
     measurements in the electric vehicle charging station at Kampusareena on March
     1st 2025 (UTC). Only identify measurements where the preceding measurement did not meet
-    these conditions.  Provide the potential charging start time, measured value,
-    rolling average, and increase in kW, ordered chronologically.
+    these conditions.  Provide the potential charging start time, measured value (kW),
+    rolling average (kW), and increase (kW), ordered chronologically.
     Include readings exactly ten minutes before the current measurement in its rolling window; exclude the current measurement itself.
     Display a table with these columns even if there are no matching rows.
   metadata:
@@ -770,7 +770,8 @@ cases:
   evaluators: []
 - name: task_55
   inputs: At the TTY Lempäälä 1 EV charging station on 24 March 2025 (UTC), what was
-    the daily mean of the 10-minute voltage THD for each phase? Return the phase and
+    the daily mean of the 10-minute voltage THD reconstructed from recorded odd
+    harmonics for each phase? Return the phase and
     mean magnitude in volts, rounded to four decimal places and ordered by phase.
     Select ten-minute intervals ending after 24 March 00:00 UTC and at or before 25 March 00:00 UTC.
     Display one row per phase in a table.

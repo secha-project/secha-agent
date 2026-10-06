@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from scripts.serve_benchmark_logs import latest_log, queue_summary
+
 
 @pytest.fixture
 def batch_workspace(tmp_path):
@@ -30,12 +32,20 @@ def batch_workspace(tmp_path):
     uv.write_text(
         f"#!{sys.executable}\n"
         "import json, os, sys\n"
+        "from pathlib import Path\n"
         "args = sys.argv[1:]\n"
         "config = args[args.index('--config') + 1]\n"
         "with open(os.environ['BATCH_TEST_CALLS'], 'a') as stream:\n"
         "    stream.write(json.dumps(args) + '\\n')\n"
         "print('model output', flush=True)\n"
         "print('retry warning', file=sys.stderr, flush=True)\n"
+        "if '--run-state' in args:\n"
+        "    path = Path(args[args.index('--run-state') + 1])\n"
+        "    state = json.loads(path.read_text()) if path.exists() else {\n"
+        "        'config': config, 'run_directory': str(path.parent / config),\n"
+        "        'completed': False}\n"
+        "    state['completed'] = config != os.environ.get('BATCH_TEST_FAIL')\n"
+        "    path.write_text(json.dumps(state))\n"
         "sys.exit(23 if config == os.environ.get('BATCH_TEST_FAIL') else 0)\n"
     )
     uv.chmod(0o755)
@@ -129,81 +139,123 @@ def test_skipping_every_config_is_a_noop(batch_workspace):
     assert not (root / "benchmark-results").exists()
 
 
-QWEN_SOURCES = {
-    "qwen3.8-27b__baseline": "2026-09-28_03-23",
-    "qwen3.8-27b__few_shot": "2026-09-28_17-43",
-    "qwen3.8-27b__few_shot_semantic_layer": "2026-09-28_10-35",
-    "qwen3.8-27b__semantic_layer": "2026-09-29_08-28",
-}
-
-
-def add_qwen_sources(root):
-    paths = {}
-    for config, timestamp in QWEN_SOURCES.items():
-        (root / "src/validation/run_configs" / f"{config}.yaml").write_text(
-            "repetitions: 3\n"
-        )
-        source = (
-            root
-            / "benchmark-results/power-quality-monitoring"
-            / f"{config}_{timestamp}"
-        )
-        (source / "artifacts").mkdir(parents=True)
-        (source / "checkpoint.json").write_text("original checkpoint")
-        (source / "artifacts/retained.png").write_bytes(b"original image")
-        paths[config] = source
-    return paths
-
-
-@pytest.mark.parametrize("dry_run", [False, True])
-def test_qwen_table_redo_selects_four_original_sources_and_preserves_them(
-    batch_workspace, dry_run
-):
-    root, run = batch_workspace
-    sources = add_qwen_sources(root)
-    before = {
-        path: path.read_bytes()
-        for source in sources.values()
-        for path in source.rglob("*")
-        if path.is_file()
-    }
-    args = ["--redo-qwen-tables", *(["--dry-run"] if dry_run else [])]
-    result, calls = run(*args)
-    assert result.returncode == 0, result.stderr
-    assert config_names(calls) == list(QWEN_SOURCES)
-    for call in calls:
-        name = call[call.index("--config") + 1]
-        assert "--redo-tables" in call
-        assert ("--dry-run" in call) == dry_run
-        if dry_run:
-            assert "--resume" not in call
-        else:
-            assert call[call.index("--resume") + 1] == str(
-                sources[name].relative_to(root)
-            )
-    assert all(path.read_bytes() == content for path, content in before.items())
-    if dry_run:
-        assert not (root / "benchmark-results/batch-logs").exists()
-
-
-def test_qwen_table_redo_rejects_missing_source_before_starting_any_run(
+def test_same_command_resumes_failed_config_then_runs_remaining_configs(
     batch_workspace,
 ):
     root, run = batch_workspace
-    sources = add_qwen_sources(root)
-    sources["qwen3.8-27b__semantic_layer"].joinpath("checkpoint.json").unlink()
-    result, calls = run("--redo-qwen-tables")
-    assert result.returncode == 2
-    assert "Missing original checkpoint or artifacts" in result.stderr
-    assert calls == []
+    first, _ = run(fail="beta")
+    assert first.returncode == 23
+    directory = Path(
+        (root / "benchmark-results/batch-logs/latest-queue").read_text().strip()
+    )
+    state = (directory / "beta.json").read_bytes()
+    assert not json.loads(state)["completed"]
+
+    second, calls = run()
+    assert second.returncode == 0, second.stderr
+    assert config_names(calls) == ["alpha", "beta", "beta", "gamma"]
+    assert "SKIP completed: alpha" in second.stdout
+    assert "[2/3] RESUMING: beta" in second.stdout
+    beta_states = [
+        call[call.index("--run-state") + 1] for call in calls if "beta" in call
+    ]
+    assert beta_states == [str(directory / "beta.json")] * 2
+    assert (
+        json.loads((directory / "beta.json").read_text())["run_directory"]
+        == json.loads(state)["run_directory"]
+    )
+    assert len(list(root.glob("benchmark-results/batch-logs/*/queue.txt"))) == 1
+    assert (
+        latest_log(root / "benchmark-results/batch-logs") == directory / "03_gamma.log"
+    )
+    assert "Configs completed: 3/3" in queue_summary(
+        root / "benchmark-results/batch-logs"
+    )
 
 
-def test_qwen_table_redo_can_skip_finished_ablations(batch_workspace):
+def test_finished_queue_is_a_noop_until_new_is_requested(batch_workspace):
     root, run = batch_workspace
-    add_qwen_sources(root)
-    result, calls = run("--redo-qwen-tables", "--skip", "qwen3.8-27b__baseline")
+    assert run()[0].returncode == 0
+    repeated, calls = run()
+    assert repeated.returncode == 0, repeated.stderr
+    assert config_names(calls) == ["alpha", "beta", "gamma"]
+    assert repeated.stdout.count("SKIP completed:") == 3
+    fresh, calls = run("--new")
+    assert fresh.returncode == 0, fresh.stderr
+    assert config_names(calls) == ["alpha", "beta", "gamma"] * 2
+    assert len(list(root.glob("benchmark-results/batch-logs/*/queue.txt"))) == 2
+
+
+def test_resume_rejects_changed_config_before_running_anything(batch_workspace):
+    root, run = batch_workspace
+    assert run(fail="beta")[0].returncode == 23
+    (root / "src/validation/run_configs/gamma.yaml").write_text("repetitions: 4\n")
+    result, calls = run()
+    assert result.returncode == 2
+    assert "Config changed or missing: gamma" in result.stderr
+    assert config_names(calls) == ["alpha", "beta"]
+
+
+def test_saved_queue_ignores_later_config_additions_and_remembers_skips(
+    batch_workspace,
+):
+    root, run = batch_workspace
+    assert run("--skip", "alpha", fail="beta")[0].returncode == 23
+    (root / "src/validation/run_configs/delta.yaml").write_text("repetitions: 3\n")
+    result, calls = run()
     assert result.returncode == 0, result.stderr
-    assert config_names(calls) == list(QWEN_SOURCES)[1:]
+    assert config_names(calls) == ["beta", "beta", "gamma"]
+
+
+def test_dry_run_leaves_saved_progress_untouched(batch_workspace):
+    root, run = batch_workspace
+    assert run(fail="beta")[0].returncode == 23
+    before = {
+        p: p.read_bytes()
+        for p in (root / "benchmark-results").rglob("*")
+        if p.is_file()
+    }
+    result, calls = run("--dry-run")
+    assert result.returncode == 0, result.stderr
+    assert config_names(calls)[2:] == ["alpha", "beta", "gamma"]
+    assert all("--dry-run" in call and "--run-state" not in call for call in calls[2:])
+    assert before == {
+        p: p.read_bytes()
+        for p in (root / "benchmark-results").rglob("*")
+        if p.is_file()
+    }
+
+
+def test_explicit_resume_selects_older_queue(batch_workspace):
+    root, run = batch_workspace
+    assert run(fail="beta")[0].returncode == 23
+    pointer = root / "benchmark-results/batch-logs/latest-queue"
+    older = pointer.read_text().strip()
+    assert run("--new", "--skip", "alpha", fail="gamma")[0].returncode == 23
+    newer = pointer.read_text().strip()
+    assert older != newer
+    result, calls = run("--resume", older)
+    assert result.returncode == 0, result.stderr
+    assert config_names(calls) == ["alpha", "beta", "beta", "gamma", "beta", "gamma"]
+    assert pointer.read_text().strip() == older
+    assert not (Path(newer) / "gamma.done").exists()
+    assert latest_log(pointer.parent) == Path(older) / "03_gamma.log"
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ("--resume",),
+        ("--resume", "missing"),
+        ("--resume", "x", "--new"),
+        ("--resume", "x", "--dry-run"),
+    ],
+)
+def test_invalid_resume_never_runs_configs(batch_workspace, args):
+    _, run = batch_workspace
+    result, calls = run(*args)
+    assert result.returncode == 2
+    assert calls == []
 
 
 @pytest.mark.parametrize("interrupt", [False, True])

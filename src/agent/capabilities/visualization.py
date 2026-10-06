@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from collections.abc import Mapping
+from dataclasses import replace
+from textwrap import wrap
 from typing import Any
 
 import pandas as pd
-from pydantic_ai import ModelRetry, RunContext, ToolReturn
+from pydantic_ai import BinaryContent, ModelRetry, RunContext, ToolReturn
 from pydantic_ai.capabilities import Capability
+from pydantic_ai.tools import ToolDefinition
 from pydantic_ai.toolsets import FunctionToolset
 
 from ..deps import Deps
 from ..outputs.artifacts import ChartArtifact
+from ..outputs.charts import ChartOutput, ChartOutputRef, UnknownChartOutputError
 from ..outputs.tables import TableOutputRef, UnknownTableOutputError
 from ..prompt import render_prompt
 from ..spark_runtime import concise_spark_error, spark_error_type
@@ -29,7 +34,7 @@ _LAYER_SOURCE_PATTERN = re.compile(
 
 NAME = "visualization"
 # This prompt will only be sent when using deferred loading of capabilities.
-DESCRIPTION = "Create charts from saved table outputs."
+DESCRIPTION = "Preview, review, and publish charts from saved table outputs."
 
 
 def build(
@@ -46,6 +51,16 @@ def build(
             overrides=prompt_overrides,
         ),
         retries=3,
+        sequential=True,
+    )
+    toolset.add_function(
+        display_chart_output,
+        description=render_prompt(
+            f"capabilities/{NAME}/tools/display_chart_output.md",
+            selected,
+            overrides=prompt_overrides,
+        ),
+        prepare=_prepare_display_chart_output,
         sequential=True,
     )
     return Capability(
@@ -167,9 +182,23 @@ def _use_utc_scales(spec: dict[str, Any]) -> None:
 def _standalone_spec(chart: Any) -> dict[str, Any]:
     spec = chart.to_dict()
     _use_utc_scales(spec)
+    if spec.get("width") == "container":
+        spec["width"] = 900
     if spec.get("height") == "container":
-        spec["height"] = 420
+        spec["height"] = 500
+    title = spec.get("title")
+    if isinstance(title, str):
+        spec["title"] = {
+            "text": wrap(title, width=45) if len(title) > 45 else title,
+            "anchor": "middle",
+        }
     return spec
+
+
+def _render_preview(spec: dict[str, Any]) -> bytes:
+    import vl_convert as vlc
+
+    return vlc.vegalite_to_png(spec, scale=1, allowed_base_urls=[])
 
 
 async def visualize_table_output(
@@ -177,8 +206,8 @@ async def visualize_table_output(
     ref: TableOutputRef,
     ggsql: str,
     title: str,
-) -> ToolReturn[str]:
-    """Create a chart from a saved table output and visual-only ggsql.
+) -> ToolReturn[ChartOutput]:
+    """Preview a chart from a saved table output and visual-only ggsql.
 
     Args:
         ref: A reference returned by a tool that produced a table output.
@@ -223,12 +252,13 @@ async def visualize_table_output(
             title=title.strip()
         )
         spec = _standalone_spec(chart)
+        preview = await asyncio.to_thread(_render_preview, spec)
     except Exception as exc:
         raise ModelRetry(
             f"Visualization rendering failed: {_concise_visualization_error(exc)}"
         ) from exc
 
-    chart_ref = deps.artifacts.publish(ChartArtifact(spec=spec))
+    chart_ref = deps.chart_outputs.add(ChartArtifact(spec=spec))
 
     row_note = (
         f" The chart uses the first {MAX_VISUALIZATION_ROWS:,} rows because the "
@@ -238,6 +268,57 @@ async def visualize_table_output(
         else ""
     )
     return ToolReturn(
-        return_value=f"Visualization rendered successfully.{row_note}",
-        metadata=chart_ref,
+        return_value=ChartOutput(output_ref=chart_ref, truncated=truncated),
+        content=[
+            (
+                f"Preview of chart output {chart_ref.output_id}. Not published yet. "
+                "Inspect the image for correctness and readability. Revise with "
+                "visualize_table_output if needed, then publish the selected preview "
+                f"with display_chart_output.{row_note}"
+            ),
+            BinaryContent(data=preview, media_type="image/png"),
+        ],
+    )
+
+
+async def _prepare_display_chart_output(
+    _ctx: RunContext[Deps], tool_def: ToolDefinition
+) -> ToolDefinition:
+    # Keep the reference nested, matching display_table_output's schema.
+    return replace(
+        tool_def,
+        parameters_json_schema={
+            "type": "object",
+            "properties": {"ref": tool_def.parameters_json_schema},
+            "required": ["ref"],
+            "additionalProperties": False,
+        },
+    )
+
+
+async def display_chart_output(
+    ctx: RunContext[Deps], ref: ChartOutputRef
+) -> ToolReturn[str]:
+    """Publish a chart after reviewing its rendered preview.
+
+    Args:
+        ref: A chart-output reference returned by visualize_table_output in this run.
+    """
+    try:
+        artifact = ctx.deps.chart_outputs.resolve(ref)
+    except UnknownChartOutputError as exc:
+        raise ModelRetry(
+            f"Chart output {ref.output_id!r} is no longer available. "
+            "Call visualize_table_output to create and review a new preview; "
+            "do not retry with this reference."
+        ) from exc
+
+    artifact_ref = ctx.deps.artifacts.publish(artifact)
+    return ToolReturn(
+        return_value=(
+            f"Chart artifact {artifact.id} was published. "
+            "Continue with any explanation or other requested parts of the answer. "
+            "If nothing else was requested, briefly confirm that it is available."
+        ),
+        metadata=artifact_ref,
     )

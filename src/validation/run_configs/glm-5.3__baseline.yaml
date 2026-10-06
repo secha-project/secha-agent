@@ -1,6 +1,6 @@
 agent:
   model_provider: zai
-  model_name: glm-5.3
+  model_name: glm-5.3-flash
   request_limit: 50
   model_request_max_attempts: null
   model_request_retry_budget_seconds: null
@@ -12,6 +12,6 @@ agent:
     - visualization
 
 dataset: power-quality-monitoring
-repetitions: 5
+repetitions: 3
 max_concurrency: 4
 task_max_attempts: 1

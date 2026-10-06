@@ -116,6 +116,8 @@ The agent, built with Pydantic AI, can answer data analytics questions by intera
 - `query_data`
 - `inspect_table_output`
 - `display_table_output`
+- `visualize_table_output`
+- `display_chart_output`
 
 Configure the catalog, Spark Connect, model provider, and OpenTelemetry values
 in `.env`. Keep credentials for every provider in this file; provider and
@@ -136,6 +138,69 @@ The app and one-off agent use the `AgentConfig` capability default: catalog,
 query, semantic layer, table outputs, and visualization. Pass `enabled_capabilities`
 explicitly when constructing `AgentConfig`, or set it in a validation run
 configuration, to use a different profile.
+
+Visualization uses the same preview-before-publication pattern as tables.
+`visualize_table_output` returns a private PNG preview and a chart `output_ref`.
+The agent inspects that image, revises the chart if needed, then calls
+`display_chart_output` to publish the selected draft. Drafts stay out of the
+displayed artifacts and benchmark outputs. Chart references last for the current
+agent run; a later turn can recreate a chart from its saved table output.
+
+This workflow requires an image-capable model. The z.ai provider now defaults to
+`glm-5.3-flash`; `ZAI_MODEL_NAME` or an explicit `model_name` still overrides it.
+The app's default provider remains `tuni`. All four `glm-5.3__*` benchmark
+configs now select `glm-5.3-flash` for image review. The PNG uses a fixed viewport;
+the published interactive chart still adapts to the chat width.
+
+The synthetic review probe renders a draft with deliberately incorrect axis
+units. It needs no Spark or catalog connection. The live option uses configured
+z.ai credentials and asks the agent to inspect, correct, and publish the chart:
+
+```bash
+uv run python -m scripts.probe_visualization_review
+uv run python -m scripts.probe_visualization_review --live
+```
+
+The probe saves draft and published chart files plus a result summary under
+`output/visualization-review-probe`. The live run is capped at eight model
+requests, 40,000 total tokens, and 30 minutes. Its request timeout defaults to
+600 seconds; use `--request-timeout` and `--run-timeout` to override these budgets.
+
+Use `--provider openai --model gpt-6-sol` (or another configured provider/model)
+to test the same flow elsewhere. The default `--case units` contains incorrect
+axis units; `--case control` starts with a correct chart that should be published
+unchanged. Each image contains a random reference code absent from the text
+prompt. The probe verifies that the model reads that code and the original axis
+label, receives the preview before publication, preserves the data and title,
+and publishes exactly one appropriate chart. Results include image hashes and
+tool-call order without storing model reasoning or base64 image payloads.
+
+For one real visualization benchmark question, including Spark/catalog access
+and the normal visualization evaluators, use a fresh output directory:
+
+```bash
+uv run python -m scripts.probe_visualization_benchmark \
+  --config glm-5.3__baseline --task task_26 \
+  --output output/visualization-benchmark-smoke/glm-flash
+```
+
+This runs one repetition of the selected case without editing the benchmark
+YAMLs, with a 30-minute deadline for the agent run. It saves the checkpoint,
+report, chart previews, final chart, and image handoff evidence. `result.json`
+separates image-review verification from the benchmark assertions, so
+successful publication does not hide a wrong chart.
+
+Normal agent runs allow six HTTP attempts within a 1,800-second retry budget
+per logical model request. This includes pacing, backoff, and non-streaming
+response reads; it is separate from the 600-second HTTP inactivity timeout.
+The longer budget gives slow Qwen requests room to complete and retry without
+being cut off by the former 300-second deadline. Set
+`model_request_retry_budget_seconds` and `model_request_max_attempts` explicitly
+to choose a different policy. Benchmark configs retain their unlimited retry
+settings and 50-request agent limit. Spark actions allow 120 seconds before
+interrupting the tagged query. The retry policy also recognizes the TUNI/Open
+WebUI gateway's exact HTTP 400 `Server Connection Error` response as transient;
+other invalid requests still fail immediately.
 
 Then run a one-off prompt with:
 
@@ -193,6 +258,43 @@ uv run --locked --no-dev python -m src.validation.run_benchmark \
   --redo task_6 task_8
 ```
 
+To run every configuration in order, use the bash launcher:
+
+```bash
+bash scripts/run_benchmarks.sh --dry-run  # Validate all configs locally
+bash scripts/run_benchmarks.sh            # Start, or continue after interruption
+```
+
+Each config keeps its configured tasks and repetitions (currently 55 × 3 = 165
+attempts). The launcher saves the config order, YAML snapshots, per-config run
+state, and progress logs under `benchmark-results/batch-logs/`. After a crash or
+Ctrl-C, repeat the second command: completed configs are skipped, unfinished
+attempts resume in the same run directory, and the remaining configs follow.
+No separate Python resume command or manual list of completed configs is needed.
+Recorded execution failures count as completed attempts, as in the standalone
+runner; resuming does not silently redo them.
+
+The first invocation starts fresh, regardless of older benchmark reports. Once
+its queue is finished, repeating the command does nothing. Use `--new` for a new
+full benchmark, or `--new --skip CONFIG` to omit selected configs. To continue an
+older saved queue, pass `--resume benchmark-results/batch-logs/SAVED_DIR`.
+After starting with `--new`, omit that flag when resuming. Changed YAML files are
+rejected on resume; restore them or start a new queue with `--new`. Dry runs
+validate the current configs without changing saved progress or creating logs.
+
+Start the log viewer separately, before or during the benchmark:
+
+```bash
+python3 scripts/serve_benchmark_logs.py
+```
+
+Open `http://localhost:8501`. It follows the launcher's saved queue, shows the
+number of completed configs and the latest config's progress, and switches when
+a config starts or resumes. Keep it running across interruptions and `--new`
+runs; no server restart or new log path is needed. The page refreshes every five
+seconds; checkpoint counts are logged once per minute. A positional log path
+pins the viewer to one file instead.
+
 Report cost and usage fields retain the same schema and represent **subtotals of
 recorded usage**. In `results.overall.usage` and each category's `summary`,
 `input_tokens`, `output_tokens`, `total_tokens`, and `estimated_cost_usd` cover
@@ -244,3 +346,7 @@ phoenix serve
 ```
 
 You can access the dashboard at `http://localhost:6006`.
+
+Logfire scrubbing is disabled for app and benchmark runs, preserving original
+identifiers, SQL, tool arguments/results, and model messages in new traces.
+Previously redacted trace content cannot be recovered from the saved traces.

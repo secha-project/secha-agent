@@ -2,7 +2,7 @@ import asyncio
 import os
 import shutil
 import traceback
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -23,6 +23,7 @@ from src.agent.catalog import UnityCatalogClient
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
 from src.agent.outputs.artifacts import ArtifactCollector
+from src.agent.outputs.charts import ChartOutputStore
 from src.agent.outputs.tables import TableOutputStore
 from src.agent.spark_runtime import get_spark_session
 from src.validation.checkpoint import EvaluationCheckpoint
@@ -73,6 +74,7 @@ class AgentTask:
             self.deps,
             artifacts=artifacts,
             table_outputs=TableOutputStore(),
+            chart_outputs=ChartOutputStore(),
             table_artifact_max_rows=None,
         )
         with (
@@ -105,6 +107,7 @@ def configure_observability(config: AgentConfig) -> None:
         send_to_logfire=False,
         service_name=config.logfire_service_name,
         metrics=False,
+        scrubbing=False,
     )
     logfire.instrument_pydantic_ai()
 
@@ -416,6 +419,7 @@ def run_benchmark(
     resume_directory: Path | None = None,
     redo_tasks: Collection[str] = (),
     progress_log: Path | None = None,
+    on_run_created: Callable[[Path], None] | None = None,
 ) -> Path:
     if redo_tasks and resume_directory is None:
         raise ValueError("redo_tasks requires resume_directory")
@@ -454,6 +458,18 @@ def run_benchmark(
         run_directory = source_directory
     else:
         run_directory = create_run_directory(run_name, run_config.dataset)
+
+    if on_run_created is not None:
+        checkpoint_path = run_directory / "checkpoint.json"
+        if not checkpoint_path.exists():
+            # Save an empty checkpoint before external setup, so even a failure
+            # before the first attempt can resume the same directory.
+            EvaluationCheckpoint(
+                checkpoint_path,
+                name=run_name,
+                experiment_metadata=_experiment_metadata(run_name, run_config),
+            ).completed_report([], trace_id=None, span_id=None)
+        on_run_created(run_directory)
 
     with (
         ProgressLog(

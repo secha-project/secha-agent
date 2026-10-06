@@ -29,6 +29,7 @@ PROMPT_FILES = {
     "inspect_table_output.description": "capabilities/table_outputs/tools/inspect_table_output.md",
     "display_table_output.description": "capabilities/table_outputs/tools/display_table_output.md",
     "visualize_table_output.description": "capabilities/visualization/tools/visualize_table_output.md",
+    "display_chart_output.description": "capabilities/visualization/tools/display_chart_output.md",
 }
 _PROMPT_KEYS = {path: key for key, path in PROMPT_FILES.items()}
 

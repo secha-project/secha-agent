@@ -1,4 +1,3 @@
-import json
 import re
 from collections import Counter
 from dataclasses import dataclass
@@ -390,54 +389,6 @@ def _table_outputs(expected_output):
     return [item for item in expected_output if isinstance(item, TableOutput)]
 
 
-def _alternative_table_paths(target_path):
-    manifest_path = target_path.with_suffix(".alternatives.json")
-    if not manifest_path.is_file():
-        return []
-    manifest = json.loads(manifest_path.read_text())
-    paths = manifest["table_paths"]
-    if not isinstance(paths, list) or not all(
-        isinstance(path, str) and path for path in paths
-    ):
-        raise ValueError(f"Invalid alternative table paths in {manifest_path}")
-    return [target_path.parent / path for path in paths]
-
-
-def _charging_start_watts_as_kw(ctx, target_table, candidate_table):
-    # Task 36's "increase in kW" also permits measured/rolling values labeled W.
-    if str(getattr(getattr(ctx, "metadata", None), "case_id", None)) != (
-        "d5884b41-e3f7-4ef5-bb2e-5c445e9743e1"
-    ) or tuple(target_table.columns) != (
-        "charging_start",
-        "(pw / 1000)",
-        "rolling_avg",
-        "(power_change / 1000)",
-    ):
-        return None
-    fields = []
-    for pattern in (
-        r"measured(?:_value|_power)?_w",
-        r"rolling_(?:average|avg)_w",
-        r"(?:power_)?increase_kw",
-    ):
-        matches = [
-            name
-            for name in candidate_table.columns
-            if re.fullmatch(pattern, str(name).lower())
-        ]
-        if len(matches) != 1:
-            return None
-        fields.append(matches[0])
-    converted = candidate_table.copy()
-    for name in fields[:2]:
-        if not pd.api.types.is_numeric_dtype(converted[name]):
-            return None
-        converted[name] = converted[name] / 1000
-    return converted.rename(
-        columns=dict(zip(fields, target_table.columns[1:], strict=True))
-    )
-
-
 @dataclass
 class ValidateTableIncluded(Evaluator[str, BenchmarkOutput, CaseMetadata]):
     """Check that the agent selected a table to return to the user."""
@@ -500,35 +451,6 @@ class ValidateTableValues(Evaluator[str, BenchmarkOutput, CaseMetadata]):
                 tolerance=self.tolerance,
                 minimum_significant_digits=rounding,
             )
-            if match_type == "no_match":
-                converted = _charging_start_watts_as_kw(
-                    ctx, target_table, candidate_table
-                )
-                if converted is not None:
-                    match_type, _ = classify_table_match(
-                        target_table,
-                        converted,
-                        min_coverage=self.min_coverage,
-                        tolerance=self.tolerance,
-                        minimum_significant_digits=rounding,
-                    )
-
-            accepted = {"exact_match"}
-            if not table_output.ordered:
-                accepted.add("match_up_to_ordering")
-            if match_type not in accepted:
-                for alternative_path in _alternative_table_paths(target_path):
-                    alternative_match, _ = classify_table_match(
-                        pd.read_csv(alternative_path),
-                        candidate_table,
-                        min_coverage=self.min_coverage,
-                        tolerance=self.tolerance,
-                        minimum_significant_digits=rounding,
-                    )
-                    if alternative_match in accepted:
-                        match_type = alternative_match
-                        break
-
             if match_type != "exact_match" and not (
                 match_type == "match_up_to_ordering" and not table_output.ordered
             ):

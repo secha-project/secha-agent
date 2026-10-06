@@ -11,7 +11,11 @@ from pydantic_ai.profiles.qwen import qwen_model_profile
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .capabilities import EnabledCapabilities
-from .model_retry import RetryingOpenAIProvider, RetryingZaiProvider
+from .model_retry import (
+    DEFAULT_MODEL_REQUEST_RETRY_BUDGET_SECONDS,
+    RetryingOpenAIProvider,
+    RetryingZaiProvider,
+)
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 DEFAULT_ENABLED_CAPABILITIES = frozenset(
@@ -55,7 +59,7 @@ class OpenAIProviderConfig(BaseSettings):
 
 class ZaiProviderConfig(BaseSettings):
     api_key: SecretStr
-    model_name: str = "glm-5.3"
+    model_name: str = "glm-5.3-flash"
     url: str = "https://api.z.ai/api/paas/v4/"
 
     model_config = SettingsConfigDict(
@@ -79,7 +83,9 @@ class AgentConfig(BaseSettings):
     temperature: float | None = Field(default=None, ge=0.0)
     request_limit: int = Field(default=50, ge=1)
     model_request_max_attempts: int | None = Field(default=6, ge=1)
-    model_request_retry_budget_seconds: float | None = Field(default=300, ge=0)
+    model_request_retry_budget_seconds: float | None = Field(
+        default=DEFAULT_MODEL_REQUEST_RETRY_BUDGET_SECONDS, ge=0
+    )
     model_request_min_interval_seconds: float = Field(default=0, ge=0)
     enabled_capabilities: EnabledCapabilities = DEFAULT_ENABLED_CAPABILITIES
     otel_exporter_otlp_endpoint: str

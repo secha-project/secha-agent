@@ -8,14 +8,16 @@ from typing import Any, cast
 
 import pandas as pd
 import pytest
-from pydantic_ai import ModelRetry
+from pydantic_ai import BinaryContent, ModelRetry
 
 from src.agent.capabilities.visualization import (
     MAX_VISUALIZATION_ROWS,
+    display_chart_output,
     normalize_datetime_precision,
     visualize_table_output,
 )
 from src.agent.outputs.artifacts import ArtifactCollector, ArtifactRef, ChartArtifact
+from src.agent.outputs.charts import ChartOutputRef, ChartOutputStore
 from src.agent.outputs.tables import (
     LiveTableOutput,
     TableOutputRef,
@@ -81,6 +83,7 @@ def _context(
                 spark=spark,
                 artifacts=artifacts,
                 table_outputs=table_outputs,
+                chart_outputs=ChartOutputStore(),
             ),
         ),
         spark,
@@ -88,18 +91,30 @@ def _context(
     )
 
 
-def test_visualization_publishes_registered_spec() -> None:
+def test_visualization_previews_before_publishing_saved_spec() -> None:
     ctx, spark, ref = _context()
 
     result = asyncio.run(
         visualize_table_output(ctx, ref, GGSQL_QUERY, "Power by category")
     )
 
-    assert isinstance(result.metadata, ArtifactRef)
-    assert result.content is None
-    artifact = ctx.deps.artifacts.published[0]
-    assert ctx.deps.artifacts.resolve(result.metadata) is artifact
+    assert result.metadata is None
+    assert ctx.deps.artifacts.published == ()
+    assert isinstance(result.content[1], BinaryContent)
+    assert result.content[1].media_type == "image/png"
+    assert result.content[1].data.startswith(b"\x89PNG\r\n\x1a\n")
+    artifact = ctx.deps.chart_outputs.resolve(result.return_value.output_ref)
     assert isinstance(artifact, ChartArtifact)
+    previewed_spec = artifact.spec_json
+
+    # Publishing uses the exact previewed data even if the source has changed.
+    spark.result.frame["value"] = [100, 200]
+    published = asyncio.run(display_chart_output(ctx, result.return_value.output_ref))
+    assert isinstance(published.metadata, ArtifactRef)
+    assert published.content is None
+    assert ctx.deps.artifacts.published == (artifact,)
+    assert ctx.deps.artifacts.resolve(published.metadata) is artifact
+    assert artifact.spec_json == previewed_spec
     assert spark.queries == []
 
 
@@ -108,7 +123,45 @@ def test_visualization_reports_row_truncation() -> None:
 
     result = asyncio.run(visualize_table_output(ctx, ref, GGSQL_QUERY, "Limited chart"))
 
-    assert "first 1,000 rows" in result.return_value
+    assert result.return_value.truncated is True
+    assert "first 1,000 rows" in result.content[0]
+
+
+def test_only_selected_revision_is_published() -> None:
+    ctx, _, ref = _context()
+    first = asyncio.run(visualize_table_output(ctx, ref, GGSQL_QUERY, "First draft"))
+    revised = asyncio.run(
+        visualize_table_output(ctx, ref, GGSQL_QUERY, "Revised chart")
+    )
+
+    assert first.return_value.output_ref != revised.return_value.output_ref
+    assert ctx.deps.artifacts.published == ()
+    asyncio.run(display_chart_output(ctx, revised.return_value.output_ref))
+    (artifact,) = ctx.deps.artifacts.published
+    assert artifact is ctx.deps.chart_outputs.resolve(revised.return_value.output_ref)
+
+
+def test_display_rejects_stale_or_table_reference() -> None:
+    ctx, _, table_ref = _context()
+    for output_id in ("stale", table_ref.output_id):
+        with pytest.raises(ModelRetry, match="create and review a new preview"):
+            asyncio.run(display_chart_output(ctx, ChartOutputRef(output_id=output_id)))
+    assert ctx.deps.artifacts.published == ()
+
+
+def test_preview_rendering_failure_is_retryable_and_cannot_be_published(monkeypatch):
+    ctx, _, ref = _context()
+    stored = []
+    monkeypatch.setattr(ctx.deps.chart_outputs, "add", stored.append)
+
+    def fail(*_args, **_kwargs):
+        raise ValueError("PNG rendering failed")
+
+    monkeypatch.setattr("vl_convert.vegalite_to_png", fail)
+    with pytest.raises(ModelRetry, match="Visualization rendering failed.*PNG"):
+        asyncio.run(visualize_table_output(ctx, ref, GGSQL_QUERY, "Broken preview"))
+    assert stored == []
+    assert ctx.deps.artifacts.published == ()
 
 
 @pytest.mark.parametrize(
@@ -166,12 +219,12 @@ def test_datetime_chart_renders_identically_in_utc_and_helsinki(day: str) -> Non
     spark.result.frame = pd.DataFrame(
         {"time": pd.date_range(day, periods=24, freq="h"), "value": range(24)}
     )
-    asyncio.run(
+    result = asyncio.run(
         visualize_table_output(
             ctx, ref, "VISUALISE time AS x, value AS y DRAW line", "UTC times"
         )
     )
-    spec = ctx.deps.artifacts.published[0].to_spec()
+    spec = ctx.deps.chart_outputs.resolve(result.return_value.output_ref).to_spec()
     spec["width"] = 600
     render = (
         "import json, sys, vl_convert; "

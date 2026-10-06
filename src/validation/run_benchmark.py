@@ -8,6 +8,7 @@ from src.validation.eval_models import (
     TableOutput,
     VisualizationOutput,
 )
+from src.validation.run_state import track_run
 from src.validation.runner import load_dataset, run_benchmark
 
 
@@ -31,6 +32,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--dry-run",
         action="store_true",
         help="Validate configuration, prompts, dataset, and files without external calls.",
+    )
+    mode.add_argument(
+        "--run-state",
+        type=Path,
+        help="Remember this run for the bash launcher; resume or skip it on restart.",
     )
     parser.add_argument(
         "--progress-log",
@@ -143,6 +149,26 @@ def main(argv: list[str] | None = None) -> None:
         redo_tasks = table_task_names(load_dataset(run_config.dataset))
         if not redo_tasks:
             raise ValueError("The benchmark dataset has no table-output tasks")
+    if args.run_state is not None:
+        with track_run(args.run_state, run_name) as state:
+            if state.completed:
+                print(f"Already completed: {run_name} ({state.run_directory})")
+                return
+
+            def remember_directory(directory: Path) -> None:
+                state.run_directory = directory.resolve()
+                state.save(args.run_state)
+
+            run_benchmark(
+                run_name,
+                run_config,
+                resume_directory=state.run_directory,
+                progress_log=args.progress_log,
+                on_run_created=remember_directory,
+            )
+            state.completed = True
+            state.save(args.run_state)
+        return
     run_benchmark(
         run_name,
         run_config,

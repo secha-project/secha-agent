@@ -14,6 +14,8 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.providers.zai import ZaiProvider
 
 logger = logging.getLogger(__name__)
+DEFAULT_MODEL_REQUEST_TIMEOUT_SECONDS = 600
+DEFAULT_MODEL_REQUEST_RETRY_BUDGET_SECONDS = 1_800
 TRANSIENT_STATUS_CODES = {408, 409, 429, 500, 502, 503, 504}
 
 
@@ -59,13 +61,30 @@ def retry_after_seconds(response: httpx.Response) -> float | None:
     return seconds if 0 <= seconds < float("inf") else None
 
 
+def _is_transient_response(response: httpx.Response) -> bool:
+    if response.status_code in TRANSIENT_STATUS_CODES:
+        return True
+    if response.status_code != 400:
+        return False
+    # TUNI's Open WebUI gateway reports upstream connection failures as 400.
+    # Match only that known failure; invalid requests must still fail immediately.
+    try:
+        error = response.json()
+    except ValueError:
+        return False
+    return (
+        isinstance(error, dict)
+        and error.get("detail") == "Open WebUI: Server Connection Error"
+    )
+
+
 class ModelRetryTransport(httpx.AsyncBaseTransport):
     def __init__(
         self,
         wrapped: httpx.AsyncBaseTransport | None = None,
         *,
         max_attempts: int | None = 6,
-        retry_budget_seconds: float | None = 300,
+        retry_budget_seconds: float | None = DEFAULT_MODEL_REQUEST_RETRY_BUDGET_SECONDS,
         pacer: RequestPacer | None = None,
     ) -> None:
         self.wrapped = wrapped if wrapped is not None else httpx.AsyncHTTPTransport()
@@ -107,6 +126,7 @@ class ModelRetryTransport(httpx.AsyncBaseTransport):
                 ]
                 if (
                     response.status_code in TRANSIENT_STATUS_CODES
+                    or response.status_code == 400
                     or content_type.strip().lower() != "text/event-stream"
                 ):
                     # Include non-streaming body read failures in the retry policy.
@@ -122,7 +142,7 @@ class ModelRetryTransport(httpx.AsyncBaseTransport):
                 if self._exhausted(attempt, started, delay):
                     raise
             else:
-                if response.status_code not in TRANSIENT_STATUS_CODES:
+                if not _is_transient_response(response):
                     return response
                 # Buffered errors retain their status/body for the SDK when
                 # retries are exhausted.
@@ -164,7 +184,7 @@ class _RetryingProviderMixin:
         api_key: str,
         base_url: str | None = None,
         max_attempts: int | None = 6,
-        retry_budget_seconds: float | None = 300,
+        retry_budget_seconds: float | None = DEFAULT_MODEL_REQUEST_RETRY_BUDGET_SECONDS,
         min_interval_seconds: float = 0,
         pacer: RequestPacer | None = None,
     ) -> None:
@@ -179,7 +199,7 @@ class _RetryingProviderMixin:
                     retry_budget_seconds=retry_budget_seconds,
                     pacer=request_pacer,
                 ),
-                timeout=httpx.Timeout(600, connect=5),
+                timeout=httpx.Timeout(DEFAULT_MODEL_REQUEST_TIMEOUT_SECONDS, connect=5),
             )
 
         http_client = create_http_client()

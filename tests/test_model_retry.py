@@ -100,6 +100,58 @@ def test_permanent_errors_are_not_retried(status, code, delays):
     assert delays == []
 
 
+def test_openwebui_upstream_connection_error_retries_the_same_request(delays):
+    bodies = []
+
+    def respond(request):
+        bodies.append(request.content)
+        if len(bodies) == 1:
+            return httpx.Response(
+                400, json={"detail": "Open WebUI: Server Connection Error"}
+            )
+        return httpx.Response(200, json={"ok": True})
+
+    async def run():
+        async with httpx.AsyncClient(
+            transport=ModelRetryTransport(httpx.MockTransport(respond))
+        ) as client:
+            response = await client.post(
+                "https://model.invalid", json={"prompt": "test"}
+            )
+            assert response.json() == {"ok": True}
+
+    asyncio.run(run())
+    assert len(bodies) == 2 and bodies[0] == bodies[1]
+    assert delays == [15]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"detail": "Open WebUI: Invalid model"},
+        {"detail": "Server Connection Error"},
+        ["Open WebUI: Server Connection Error"],
+        "Open WebUI: Server Connection Error",
+    ],
+)
+def test_other_gateway_bad_requests_are_not_retried(body, delays):
+    calls = []
+
+    def respond(request):
+        calls.append(request)
+        return httpx.Response(400, json=body)
+
+    async def run():
+        async with httpx.AsyncClient(
+            transport=ModelRetryTransport(httpx.MockTransport(respond), max_attempts=2)
+        ) as client:
+            assert (await client.post("https://model.invalid")).status_code == 400
+
+    asyncio.run(run())
+    assert len(calls) == 1
+    assert delays == []
+
+
 def test_exhausted_retry_preserves_sdk_rate_limit_error_and_body(delays):
     calls = []
 
@@ -141,7 +193,9 @@ def test_server_delay_beyond_budget_stops_without_retrying_early(delays):
 
     async def run():
         async with httpx.AsyncClient(
-            transport=ModelRetryTransport(httpx.MockTransport(respond))
+            transport=ModelRetryTransport(
+                httpx.MockTransport(respond), retry_budget_seconds=300
+            )
         ) as client:
             assert (await client.post("https://model.invalid")).status_code == 429
 
@@ -445,6 +499,8 @@ def test_provider_closes_and_recreates_client_without_sdk_retries(provider_class
             first = provider._own_http_client
             assert not first.is_closed
             assert provider.client.max_retries == 0
+            assert first.timeout.read == 600
+            assert first._transport.retry_budget_seconds == 1_800
         assert first.is_closed
         async with provider:
             assert provider._own_http_client is not first
@@ -476,6 +532,20 @@ def test_model_retry_settings_are_recorded_in_metadata(monkeypatch):
     assert metadata["model_request_max_attempts"] == 4
     assert metadata["model_request_retry_budget_seconds"] == 120
     assert metadata["model_request_min_interval_seconds"] == 5
+
+    default_config = AgentConfig(
+        _env_file=None,
+        catalog_url="http://catalog.invalid",
+        catalog_token="test",
+        spark_url="sc://spark.invalid",
+        otel_exporter_otlp_endpoint="http://otel.invalid",
+        model_provider="openai",
+    )
+    assert default_config.model_request_retry_budget_seconds == 1_800
+    assert (
+        default_config.experiment_metadata()["model_request_retry_budget_seconds"]
+        == 1_800
+    )
 
 
 @pytest.mark.parametrize("blocked", ["pacing", "request"])

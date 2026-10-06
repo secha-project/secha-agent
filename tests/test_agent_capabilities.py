@@ -69,6 +69,7 @@ def test_table_tools_advertise_consistent_nested_references(few_shot: bool) -> N
         "inspect_table_output",
         "display_table_output",
         "visualize_table_output",
+        "display_chart_output",
     ):
         schema = tools[name].parameters_json_schema
         assert "ref" in schema["required"]

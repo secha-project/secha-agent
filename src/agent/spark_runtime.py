@@ -24,7 +24,7 @@ async def run_spark_with_timeout[T](
     spark: SparkSession,
     action: Callable[[], T],
     *,
-    seconds: float = 60,
+    seconds: float = 120,
 ) -> T:
     if seconds <= 0:
         raise ValueError("seconds must be greater than zero")

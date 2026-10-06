@@ -2,10 +2,9 @@
 
 The 16 experiment configs cover four models and every combination of few-shot
 tool examples and semantic-layer access. Each config uses the complete
-`power-quality-monitoring` dataset and concurrency **4**. The completed
-`glm-5.3__baseline` configuration retains **5 repetitions** (275 attempts).
-The remaining 15 configurations use **3 repetitions** each (165 attempts),
-giving **2,475 remaining attempts** and 2,750 across the matrix.
+`power-quality-monitoring` dataset and concurrency **4**. Every configuration
+uses **3 repetitions**: 55 tasks × 3 = **165 attempts per config**, or **2,640
+attempts** across all 16 configs.
 
 Transient model failures are retried on the individual HTTP request, preserving
 the current conversation and successful tool calls. Matrix configs keep retrying
@@ -35,7 +34,11 @@ Configure this with `agent.model_request_max_attempts`,
 `agent.model_request_min_interval_seconds`; all three are recorded in metadata.
 For example, a minimum interval of 10 seconds limits that client to 6 request
 starts per minute. Outside the matrix, agent defaults remain 6 attempts and a
-300-second retry budget, with no minimum interval. HTTP timeouts are separate
+1,800-second retry budget, with no minimum interval. The HTTP inactivity timeout
+is 600 seconds. The retry budget includes pacing, backoff, and non-streaming
+response reads, so a shorter budget can end a request before its HTTP timeout.
+The exact Open WebUI HTTP 400 `Server Connection Error` response is treated as
+transient; other HTTP 400 errors remain permanent. HTTP timeouts are separate
 from the retry budget. All matrix configs use `task_max_attempts: 1`; retries
 happen within the request, so successful tool work is retained while waiting.
 
@@ -69,15 +72,17 @@ cases. New runs use a new timestamped results directory.
 | --- | --- | --- |
 | `gpt-6-sol` | `openai` | `gpt-6-sol` |
 | `gpt-6-luna` | `openai` | `gpt-6-luna` |
-| `glm-5.3` | `zai` | `glm-5.3` |
+| `glm-5.3` | `zai` | `glm-5.3-flash` |
 | `qwen3.8-27b` | `tuni` | `Qwen3.8-27B-AIC` |
 
-Model IDs were checked on 2026-09-26 against the official
-[GPT-6 Sol](https://developers.openai.com/api/docs/models/gpt-6-sol),
-[GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna), and
-[GLM-5.3](https://docs.z.ai/guides/llm/glm-5.3) documentation. Qwen retains the
-existing TUNI deployment ID. These selections supersede the older model names
-in `docs/3-methodology.tex`.
+The `glm-5.3` config root now selects `glm-5.3-flash` for image review, verified
+with live visualization probes on 2026-10-06. Earlier GLM-5.3 runs remain separate;
+the model change prevents resuming their checkpoints with these configs.
+GPT-6 IDs were checked on 2026-09-26 against the official
+[GPT-6 Sol](https://developers.openai.com/api/docs/models/gpt-6-sol) and
+[GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna) documentation.
+Qwen retains the existing TUNI deployment ID. These selections supersede the
+older model names in `docs/3-methodology.tex`.
 
 Every root has the same four suffixes:
 
@@ -133,16 +138,33 @@ bash scripts/run_benchmarks.sh --dry-run
 ```
 
 Run every YAML config sequentially with `bash scripts/run_benchmarks.sh`.
-To run the remaining 15 configs after GLM baseline finishes:
+The first invocation starts fresh; after an interruption, repeat the same command
+without flags. It skips finished configs, resumes unfinished attempts in the
+current config's saved run directory, then continues with the remaining configs.
+Each YAML's repetitions and concurrency are preserved (currently 55 tasks × 3
+repetitions = 165 attempts per config).
 
 ```bash
-bash scripts/run_benchmarks.sh --skip glm-5.3__baseline
+bash scripts/run_benchmarks.sh                    # Start or continue
+bash scripts/run_benchmarks.sh --new              # Start all configs from scratch
+bash scripts/run_benchmarks.sh --new --skip glm-5.3__baseline
+bash scripts/run_benchmarks.sh --resume benchmark-results/batch-logs/SAVED_DIR
 ```
 
-Add `--dry-run` to validate that queue without model/database calls or new logs.
-Repeat `--skip CONFIG` for any other finished configurations. Skips are explicit;
-the script does not infer completion from old reports or automatically resume
-partial runs. It preserves the repetition settings in each YAML file.
+The launcher remembers only runs it started, using a saved config order, YAML
+snapshots and per-config state beside the logs. Old standalone reports are not
+used to infer completion. A finished queue stays finished until `--new` is given;
+after starting with `--new`, omit that flag when continuing. `--resume DIR`
+selects an older queue and makes it the default for subsequent invocations.
+Repeat `--skip CONFIG` to omit configs when creating a queue; saved queues retain
+their selection even if new YAML files appear. Changed or missing saved YAMLs
+stop the launcher before any benchmark starts. Restore them or use `--new`.
+
+`--dry-run` always validates the current config selection, with optional skips,
+without changing saved progress or creating logs. Recorded execution failures
+remain completed attempts; use the standalone runner's explicit redo options
+when you intend to repeat them. Per-config locks prevent two launchers from
+executing the same saved run concurrently and are released when a process exits.
 
 Numbered banners show the active config, start time and log path. Each run keeps
 its live progress display when launched in a terminal; completion banners include
@@ -154,6 +176,8 @@ redraws, full model output, report tables, and repeated warnings are not copied 
 these logs. The terminal still displays live progress and diagnostic output.
 Standalone runs can opt in with `--progress-log PATH`.
 The script stops if a command fails and can be invoked from any directory.
+Rerun it to continue; even setup failures before the first attempt have a saved
+empty checkpoint. No Python resume command is needed.
 
 To view the latest status log in a browser, run in a separate terminal:
 
@@ -161,11 +185,19 @@ To view the latest status log in a browser, run in a separate terminal:
 python3 scripts/serve_benchmark_logs.py
 ```
 
-Open `http://localhost:8501`. The page refreshes every five seconds and follows the
-most recently updated run log automatically. Pass a log path to watch one specific
-file. Add `--host 0.0.0.0` to make the viewer reachable from another machine; the
-viewer has no authentication. It uses only Python's standard library, shows up to
-200 recent lines, and does not write HTTP access logs.
+Open `http://localhost:8501`. The page refreshes every five seconds and follows
+the launcher's `latest-queue` pointer, showing completed-config counts and the
+most recently updated log in that queue. It switches as configs start or resume,
+and when `--new` or `--resume DIR` selects another queue. Unrelated runs cannot
+take over the page. Keep the server running independently across benchmark
+interruptions; the launcher does not start or stop it.
+
+Without a saved queue, the viewer discovers the latest standalone benchmark or
+optimizer log. Pass a positional log path to pin it to one file, including an
+optimizer's `progress.log`. Checkpoint counts update once per minute. Add
+`--host 0.0.0.0` to make the viewer reachable from another machine; the viewer has
+no authentication. It uses only Python's standard library, shows up to 200 recent
+log lines, and does not write HTTP access logs.
 
 The base install includes benchmark dependencies. Streamlit and publication
 plotting are optional (`--group app` and `--group plots` respectively). See the

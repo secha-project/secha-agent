@@ -1,4 +1,3 @@
-import json
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -489,7 +488,7 @@ def charging_start_table_context(tmp_path):
         "2025-03-01 01:19:20.615,0.029174286,0.027048353905,0.002125932095\n"
     )
     return SimpleNamespace(
-        inputs="Provide the measured value, rolling average, and increase in kW.",
+        inputs="Provide the measured value (kW), rolling average (kW), and increase (kW).",
         metadata=CaseMetadata(
             case_id="d5884b41-e3f7-4ef5-bb2e-5c445e9743e1",
             category="semantic integration",
@@ -505,13 +504,13 @@ def charging_start_table_context(tmp_path):
         (
             "measured_value_w,rolling_average_w,increase_kw",
             "29.174286,27.048353905,0.002125932095",
-            True,
+            False,
         ),
-        ("measured_value_W,rolling_avg_W,increase_kW", "29.174,27.048,0.002126", True),
+        ("measured_value_W,rolling_avg_W,increase_kW", "29.174,27.048,0.002126", False),
         (
             "measured_w,rolling_average_w,increase_kw",
             "29.174286,27.048353905,0.002125932095",
-            True,
+            False,
         ),
         (
             "measured_value_kw,rolling_average_kw,increase_kw",
@@ -534,7 +533,7 @@ def charging_start_table_context(tmp_path):
         ),
     ],
 )
-def test_charging_start_accepts_explicit_equivalent_units_only(
+def test_charging_start_requires_all_power_values_in_kw(
     tmp_path, charging_start_table_context, header, values, accepted
 ):
     (tmp_path / "candidate.csv").write_text(
@@ -546,20 +545,13 @@ def test_charging_start_accepts_explicit_equivalent_units_only(
     assert result["ValidateTableValues"] is accepted
 
 
-@pytest.mark.parametrize("different_case", [False, True])
-def test_unit_compatibility_keeps_case_scope_and_exact_event_timestamps(
-    tmp_path, charging_start_table_context, different_case
+def test_charging_start_keeps_exact_event_timestamps(
+    tmp_path, charging_start_table_context
 ):
-    timestamp = "2025-03-01 01:19:20.615" if different_case else "2025-03-01 01:19:20"
     (tmp_path / "candidate.csv").write_text(
-        "potential_charging_start_utc,measured_value_w,rolling_average_w,increase_kw\n"
-        f"{timestamp},29.174286,27.048353905,0.002125932095\n"
+        "potential_charging_start_utc,measured_value_kw,rolling_average_kw,increase_kw\n"
+        "2025-03-01 01:19:20,0.029174286,0.027048353905,0.002125932095\n"
     )
-    if different_case:
-        charging_start_table_context.metadata = CaseMetadata(
-            case_id="00000000-0000-0000-0000-000000000001",
-            category="semantic integration",
-        )
     assert (
         ValidateTableValues(artifact_base_path=tmp_path).evaluate(
             cast(Any, charging_start_table_context)
@@ -574,14 +566,8 @@ def voltage_thd_table_context(tmp_path):
     references.mkdir(parents=True)
     header = "phase,mean_voltage_harmonic_distortion_v\n"
     (references / "table.csv").write_text(header + "L1,3.9095\nL2,3.5781\nL3,3.7861\n")
-    (references / "table-reported.csv").write_text(
-        header + "L1,3.8726\nL2,3.5395\nL3,3.7543\n"
-    )
-    (references / "table.alternatives.json").write_text(
-        json.dumps({"table_paths": ["table-reported.csv"]})
-    )
     return SimpleNamespace(
-        inputs="Return the phase and mean magnitude in volts, rounded to four decimal places and ordered by phase.",
+        inputs="Return voltage THD reconstructed from recorded odd harmonics: phase and mean magnitude in volts, rounded to four decimal places and ordered by phase.",
         metadata=CaseMetadata(
             case_id="968808f7-503e-4c5a-a859-597dfbac2d56",
             category="domain knowledge",
@@ -597,20 +583,20 @@ def voltage_thd_table_context(tmp_path):
     "rows,accepted",
     [
         ("L1,3.9095\nL2,3.5781\nL3,3.7861\n", True),
-        ("L1,3.8726\nL2,3.5395\nL3,3.7543\n", True),
-        ("L1,3.8733\nL2,3.5402\nL3,3.7550\n", True),
+        ("L1,3.8726\nL2,3.5395\nL3,3.7543\n", False),
+        ("L1,3.8733\nL2,3.5402\nL3,3.7550\n", False),
         ("L1,3.9293\nL2,3.5961\nL3,3.8071\n", False),
         ("L1,3.9095\nL2,3.5395\nL3,3.7543\n", False),
-        ("L1,3.5395\nL2,3.8726\nL3,3.7543\n", False),
-        ("L1,3.8726\nL1,3.8726\nL3,3.7543\n", False),
-        ("L1,3.8726\nL2,3.5395\n", False),
-        ("L3,3.7543\nL2,3.5395\nL1,3.8726\n", False),
-        ("L1,3.9\nL2,3.5\nL3,3.8\n", False),
+        ("L1,3.5781\nL2,3.9095\nL3,3.7861\n", False),
+        ("L1,3.9095\nL1,3.9095\nL3,3.7861\n", False),
+        ("L1,3.9095\nL2,3.5781\n", False),
+        ("L3,3.7861\nL2,3.5781\nL1,3.9095\n", False),
+        ("L1,3.9\nL2,3.6\nL3,3.8\n", False),
         ("L1,1.6\nL2,1.5\nL3,1.6\n", False),
-        ("L1,3.8726\nL2,3.5395\nL3,3.7543\nL4,3.8726\n", False),
+        ("L1,3.9095\nL2,3.5781\nL3,3.7861\nL4,3.9095\n", False),
     ],
 )
-def test_voltage_thd_accepts_either_complete_reference_only(
+def test_voltage_thd_accepts_only_reconstructed_reference(
     tmp_path, voltage_thd_table_context, rows, accepted
 ):
     (tmp_path / "candidate.csv").write_text("phase,mean_thd_v\n" + rows)
@@ -620,11 +606,11 @@ def test_voltage_thd_accepts_either_complete_reference_only(
     assert result["ValidateTableValues"] is accepted
 
 
-def test_alternative_reference_preserves_unordered_table_matching(
+def test_voltage_thd_preserves_unordered_table_matching(
     tmp_path, voltage_thd_table_context
 ):
     (tmp_path / "candidate.csv").write_text(
-        "phase,mean_thd_v\nL3,3.7543\nL2,3.5395\nL1,3.8726\n"
+        "phase,mean_thd_v\nL3,3.7861\nL2,3.5781\nL1,3.9095\n"
     )
     voltage_thd_table_context.expected_output[0].ordered = False
     assert ValidateTableValues(artifact_base_path=tmp_path).evaluate(
@@ -632,28 +618,15 @@ def test_alternative_reference_preserves_unordered_table_matching(
     ) == {"ValidateTableValues": True, "TableMatchType": "match_up_to_ordering"}
 
 
-def test_alternative_reference_is_opted_in_by_the_artifact_only(
-    tmp_path, voltage_thd_table_context
-):
-    references = tmp_path / "artifacts" / "task_55"
-    (references / "table.alternatives.json").unlink()
-    (tmp_path / "candidate.csv").write_text(
-        "phase,mean_thd_v\nL1,3.8726\nL2,3.5395\nL3,3.7543\n"
-    )
-    assert (
-        ValidateTableValues(artifact_base_path=tmp_path).evaluate(
-            cast(Any, voltage_thd_table_context)
-        )["ValidateTableValues"]
-        is False
-    )
-
-
-def test_alternative_reference_keeps_the_configured_numeric_tolerance(
+def test_voltage_thd_keeps_the_configured_numeric_tolerance(
     tmp_path, voltage_thd_table_context
 ):
     (tmp_path / "candidate.csv").write_text(
-        "phase,mean_thd_v\nL1,3.8729\nL2,3.5399\nL3,3.7546\n"
+        "phase,mean_thd_v\nL1,3.9098\nL2,3.5785\nL3,3.7864\n"
     )
+    assert ValidateTableValues(artifact_base_path=tmp_path).evaluate(
+        cast(Any, voltage_thd_table_context)
+    )["ValidateTableValues"]
     assert (
         ValidateTableValues(artifact_base_path=tmp_path, tolerance=0).evaluate(
             cast(Any, voltage_thd_table_context)

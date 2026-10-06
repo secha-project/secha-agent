@@ -123,7 +123,7 @@ def test_stream_returns_owned_assistant_and_pending_artifacts(
 
 
 class VisualizationAgentStub:
-    def __init__(self, references: list[ArtifactRef]) -> None:
+    def __init__(self, references: list[ArtifactRef | None]) -> None:
         self.references = references
 
     @asynccontextmanager
@@ -137,14 +137,22 @@ class VisualizationAgentStub:
                 tool_id = f"viz-{index}"
                 yield FunctionToolCallEvent(
                     ToolCallPart(
-                        tool_name="visualize_table_output",
+                        tool_name=(
+                            "display_chart_output"
+                            if reference
+                            else "visualize_table_output"
+                        ),
                         args={"ggsql": "SELECT ...", "title": f"Attempt {index}"},
                         tool_call_id=tool_id,
                     )
                 )
                 yield FunctionToolResultEvent(
                     ToolReturnPart(
-                        tool_name="visualize_table_output",
+                        tool_name=(
+                            "display_chart_output"
+                            if reference
+                            else "visualize_table_output"
+                        ),
                         content="rendered",
                         tool_call_id=tool_id,
                         metadata=reference,
@@ -192,3 +200,29 @@ def test_stream_renders_each_published_visualization() -> None:
     ]
     assert len(parts) == 2
     assert container.chart_count == 2
+
+
+def test_stream_keeps_chart_drafts_out_of_display_and_saved_artifacts() -> None:
+    artifacts = ArtifactCollector()
+    chart = _make_chart_artifact("reviewed")
+    artifacts.publish(chart)
+    container = StreamingContainer()
+
+    result = asyncio.run(
+        stream_agent_response(
+            events=agent_events(VisualizationAgentStub([None, None, chart.ref])),
+            artifacts=artifacts,
+            container=container,
+        )
+    )
+
+    assert result is not None
+    assert result.artifacts == (chart,)
+    assert container.chart_count == 1
+    assert (
+        sum(
+            isinstance(part, ArtifactDisplayPart)
+            for part in result.assistant_message.parts
+        )
+        == 1
+    )

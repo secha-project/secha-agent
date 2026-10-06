@@ -38,6 +38,7 @@ def load_resources() -> AppResources:
         send_to_logfire=False,
         service_name=config.logfire_service_name,
         metrics=False,
+        scrubbing=False,
     )
     logfire.instrument_pydantic_ai()
     spark = get_spark_session(config)

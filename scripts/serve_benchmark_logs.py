@@ -9,17 +9,42 @@ from urllib.parse import urlsplit
 LOGS_DIR = Path(__file__).resolve().parents[1] / "benchmark-results" / "batch-logs"
 
 
+def selected_queue(directory: Path) -> Path | None:
+    try:
+        saved = (directory / "latest-queue").read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        return None
+    if not saved:
+        raise ValueError("The saved queue path is empty")
+    return Path(saved)
+
+
 def latest_log(directory: Path) -> Path | None:
+    queue = selected_queue(directory)
+    paths = (
+        list(queue.glob("*.log"))
+        if queue is not None
+        else [
+            *directory.glob("*/*.log"),
+            *directory.parent.glob("*/gepa-*/progress.log"),
+        ]
+    )
     candidates = []
-    for path in [
-        *directory.glob("*/*.log"),
-        *directory.parent.glob("*/gepa-*/progress.log"),
-    ]:
+    for path in paths:
         try:
             candidates.append((path.stat().st_mtime_ns, str(path), path))
         except FileNotFoundError:
             continue
     return max(candidates)[2] if candidates else None
+
+
+def queue_summary(directory: Path) -> str:
+    queue = selected_queue(directory)
+    if queue is None:
+        return ""
+    names = (queue / "queue.txt").read_text(encoding="utf-8").splitlines()
+    completed = sum((queue / f"{name}.done").is_file() for name in names)
+    return f"Saved queue: {queue}\nConfigs completed: {completed}/{len(names)}\n\n"
 
 
 def read_tail(path: Path) -> str:
@@ -47,9 +72,11 @@ def make_handler(log_file: Path | None, logs_directory: Path = LOGS_DIR):
                 content = (
                     read_tail(path) if path is not None else "Waiting for a run..."
                 )
+                if log_file is None:
+                    content = queue_summary(logs_directory) + content
             except FileNotFoundError:
                 title, content = "Benchmark logs", "Waiting for the log file..."
-            except OSError as error:
+            except (OSError, ValueError) as error:
                 title, content = "Benchmark logs", f"Cannot read log: {error}"
 
             if route == "/log":
@@ -76,7 +103,7 @@ def make_handler(log_file: Path | None, logs_directory: Path = LOGS_DIR):
             self.end_headers()
             self.wfile.write(data)
 
-        def log_message(self, _format: str, *args) -> None:
+        def log_message(self, format: str, *args) -> None:
             # Browser polling must not create another growing access log.
             pass
 
@@ -89,7 +116,7 @@ def main() -> None:
         "log_file",
         nargs="?",
         type=Path,
-        help="One log file; default follows the latest run.",
+        help="One log file; default follows the launcher's saved queue, or the latest standalone log.",
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8501)

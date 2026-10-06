@@ -79,12 +79,14 @@ def test_agent_task_uses_fresh_output_state_for_each_run(
     )
     contexts: list[ArtifactCollector] = []
     table_output_stores = []
+    chart_output_stores = []
     recorded_metrics: list[tuple[str, int]] = []
 
     async def run(_prompt: str, **kwargs: Any) -> SimpleNamespace:
         context = kwargs["deps"].artifacts
         contexts.append(context)
         table_output_stores.append(kwargs["deps"].table_outputs)
+        chart_output_stores.append(kwargs["deps"].chart_outputs)
         assert kwargs["deps"].table_artifact_max_rows is None
         return SimpleNamespace(output="answer", usage=SimpleNamespace(tool_calls=2))
 
@@ -108,6 +110,8 @@ def test_agent_task_uses_fresh_output_state_for_each_run(
     assert contexts[0] is not contexts[1]
     assert template_artifacts not in contexts
     assert table_output_stores[0] is not table_output_stores[1]
+    assert chart_output_stores[0] is not chart_output_stores[1]
+    assert deps.chart_outputs not in chart_output_stores
     assert recorded_metrics == [("tool_calls", 2), ("tool_calls", 2)]
 
 
