@@ -16,7 +16,13 @@ from pydantic_ai.models.test import TestModel
 
 from src.agent.config import AgentConfig
 from src.agent.deps import Deps
-from src.agent.prompt import render_prompt, snapshot_prompts
+from src.optimization.adapter import (
+    BenchmarkAdapter,
+    create_component_selector,
+    split_cases,
+)
+from src.optimization.prompt import snapshot_prompts
+from src.optimization.run_optimization import PROMPTS_DIR, parse_args
 from src.validation.config import BenchmarkRunConfig
 from src.validation.eval_models import (
     BenchmarkCase,
@@ -26,12 +32,6 @@ from src.validation.eval_models import (
     TextOutput,
 )
 from src.validation.evaluators import ValidateTextOutput
-from src.validation.optimization import (
-    BenchmarkAdapter,
-    create_component_selector,
-    split_cases,
-)
-from src.validation.run_optimization import parse_args
 
 SELECTED_CAPABILITIES = frozenset({"query", "table_outputs"})
 
@@ -176,7 +176,7 @@ def test_bad_proposal_retains_existing_component(adapter):
 
 
 def test_feedback_selects_relevant_component_and_passes_diagnosis_to_rewrite(adapter):
-    from src.validation.optimization_state import OptimizationProgressLog
+    from src.optimization.state import OptimizationProgressLog
 
     requests = []
 
@@ -205,7 +205,7 @@ def test_feedback_selects_relevant_component_and_passes_diagnosis_to_rewrite(ada
 
     adapter.selector = create_component_selector(
         FunctionModel(select),
-        render_prompt("optimization/selector.md", SELECTED_CAPABILITIES),
+        (PROMPTS_DIR / "selector.md").read_text(encoding="utf-8").strip(),
         ModelSettings(),
     )
     candidate = {
@@ -351,12 +351,34 @@ def test_search_uses_configured_repetitions_and_reflects_each_attempt(adapter):
     ) == [("correct", 1), ("wrong", 0)]
 
 
-def test_cli_allows_component_listing_without_credentials():
-    assert parse_args(["--list-components"]).list_components
-    with pytest.raises(SystemExit):
+def test_cli_lists_components_without_credentials_or_run_setup(monkeypatch, capsys):
+    from src.optimization import run_optimization as cli
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Component listing must not load credentials or prepare a run")
+
+    monkeypatch.setattr(AgentConfig, "__init__", forbidden)
+    monkeypatch.setattr(AgentConfig, "load_provider", forbidden)
+    monkeypatch.setattr(cli, "prepare_run", forbidden)
+
+    cli.main(["--list-components"])
+
+    output = capsys.readouterr()
+    assert {
+        "base.instructions",
+        "query.instructions",
+        "query_data.description",
+    } <= set(output.out.splitlines())
+    assert output.err == ""
+
+
+def test_cli_requires_reflection_model_for_optimization(capsys):
+    with pytest.raises(SystemExit) as caught:
         parse_args(
             ["--config", "example", "--train", "first", "--validation", "second"]
         )
+    assert caught.value.code == 2
+    assert "--reflection-model is required" in capsys.readouterr().err
 
 
 def test_resume_uses_run_path_instead_of_new_results_root():
@@ -377,13 +399,13 @@ def test_resume_uses_run_path_instead_of_new_results_root():
 def test_reflection_model_name_selects_provider_without_benchmark_config(
     name, provider
 ):
-    from src.validation.run_optimization import reflection_provider
+    from src.optimization.run_optimization import reflection_provider
 
     assert reflection_provider(name) == provider
 
 
 def test_custom_reflection_model_requires_explicit_provider():
-    from src.validation.run_optimization import reflection_provider
+    from src.optimization.run_optimization import reflection_provider
 
     with pytest.raises(ValueError, match="--reflection-provider"):
         reflection_provider("custom-deployment")
@@ -395,7 +417,7 @@ def test_custom_reflection_model_requires_explicit_provider():
 
 def test_reflection_settings_do_not_inherit_target_model_options(adapter):
     from src.agent.config import PricingReference
-    from src.validation.run_optimization import bounded_agent, reflection_agent
+    from src.optimization.run_optimization import bounded_agent, reflection_agent
 
     args = parse_args(
         [
@@ -427,7 +449,7 @@ def test_reflection_settings_do_not_inherit_target_model_options(adapter):
 
 @pytest.mark.parametrize("dry_run", [True, False])
 def test_cli_snapshots_inputs_and_exports_winner(adapter, monkeypatch, dry_run):
-    from src.validation import run_optimization as cli
+    from src.optimization import run_optimization as cli
 
     run_directory = adapter.run_directory / "cli-run"
     run_directory.mkdir()
@@ -518,7 +540,7 @@ def resumable_cli(adapter, monkeypatch, tmp_path):
     import yaml
     from pydantic_ai.exceptions import ModelAPIError
 
-    from src.validation import run_optimization as cli
+    from src.optimization import run_optimization as cli
 
     config = adapter.config.model_copy(update={"repetitions": 2, "max_concurrency": 1})
     source = tmp_path / "resume-source"
@@ -1032,7 +1054,7 @@ def test_resume_rejects_changed_reflection_model_or_provider(
 
 
 def test_resume_limits_stop_and_leave_manual_resume_available(resumable_cli):
-    from src.validation.optimization_state import OptimizationServiceError
+    from src.optimization.state import OptimizationServiceError
 
     state = resumable_cli
     state.target_failures = 100
@@ -1051,7 +1073,7 @@ def test_judge_api_failure_is_left_pending_instead_of_scored(adapter):
     from pydantic_ai.exceptions import ModelAPIError
     from pydantic_evals.evaluators import Evaluator
 
-    from src.validation.optimization_state import OptimizationServiceError
+    from src.optimization.state import OptimizationServiceError
 
     class UnavailableJudge(Evaluator):
         def evaluate(self, ctx):

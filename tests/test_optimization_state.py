@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.validation.optimization_state import OptimizationProgressLog, lock_run
+from src.optimization.state import OptimizationProgressLog, lock_run
 
 
 def test_optimizer_log_tracks_active_batch_and_finishes(tmp_path):
@@ -47,14 +47,20 @@ def test_active_optimization_cannot_be_resumed_concurrently(tmp_path):
 
 
 def test_proposed_split_covers_every_case_and_preserves_group_and_stratum_quotas():
-    root = Path(__file__).resolve().parents[1] / "src" / "validation"
+    root = Path(__file__).resolve().parents[1] / "src"
     proposal = yaml.safe_load(
         (
-            root / "optimization_splits" / "power-quality-monitoring_40-20-40.yaml"
+            root / "optimization" / "splits" / "power-quality-monitoring_40-20-40.yaml"
         ).read_text()
     )
     dataset = yaml.safe_load(
-        (root / "benchmark" / "power-quality-monitoring" / "dataset.yaml").read_text()
+        (
+            root
+            / "validation"
+            / "benchmark"
+            / "power-quality-monitoring"
+            / "dataset.yaml"
+        ).read_text()
     )
     splits = {key: set(proposal[key]) for key in ("train", "validation", "test")}
     assert [len(value) for value in splits.values()] == [22, 11, 22]

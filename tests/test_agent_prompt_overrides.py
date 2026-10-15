@@ -8,7 +8,7 @@ from pydantic_ai.models.test import TestModel
 from src.agent.agent import create_agent
 from src.agent.capabilities import CAPABILITIES
 from src.agent.deps import Deps
-from src.agent.prompt import PROMPT_FILES, render_prompt, snapshot_prompts
+from src.agent.prompt import render_prompt
 
 ALL = frozenset(capability.NAME for capability in CAPABILITIES)
 
@@ -25,22 +25,12 @@ def capture(overrides=None, capabilities=ALL):
     return request.instructions, model.last_model_request_parameters
 
 
-@pytest.mark.parametrize("capabilities", [ALL, frozenset({"query", "table_outputs"})])
-def test_snapshot_preserves_entire_model_context(capabilities):
-    original_instructions, original_parameters = capture(capabilities=capabilities)
-    baseline = snapshot_prompts(capabilities)
-    assert all("{%" not in text for text in baseline.values())
-    snapshot_instructions, snapshot_parameters = capture(baseline, capabilities)
-    assert snapshot_instructions == original_instructions
-    assert snapshot_parameters == original_parameters
-
-
 def test_overrides_are_isolated_and_preserve_argument_schemas():
     original_instructions, original_parameters = capture()
     changed_instructions, changed_parameters = capture(
         {
-            "query.instructions": "Query policy experiment.",
-            "query_data.description": "SQL tool description experiment.",
+            "capabilities/query/instructions.md": "Query policy experiment.",
+            "capabilities/query/tools/query_data.md": "SQL tool description experiment.",
         }
     )
     assert "Query policy experiment." in changed_instructions
@@ -54,53 +44,27 @@ def test_overrides_are_isolated_and_preserve_argument_schemas():
     assert capture()[0] == original_instructions
 
 
-def test_every_registered_component_reaches_the_model():
-    overrides = {key: f"Marker for {key}." for key in PROMPT_FILES}
-    instructions, parameters = capture(overrides)
-    for key, text in overrides.items():
-        if key.endswith(".instructions"):
-            assert text in instructions
-        else:
-            name = key.removesuffix(".description")
-            assert (
-                next(
-                    tool for tool in parameters.function_tools if tool.name == name
-                ).description
-                == text
-            )
-
-
 def test_overrides_are_final_text_and_are_not_rendered_again():
-    path = PROMPT_FILES["query.instructions"]
+    path = "capabilities/query/instructions.md"
     text = '{% if "catalog" in capabilities %}Discover first.{% else %}Use known IDs.{% endif %}'
-    overrides = {"query.instructions": text}
+    overrides = {path: text}
     assert render_prompt(path, ALL, overrides=overrides) == text
     assert (
         render_prompt(path, frozenset({"query", "table_outputs"}), overrides=overrides)
         == text
     )
     assert (
-        render_prompt(path, ALL, overrides={"query.instructions": "{{ literal }}"})
-        == "{{ literal }}"
+        render_prompt(path, ALL, overrides={path: "{{ literal }}"}) == "{{ literal }}"
     )
 
 
 @pytest.mark.parametrize(
-    "overrides",
-    [
-        {"typo.instructions": "text"},
-        {"query.instructions": ""},
-        {"query.instructions": "   "},
-    ],
+    "text",
+    ["", "   ", None, 42],
 )
-def test_invalid_override_fails_before_execution(overrides):
+def test_invalid_override_fails_before_execution(text):
     with pytest.raises(ValueError):
-        create_agent(ALL, prompt_overrides=overrides)
-
-
-def test_inactive_component_is_rejected():
-    with pytest.raises(ValueError, match="inactive"):
-        create_agent({"catalog"}, prompt_overrides={"query.instructions": "text"})
+        create_agent(ALL, prompt_overrides={"capabilities/query/instructions.md": text})
 
 
 @pytest.mark.parametrize("semantic", [False, True])

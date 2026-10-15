@@ -1,5 +1,3 @@
-"""GEPA integration using the ordinary SECHA benchmark task and evaluators."""
-
 from __future__ import annotations
 
 import json
@@ -27,10 +25,8 @@ from pydantic_evals.reporting import ReportCase
 
 from src.agent.agent import create_agent
 from src.agent.deps import Deps
-from src.agent.prompt import prompt_files
-from src.validation.config import BenchmarkRunConfig
-from src.validation.eval_models import BenchmarkCase, BenchmarkDataset
-from src.validation.optimization_state import (
+from src.optimization.prompt import prompt_files, to_prompt_overrides
+from src.optimization.state import (
     OptimizationProgressLog,
     OptimizationServiceError,
     clear_service_failures,
@@ -38,6 +34,8 @@ from src.validation.optimization_state import (
     retryable_service_error,
     write_json,
 )
+from src.validation.config import BenchmarkRunConfig
+from src.validation.eval_models import BenchmarkCase, BenchmarkDataset
 from src.validation.reporting import BenchmarkReport, save_report
 from src.validation.runner import AgentTask, evaluate
 
@@ -289,7 +287,10 @@ class BenchmarkAdapter:
     ) -> EvaluationBatch[Trajectory, str]:
         prompts = self.baseline | candidate
         agent = create_agent(
-            self.config.agent.enabled_capabilities, prompt_overrides=prompts
+            self.config.agent.enabled_capabilities,
+            prompt_overrides=to_prompt_overrides(
+                prompts, self.config.agent.enabled_capabilities
+            ),
         )
         directory = operation_directory(
             self.run_directory / "evaluations",
@@ -534,7 +535,10 @@ class BenchmarkAdapter:
                     )
                 create_agent(
                     self.config.agent.enabled_capabilities,
-                    prompt_overrides=self.baseline | candidate | {component: text},
+                    prompt_overrides=to_prompt_overrides(
+                        self.baseline | candidate | {component: text},
+                        self.config.agent.enabled_capabilities,
+                    ),
                 )
             except ValueError as exc:
                 error = str(exc)

@@ -1,5 +1,3 @@
-"""Durable operations and compact status for resumable prompt optimization."""
-
 from __future__ import annotations
 
 import fcntl

@@ -1,5 +1,3 @@
-"""Optimize prompts with frozen inputs, bounded retries, and resumable evaluations."""
-
 from __future__ import annotations
 
 import argparse
@@ -23,22 +21,22 @@ from pydantic_ai.exceptions import ModelAPIError
 
 from src.agent.agent import create_agent
 from src.agent.capabilities import CAPABILITIES
-from src.agent.prompt import prompt_files, render_prompt, snapshot_prompts
-from src.validation.config import BENCHMARKS_DIR, PROJECT_ROOT, load_run_config
-from src.validation.eval_models import BenchmarkDataset
-from src.validation.evaluators import ValidateVisualizationQuality
-from src.validation.optimization import (
+from src.optimization.adapter import (
     BenchmarkAdapter,
     create_component_selector,
     split_cases,
-    write_json,
 )
-from src.validation.optimization_state import (
+from src.optimization.prompt import prompt_files, snapshot_prompts, to_prompt_overrides
+from src.optimization.state import (
     OptimizationProgressLog,
     OptimizationServiceError,
     lock_run,
     retryable_service_error,
+    write_json,
 )
+from src.validation.config import BENCHMARKS_DIR, PROJECT_ROOT, load_run_config
+from src.validation.eval_models import BenchmarkDataset
+from src.validation.evaluators import ValidateVisualizationQuality
 from src.validation.runner import (
     CUSTOM_EVALUATOR_TYPES,
     attach_case_evaluators,
@@ -49,6 +47,7 @@ from src.validation.runner import (
 )
 
 ALL_CAPABILITIES = frozenset(capability.NAME for capability in CAPABILITIES)
+PROMPTS_DIR = Path(__file__).with_name("prompts")
 FORMAT_VERSION = 4
 COMPONENT_SELECTION = "feedback"
 SNAPSHOT_FILES = (
@@ -351,13 +350,17 @@ def prepare_run(args):
         args.components = (
             args.components if args.components is not None else list(baseline)
         )
-        proposer_instructions = render_prompt("optimization/proposer.md", selected)
-        selector_instructions = render_prompt("optimization/selector.md", selected)
+        proposer_instructions = (
+            (PROMPTS_DIR / "proposer.md").read_text(encoding="utf-8").strip()
+        )
+        selector_instructions = (
+            (PROMPTS_DIR / "selector.md").read_text(encoding="utf-8").strip()
+        )
     if not args.components or len(args.components) != len(set(args.components)):
         raise ValueError("Components must be nonempty and unique")
     if set(args.components) - baseline.keys():
         raise ValueError("Unknown or inactive prompt components")
-    create_agent(selected, prompt_overrides=baseline)
+    create_agent(selected, prompt_overrides=to_prompt_overrides(baseline, selected))
     source_dataset = load_dataset(config.dataset)
     if not saved:
         split_cases(source_dataset, args.train, args.validation, args.test)
@@ -621,7 +624,7 @@ def main(argv: list[str] | None = None) -> None:
                     progress.event("RESUMING")
         except BaseException:
             print(
-                f"Continue with: python -m src.validation.run_optimization --resume {shlex.quote(str(directory))}",
+                f"Continue with: python -m src.optimization.run_optimization --resume {shlex.quote(str(directory))}",
                 flush=True,
             )
             raise
