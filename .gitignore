@@ -20,3 +20,5 @@ AGENTS.md
 # Local research/reporting scripts; only the benchmark runner is distributed.
 /scripts/*
 !/scripts/run_benchmarks.sh
+# Local documentation and research drafts.
+/docs/
