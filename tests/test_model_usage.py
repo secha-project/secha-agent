@@ -1,5 +1,3 @@
-"""Exercise real provider parsing; no model API or database requests."""
-
 import asyncio
 from types import SimpleNamespace
 from uuid import uuid4

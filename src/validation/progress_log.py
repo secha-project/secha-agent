@@ -1,5 +1,3 @@
-"""Small periodic status logs, independent of terminal progress rendering."""
-
 import json
 import time
 from datetime import UTC, datetime

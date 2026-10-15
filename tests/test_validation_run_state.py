@@ -1,5 +1,3 @@
-"""Exercise launcher recovery through the real checkpoint runner, without services."""
-
 import asyncio
 import json
 from pathlib import Path

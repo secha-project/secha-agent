@@ -1,5 +1,3 @@
-"""Remember one configuration's run directory across launcher interruptions."""
-
 import fcntl
 from contextlib import contextmanager
 from pathlib import Path
