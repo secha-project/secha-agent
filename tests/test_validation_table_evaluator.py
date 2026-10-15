@@ -1,3 +1,4 @@
+from itertools import permutations, product
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -17,15 +18,15 @@ from src.validation.evaluators.table import (
     [
         ({"l1": [0.8], "l2": [0.9]}, "exact_match"),
         ({"l2": [0.9], "l1": [0.8]}, "exact_match"),
-        ({"l1": [0.9], "l2": [0.8]}, "no_match"),
+        ({"l1": [0.9], "l2": [0.8]}, "exact_match"),
         ({"phase_one": [0.8], "phase_two": [0.9]}, "exact_match"),
-        ({"phase_one": [0.9], "phase_two": [0.8]}, "no_match"),
+        ({"phase_one": [0.9], "phase_two": [0.8]}, "exact_match"),
         ({"l2": [0.9], "phase_one": [0.8]}, "exact_match"),
         ({"extra": [100], "l2": [0.9], "l1": [0.8]}, "exact_match"),
         ({"l1": [0.8]}, "no_match"),
     ],
 )
-def test_column_mapping_uses_names_then_positions(candidate, match_type) -> None:
+def test_column_mapping_ignores_headers(candidate, match_type) -> None:
     target = pd.DataFrame({"l1": [0.8], "l2": [0.9]})
     assert classify_table_match(target, pd.DataFrame(candidate)) == (match_type, 1.0)
 
@@ -36,7 +37,38 @@ def test_one_candidate_column_cannot_satisfy_two_expected_columns() -> None:
     assert classify_table_match(target, candidate) == ("no_match", 1.0)
 
 
-def test_explicit_field_aliases_match_reordered_columns_with_extra_data() -> None:
+@pytest.mark.parametrize("row_count", [2, 3])
+def test_content_matching_agrees_with_exhaustive_assignments(row_count) -> None:
+    """Check ambiguous columns, extra data, duplicate rows, and partial coverage."""
+    reference_rows = [(0, 0), (0, 1), (1, 0)]
+    reference = pd.DataFrame(reference_rows, columns=["a", "b"])
+    for cells in product((0, 1), repeat=row_count * 3):
+        rows = [cells[i : i + 3] for i in range(0, len(cells), 3)]
+        ordered = unordered = False
+        # An independent oracle: enumerate every column and row assignment.
+        for columns in permutations(range(3), 2):
+            aligned = [tuple(row[i] for i in columns) for row in rows]
+            for indices in permutations(range(3), row_count):
+                if aligned == [reference_rows[i] for i in indices]:
+                    unordered = True
+                    ordered |= list(indices) == sorted(indices)
+        expected = (
+            "exact_match"
+            if ordered
+            else "match_up_to_ordering"
+            if unordered
+            else "no_match"
+        )
+        if row_count < len(reference) and unordered:
+            expected = f"partial_{expected}"
+        candidate = pd.DataFrame(rows, columns=["b", "extra", "a"])
+        assert classify_table_match(reference, candidate, tolerance=0) == (
+            expected,
+            row_count / len(reference),
+        ), rows
+
+
+def test_contents_match_reordered_columns_with_extra_data() -> None:
     target = pd.DataFrame(
         {
             "device_name": ["meter_a", "meter_b"],
@@ -82,16 +114,16 @@ def test_required_measurements_match_with_device_and_window_details(
     assert classify_table_match(target, candidate) == ("exact_match", 1.0)
 
 
-def test_alias_mapping_does_not_search_values_to_hide_swapped_phases() -> None:
+def test_unmatched_headers_do_not_constrain_column_contents() -> None:
     target = pd.DataFrame({"ul1v": [230], "ul2v": [240]})
     candidate = pd.DataFrame({"voltage_l2_v": [230], "voltage_l1_v": [240]})
-    assert classify_table_match(target, candidate) == ("no_match", 1.0)
+    assert classify_table_match(target, candidate) == ("exact_match", 1.0)
 
 
-def test_ambiguous_duplicate_field_aliases_are_rejected() -> None:
+def test_unmatched_headers_select_matching_values_from_extra_columns() -> None:
     target = pd.DataFrame({"pw": [10]})
     candidate = pd.DataFrame({"power_w": [10], "active_power_w": [11]})
-    assert classify_table_match(target, candidate) == ("no_match", 1.0)
+    assert classify_table_match(target, candidate) == ("exact_match", 1.0)
 
 
 def test_field_aliases_do_not_convert_units_or_relax_numeric_precision() -> None:
