@@ -1,8 +1,6 @@
-"""Check batch selection and failure handling without paid benchmark calls."""
-
 import json
 import os
-import select
+import selectors
 import shutil
 import signal
 import subprocess
@@ -12,8 +10,6 @@ import time
 from pathlib import Path
 
 import pytest
-
-from scripts.serve_benchmark_logs import latest_log, queue_summary
 
 
 @pytest.fixture
@@ -165,12 +161,10 @@ def test_same_command_resumes_failed_config_then_runs_remaining_configs(
         == json.loads(state)["run_directory"]
     )
     assert len(list(root.glob("benchmark-results/batch-logs/*/queue.txt"))) == 1
-    assert (
-        latest_log(root / "benchmark-results/batch-logs") == directory / "03_gamma.log"
+    assert all(
+        (directory / f"{name}.done").exists() for name in ("alpha", "beta", "gamma")
     )
-    assert "Configs completed: 3/3" in queue_summary(
-        root / "benchmark-results/batch-logs"
-    )
+    assert "[3/3] DONE: gamma" in (directory / "03_gamma.log").read_text()
 
 
 def test_finished_queue_is_a_noop_until_new_is_requested(batch_workspace):
@@ -239,7 +233,8 @@ def test_explicit_resume_selects_older_queue(batch_workspace):
     assert config_names(calls) == ["alpha", "beta", "beta", "gamma", "beta", "gamma"]
     assert pointer.read_text().strip() == older
     assert not (Path(newer) / "gamma.done").exists()
-    assert latest_log(pointer.parent) == Path(older) / "03_gamma.log"
+    assert (Path(older) / "gamma.done").exists()
+    assert "[3/3] DONE: gamma" in (Path(older) / "03_gamma.log").read_text()
 
 
 @pytest.mark.parametrize(
@@ -313,10 +308,12 @@ def test_terminal_shows_rich_progress_before_run_finishes(batch_workspace, inter
         os.close(slave)
         output = b""
         try:
-            deadline = time.monotonic() + 5
-            while b"attempts 1/2" not in output and time.monotonic() < deadline:
-                if select.select([master], [], [], 0.1)[0]:
-                    output += os.read(master, 65536)
+            with selectors.DefaultSelector() as selector:
+                selector.register(master, selectors.EVENT_READ)
+                deadline = time.monotonic() + 5
+                while b"attempts 1/2" not in output and time.monotonic() < deadline:
+                    if selector.select(timeout=0.1):
+                        output += os.read(master, 65536)
             assert b"attempts 1/2" in output, output.decode(errors="replace")
             assert process.poll() is None  # An in-flight update, not final output.
             if interrupt:

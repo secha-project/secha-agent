@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 import yaml
 
-from scripts.serve_benchmark_logs import latest_log
 from src.validation.optimization_state import OptimizationProgressLog, lock_run
 
 
@@ -45,16 +44,6 @@ def test_active_optimization_cannot_be_resumed_concurrently(tmp_path):
         pytest.fail("Must not enter a locked run")
     with lock_run(tmp_path):
         pass
-
-
-def test_existing_viewer_discovers_optimizer_summaries(tmp_path):
-    logs = tmp_path / "batch-logs"
-    logs.mkdir()
-    run = tmp_path / "dataset" / "gepa-qwen_2026-10-03"
-    run.mkdir(parents=True)
-    log = run / "progress.log"
-    log.write_text("PROGRESS\n")
-    assert latest_log(logs) == log
 
 
 def test_proposed_split_covers_every_case_and_preserves_group_and_stratum_quotas():

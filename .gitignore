@@ -17,3 +17,6 @@ AGENTS.md
 *.DS_Store
 # vscode stuff
 .vscode/
+# Local research/reporting scripts; only the benchmark runner is distributed.
+/scripts/*
+!/scripts/run_benchmarks.sh
