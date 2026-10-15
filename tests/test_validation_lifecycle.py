@@ -69,7 +69,7 @@ def test_evaluation_writer_saves_only_the_last_visualization(
         attributes.__setitem__,
     )
     monkeypatch.setattr(
-        lifecycle_module.vlc,
+        lifecycle_module.vl_convert,
         "vegalite_to_png",
         lambda spec, **_kwargs: b"\x89PNG" + bytes([spec["value"]]),
     )

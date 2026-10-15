@@ -2,7 +2,7 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from pathlib import Path
 
-import vl_convert as vlc
+import vl_convert
 from pydantic_evals import set_eval_attribute
 from pydantic_evals.lifecycle import CaseLifecycle
 from pydantic_evals.reporting import ReportCase, ReportCaseFailure
@@ -56,7 +56,7 @@ def write_evaluation_artifacts(
         spec_path.write_bytes(chart.spec_json)
         spec = chart.to_spec()
         spec.update(width=1_200, height=700)
-        image_path.write_bytes(vlc.vegalite_to_png(spec, scale=2))
+        image_path.write_bytes(vl_convert.vegalite_to_png(spec, scale=2))
         paths.extend((spec_path, image_path))
         set_eval_attribute("visualization_spec_path", str(spec_path))
         set_eval_attribute("visualization_image_path", str(image_path))

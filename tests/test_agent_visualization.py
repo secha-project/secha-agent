@@ -169,20 +169,17 @@ def test_preview_rendering_failure_is_retryable_and_cannot_be_published(monkeypa
     [
         ("", "ggsql text is empty"),
         ("SELECT 1", "include a VISUALISE clause"),
+        ("VISUALISE category AS x DRAW bogus", "Parse error"),
         (
-            "VISUALISE category AS x FROM other DRAW bar",
-            "visualization-level FROM sources",
-        ),
-        (
-            "VISUALISE category AS x",
-            "at least one DRAW",
+            "VISUALISE missing_column AS x, value AS y DRAW bar",
+            "references non-existent column 'missing_column'",
         ),
         (
             (
                 "VISUALISE category AS x, value AS y DRAW bar "
-                "MAPPING category AS fill FROM other"
+                "MAPPING missing_column AS fill"
             ),
-            "visualization-level FROM sources",
+            "references non-existent column 'missing_column'",
         ),
     ],
 )
@@ -194,6 +191,75 @@ def test_visualization_validation_failures_are_model_retries(
 
     with pytest.raises(ModelRetry, match=message):
         asyncio.run(visualize_table_output(ctx, ref, ggsql_text, "Title"))
+    assert ctx.deps.chart_outputs._outputs == {}
+    assert ctx.deps.artifacts.published == ()
+
+
+@pytest.mark.parametrize(
+    "ggsql_text",
+    [
+        "VISUALISE category AS x FROM other DRAW bar",
+        "VISUALISE category AS x, value AS y DRAW bar MAPPING category AS fill FROM other",
+        'VISUALISE category AS x, value AS y DRAW bar MAPPING category AS fill FROM "Other table"',
+    ],
+)
+def test_visualization_source_errors_explain_saved_table_requirement(
+    ggsql_text: str,
+) -> None:
+    ctx, _, ref = _context()
+
+    with pytest.raises(ModelRetry) as error:
+        asyncio.run(visualize_table_output(ctx, ref, ggsql_text, "Title"))
+
+    assert str(error.value) == (
+        "Visualization validation failed: visualization-level FROM sources are "
+        "not supported. Build one final relation in the Spark SQL SELECT and "
+        "draw every layer from that result."
+    )
+    assert ctx.deps.chart_outputs._outputs == {}
+    assert ctx.deps.artifacts.published == ()
+
+
+@pytest.mark.parametrize(
+    "ggsql_text",
+    [
+        "VISUALISE category AS x",
+        'VISUALISE "DRAW" AS x',
+        "VISUALISE category AS x LABEL x => 'DRAW'",
+        "VISUALISE category AS x -- DRAW bar",
+    ],
+)
+def test_visualization_missing_draw_has_actionable_retry(ggsql_text: str) -> None:
+    ctx, _, ref = _context()
+
+    with pytest.raises(ModelRetry) as error:
+        asyncio.run(visualize_table_output(ctx, ref, ggsql_text, "Title"))
+
+    assert str(error.value) == (
+        "Visualization validation failed: include at least one DRAW clause."
+    )
+    assert ctx.deps.chart_outputs._outputs == {}
+    assert ctx.deps.artifacts.published == ()
+
+
+@pytest.mark.parametrize(
+    "ggsql_text",
+    [
+        "VISUALISE category AS x, value AS y, 'from' AS fill DRAW bar",
+        "VISUALISE category AS x, value AS y DRAW bar LABEL x => 'FROM other'",
+        "VISUALISE category AS x, value AS y DRAW bar -- MAPPING FROM other",
+        "VISUALISE category AS x, value AS y DRAW bar SCALE y FROM (0, 5)",
+    ],
+)
+def test_visualization_accepts_from_literals_comments_and_scale_bounds(
+    ggsql_text: str,
+) -> None:
+    ctx, _, ref = _context()
+
+    result = asyncio.run(visualize_table_output(ctx, ref, ggsql_text, "Title"))
+
+    assert result.content[1].data.startswith(b"\x89PNG\r\n\x1a\n")
+    assert ctx.deps.chart_outputs.resolve(result.return_value.output_ref)
 
 
 def test_datetime_normalization_uses_microseconds_and_utc() -> None:

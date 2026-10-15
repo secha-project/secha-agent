@@ -25,14 +25,12 @@ def validate(enabled: Iterable[str]) -> frozenset[str]:
                 "table_outputs."
             )
 
-    output_producers = {"query"}
-    if output_producers & selected and "table_outputs" not in selected:
-        producers = ", ".join(sorted(output_producers & selected))
-        raise ValueError(f"The {producers} capability requires table_outputs.")
+    if "query" in selected and "table_outputs" not in selected:
+        raise ValueError("The query capability requires table_outputs.")
     if "visualization" in selected:
         if "table_outputs" not in selected:
             raise ValueError("The visualization capability requires table_outputs.")
-        if not output_producers & selected:
+        if "query" not in selected:
             raise ValueError("The visualization capability requires query.")
     return selected
 

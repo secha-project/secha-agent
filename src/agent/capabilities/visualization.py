@@ -22,15 +22,6 @@ from ..spark_runtime import concise_spark_error, spark_error_type
 
 MAX_VISUALIZATION_ROWS = 1_000
 MAX_VISUALIZATION_ERROR_LENGTH = 1_500
-_DRAW_PATTERN = re.compile(r"\bDRAW\b", re.IGNORECASE)
-_TOP_LEVEL_SOURCE_PATTERN = re.compile(
-    r"\bVISUALISE\b(?:(?!\b(?:DRAW|SCALE|FACET|PROJECT|LABEL|SETTING|RENAMING)\b).)*\bFROM\b",
-    re.IGNORECASE | re.DOTALL,
-)
-_LAYER_SOURCE_PATTERN = re.compile(
-    r"\bMAPPING\b(?:(?!\b(?:DRAW|SCALE|FACET|PROJECT|LABEL|SETTING|RENAMING|FILTER|PARTITION)\b).)*\bFROM\b",
-    re.IGNORECASE | re.DOTALL,
-)
 
 NAME = "visualization"
 # This prompt will only be sent when using deferred loading of capabilities.
@@ -103,51 +94,6 @@ def normalize_datetime_precision(frame: pd.DataFrame) -> pd.DataFrame:
     return normalized
 
 
-def _ggsql_errors(validated: Any) -> str:
-    messages: list[str] = []
-    for error in validated.errors():
-        if isinstance(error, dict):
-            message = error.get("message")
-        else:
-            message = getattr(error, "message", None)
-        messages.append(str(message or error))
-    return "\n".join(messages) or "The ggsql statement is invalid."
-
-
-def _validate_ggsql(ggsql_text: str) -> str:
-    import ggsql as ggsql_package
-
-    if not ggsql_text.strip():
-        raise ModelRetry("Visualization validation failed: ggsql text is empty.")
-    try:
-        validated = ggsql_package.validate(ggsql_text)
-    except Exception as exc:
-        raise ModelRetry(
-            f"Visualization validation failed: {_concise_visualization_error(exc)}"
-        ) from exc
-
-    if not validated.valid():
-        raise ModelRetry(
-            "Visualization validation failed: "
-            f"{_concise_visualization_error(_ggsql_errors(validated))}"
-        )
-    if not validated.has_visual():
-        raise ModelRetry("Visualization validation failed: include a VISUALISE clause.")
-
-    visual = validated.visual().strip()
-    if not _DRAW_PATTERN.search(visual):
-        raise ModelRetry(
-            "Visualization validation failed: include at least one DRAW clause."
-        )
-    if _TOP_LEVEL_SOURCE_PATTERN.search(visual) or _LAYER_SOURCE_PATTERN.search(visual):
-        raise ModelRetry(
-            "Visualization validation failed: visualization-level FROM sources are "
-            "not supported. Build one final relation in the Spark SQL SELECT and "
-            "draw every layer from that result."
-        )
-    return visual
-
-
 def _use_utc_scales(spec: dict[str, Any]) -> None:
     """Keep ggsql's UTC data, scale bounds, and ticks in the same timezone."""
     for encoding in spec.get("encoding", {}).values():
@@ -196,9 +142,9 @@ def _standalone_spec(chart: Any) -> dict[str, Any]:
 
 
 def _render_preview(spec: dict[str, Any]) -> bytes:
-    import vl_convert as vlc
+    import vl_convert
 
-    return vlc.vegalite_to_png(spec, scale=1, allowed_base_urls=[])
+    return vl_convert.vegalite_to_png(spec, scale=1, allowed_base_urls=[])
 
 
 async def visualize_table_output(
@@ -219,8 +165,25 @@ async def visualize_table_output(
     """
     if not title.strip():
         raise ModelRetry("Visualization validation failed: title cannot be empty.")
+    if not ggsql.strip():
+        raise ModelRetry("Visualization validation failed: ggsql text is empty.")
 
-    visual = _validate_ggsql(ggsql)
+    try:
+        import ggsql as ggsql_package
+
+        validated = ggsql_package.validate(ggsql)
+    except Exception as exc:
+        raise ModelRetry(
+            f"Visualization validation failed: {_concise_visualization_error(exc)}"
+        ) from exc
+
+    if not validated.valid():
+        errors = "\n".join(error["message"] for error in validated.errors())
+        raise ModelRetry(
+            f"Visualization validation failed: {_concise_visualization_error(errors)}"
+        )
+    if not validated.has_visual():
+        raise ModelRetry("Visualization validation failed: include a VISUALISE clause.")
 
     deps = ctx.deps
     try:
@@ -242,18 +205,39 @@ async def visualize_table_output(
             f"{concise_spark_error(exc)}."
         ) from exc
 
-    pandas_frame.attrs = {}
-    pandas_frame = normalize_datetime_precision(pandas_frame)
-
     try:
-        import ggsql as ggsql_package
-
-        chart = ggsql_package.render_altair(pandas_frame, visual).properties(
-            title=title.strip()
-        )
+        pandas_frame.attrs = {}
+        pandas_frame = normalize_datetime_precision(pandas_frame)
+        # Render only the parsed visual clause against the saved table.
+        # ggsql reports invalid layers, mappings, and sources itself.
+        chart = ggsql_package.render_altair(
+            pandas_frame, validated.visual()
+        ).properties(title=title.strip())
         spec = _standalone_spec(chart)
         preview = await asyncio.to_thread(_render_preview, spec)
     except Exception as exc:
+        if isinstance(exc, ValueError):
+            message = str(exc)
+            # render_altair supplies the table; this error means no DRAW layers.
+            if message.startswith("Validation error: No data sources found."):
+                raise ModelRetry(
+                    "Visualization validation failed: include at least one DRAW clause."
+                ) from exc
+            # Translate source errors without interpreting the ggsql text ourselves.
+            if message.startswith(
+                (
+                    "Parse error: Cannot use VISUALISE FROM ",
+                    (
+                        "Data source error: Failed to prepare SQL: "
+                        "Catalog Error: Table with name "
+                    ),
+                )
+            ):
+                raise ModelRetry(
+                    "Visualization validation failed: visualization-level FROM sources "
+                    "are not supported. Build one final relation in the Spark SQL SELECT "
+                    "and draw every layer from that result."
+                ) from exc
         raise ModelRetry(
             f"Visualization rendering failed: {_concise_visualization_error(exc)}"
         ) from exc
