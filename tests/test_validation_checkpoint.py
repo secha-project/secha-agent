@@ -8,8 +8,8 @@ import httpx
 import pytest
 from pydantic_evals.reporting import ReportCase
 
+from src.agent.config import create_provider
 from src.agent.deps import Deps
-from src.agent.model_retry import ModelRetryTransport
 from src.validation.checkpoint import EvaluationCheckpoint
 from src.validation.config import BenchmarkRunConfig
 from src.validation.eval_models import (
@@ -66,14 +66,12 @@ def test_cancel_backoff_keeps_case_pending_and_resume_skips_completed(
     async def run(prompt, **_kwargs):
         calls.append(prompt)
         if prompt == "pending" and not resumed:
-            async with httpx.AsyncClient(
-                transport=ModelRetryTransport(
-                    httpx.MockTransport(rate_limited),
-                    max_attempts=None,
-                    retry_budget_seconds=None,
-                )
-            ) as client:
-                await client.get("https://model.invalid")
+            async with create_provider(
+                api_key="test", base_url="https://model.invalid"
+            ) as provider:
+                await provider.client._client._transport.aclose()
+                provider.client._client._transport = httpx.MockTransport(rate_limited)
+                await provider.client.get("/", cast_to=httpx.Response)
         return SimpleNamespace(output="answer", usage=SimpleNamespace(tool_calls=0))
 
     task = AgentTask(

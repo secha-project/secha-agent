@@ -2,9 +2,7 @@ agent:
   model_provider: openai
   model_name: gpt-6-sol
   request_limit: 50
-  model_request_max_attempts: null
-  model_request_retry_budget_seconds: null
-  model_request_min_interval_seconds: 5
+  model_request_max_attempts: 6
   enabled_capabilities:
     - catalog
     - query

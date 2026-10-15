@@ -9,11 +9,11 @@ import pandas as pd
 import pytest
 from pydantic_ai import BinaryContent, ModelMessagesTypeAdapter, UserPromptPart
 from pydantic_ai.models.zai import ZaiModel
+from pydantic_ai.providers.zai import ZaiProvider
 
 from src.agent.agent import create_agent
 from src.agent.config import AgentConfig, ZaiProviderConfig
 from src.agent.deps import Deps
-from src.agent.model_retry import ModelRetryTransport, RetryingZaiProvider
 from src.agent.outputs.tables import LiveTableOutput
 
 
@@ -37,9 +37,7 @@ def config(monkeypatch):
         otel_exporter_otlp_endpoint="http://otel.invalid",
         model_provider="zai",
         model_name="glm-5.3",
-        model_request_max_attempts=None,
-        model_request_retry_budget_seconds=None,
-        model_request_min_interval_seconds=5,
+        model_request_max_attempts=6,
     )
 
 
@@ -47,16 +45,13 @@ def test_zai_uses_native_adapter_with_shared_retry_policy(config):
     async def run():
         model = config.create_model()
         assert isinstance(model, ZaiModel)
-        assert isinstance(model.provider, RetryingZaiProvider)
+        assert isinstance(model.provider, ZaiProvider)
         assert model.provider.name == "zai"
-        assert model.provider.base_url == "https://zai.invalid/custom/"
-        assert model.client.max_retries == 0
+        assert str(model.client.base_url) == "https://zai.invalid/custom/"
+        assert model.client.max_retries == 5
         async with model.provider:
             transport = model.client._client._transport
-            assert isinstance(transport, ModelRetryTransport)
-            assert transport.max_attempts is None
-            assert transport.retry_budget_seconds is None
-            assert transport.pacer.min_interval_seconds == 5
+            assert type(transport) is httpx.AsyncHTTPTransport
 
     asyncio.run(run())
     assert config.experiment_metadata()["provider_settings"]["model_adapter"] == (
@@ -91,8 +86,8 @@ def test_real_visualization_tools_send_inline_object_schemas(config):
         model = config.create_model()
         async with model.provider:
             transport = model.client._client._transport
-            await transport.wrapped.aclose()
-            transport.wrapped = httpx.MockTransport(respond)
+            await transport.aclose()
+            model.client._client._transport = httpx.MockTransport(respond)
             result = await create_agent(config.enabled_capabilities).run(
                 "question", model=model, deps=object()
             )
@@ -115,13 +110,6 @@ def test_real_visualization_tools_send_inline_object_schemas(config):
         assert ref["type"] == "object"
         assert ref["properties"]["output_id"]["type"] == "string"
         assert ref["required"] == ["output_id"]
-
-
-def test_zai_default_supports_chart_images(monkeypatch):
-    monkeypatch.delenv("ZAI_MODEL_NAME", raising=False)
-    assert (
-        ZaiProviderConfig(_env_file=None, api_key="test").model_name == "glm-5.3-flash"
-    )
 
 
 def test_zai_agent_receives_png_revises_and_publishes_only_selected_chart(config):
@@ -204,13 +192,12 @@ def test_zai_agent_receives_png_revises_and_publishes_only_selected_chart(config
         model = config.model_copy(
             update={
                 "model_name": "glm-5.3-flash",
-                "model_request_min_interval_seconds": 0,
             }
         ).create_model()
         async with model.provider:
             transport = model.client._client._transport
-            await transport.wrapped.aclose()
-            transport.wrapped = httpx.MockTransport(respond)
+            await transport.aclose()
+            model.client._client._transport = httpx.MockTransport(respond)
             return await create_agent(config.enabled_capabilities).run(
                 "Plot power by site in kW, inspect it, and publish the corrected chart.",
                 model=model,

@@ -1,48 +1,46 @@
 import asyncio
 import json
-from datetime import UTC, datetime, timedelta
-from email.utils import format_datetime
-from itertools import pairwise
-from types import SimpleNamespace
+from contextlib import asynccontextmanager
 
 import httpx
 import pytest
-from openai import AsyncOpenAI, RateLimitError
+from openai import APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.models.zai import ZaiModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.providers.zai import ZaiProvider
 
-import src.agent.model_retry as retries
-from src.agent.config import AgentConfig, OpenAIProviderConfig
-from src.agent.model_retry import (
-    ModelRetryTransport,
-    RequestPacer,
-    RetryingOpenAIProvider,
-    RetryingZaiProvider,
-    retry_after_seconds,
-)
+from src.agent.config import AgentConfig, OpenAIProviderConfig, create_provider
+
+
+@asynccontextmanager
+async def sdk_client(respond, *, max_attempts=6, zai=False):
+    async with create_provider(
+        api_key="test",
+        base_url="https://model.invalid",
+        max_attempts=max_attempts,
+        zai=zai,
+    ) as provider:
+        await provider.client._client._transport.aclose()
+        provider.client._client._transport = httpx.MockTransport(respond)
+        yield provider.client
 
 
 @pytest.fixture
 def delays(monkeypatch):
     recorded = []
-    clock = [0.0]
 
     async def sleep(seconds):
         recorded.append(seconds)
-        clock[0] += seconds
 
-    monkeypatch.setattr(retries.asyncio, "sleep", sleep)
-    monkeypatch.setattr(retries.random, "uniform", lambda *_: 0)
-    # Patch this module's clock, without changing the asyncio event loop's clock.
-    monkeypatch.setattr(retries, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr("openai._base_client.anyio.sleep", sleep)
+    monkeypatch.setattr("openai._base_client.random", lambda: 0)
     return recorded
 
 
-@pytest.mark.parametrize("status", [408, 409, 429, 500, 502, 503, 504])
-def test_transient_errors_retry_the_same_request(status, delays):
+@pytest.mark.parametrize("status", [408, 409, 429, 500, 501, 502, 503, 504])
+def test_sdk_transient_errors_retry_the_same_request(status, delays):
     bodies = []
 
     def respond(request):
@@ -54,105 +52,78 @@ def test_transient_errors_retry_the_same_request(status, delays):
         return httpx.Response(200, json={"ok": True})
 
     async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(httpx.MockTransport(respond))
-        ) as client:
-            result = await client.post("https://model.invalid", json={"prompt": "test"})
+        async with sdk_client(respond) as client:
+            result = await client.post(
+                "/", cast_to=httpx.Response, body={"prompt": "test"}
+            )
             assert result.json() == {"ok": True}
 
     asyncio.run(run())
     assert len(bodies) == 3 and len(set(bodies)) == 1
-    assert delays == [45, 30]
+    assert delays == [45, 1]
 
 
 @pytest.mark.parametrize(
-    ("status", "code"),
+    "status, body, expected_calls",
     [
-        (400, "bad_request"),
-        (401, "bad_key"),
-        (403, "forbidden"),
-        (404, "not_found"),
-        (429, "insufficient_quota"),
-        (429, "billing_hard_limit_reached"),
+        (400, b'{"detail":"Open WebUI: Server Connection Error"}', 2),
+        (400, b'{"detail":"Open WebUI: Invalid model"}', 1),
+        (400, b'{"detail":"Server Connection Error"}', 1),
+        (400, b'["Open WebUI: Server Connection Error"]', 1),
+        (400, b"not JSON", 1),
+        (401, b'{"error":{"code":"bad_key"}}', 1),
+        (403, b'{"error":{"code":"forbidden"}}', 1),
+        (404, b'{"error":{"code":"not_found"}}', 1),
+        (429, b'{"error":{"code":"insufficient_quota"}}', 1),
+        (429, b'{"error":{"code":"billing_hard_limit_reached"}}', 1),
+        (429, b'{"error":{"code":"1302"}}', 2),
+        (429, b"not JSON", 2),
     ],
 )
-def test_permanent_errors_are_not_retried(status, code, delays):
-    calls = []
-
-    def respond(request):
-        calls.append(request)
-        return httpx.Response(status, json={"error": {"code": code}})
-
-    async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(
-                httpx.MockTransport(respond),
-                max_attempts=None,
-                retry_budget_seconds=None,
-            )
-        ) as client:
-            result = await client.post("https://model.invalid")
-            assert result.status_code == status
-            assert result.json()["error"]["code"] == code
-
-    asyncio.run(run())
-    assert len(calls) == 1
-    assert delays == []
-
-
-def test_openwebui_upstream_connection_error_retries_the_same_request(delays):
+def test_tuni_and_quota_exceptions_with_unread_response_body(
+    status, body, expected_calls, delays
+):
     bodies = []
+    closed = []
+
+    class ErrorBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield body[:5]
+            yield body[5:]
+
+        async def aclose(self):
+            closed.append(True)
 
     def respond(request):
         bodies.append(request.content)
         if len(bodies) == 1:
-            return httpx.Response(
-                400, json={"detail": "Open WebUI: Server Connection Error"}
-            )
+            return httpx.Response(status, stream=ErrorBody())
+        assert closed == [True]
         return httpx.Response(200, json={"ok": True})
 
     async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(httpx.MockTransport(respond))
-        ) as client:
-            response = await client.post(
-                "https://model.invalid", json={"prompt": "test"}
-            )
-            assert response.json() == {"ok": True}
+        async with sdk_client(respond, max_attempts=2) as client:
+            if expected_calls == 1:
+                with pytest.raises(APIStatusError) as caught:
+                    await client.post(
+                        "/", cast_to=httpx.Response, body={"prompt": "test"}
+                    )
+                assert caught.value.status_code == status
+                assert caught.value.response.content == body
+            else:
+                response = await client.post(
+                    "/", cast_to=httpx.Response, body={"prompt": "test"}
+                )
+                assert response.is_success
 
     asyncio.run(run())
-    assert len(bodies) == 2 and bodies[0] == bodies[1]
-    assert delays == [15]
+    assert len(bodies) == expected_calls and len(set(bodies)) == 1
+    assert closed == [True]
+    assert delays == ([0.5] if expected_calls == 2 else [])
 
 
-@pytest.mark.parametrize(
-    "body",
-    [
-        {"detail": "Open WebUI: Invalid model"},
-        {"detail": "Server Connection Error"},
-        ["Open WebUI: Server Connection Error"],
-        "Open WebUI: Server Connection Error",
-    ],
-)
-def test_other_gateway_bad_requests_are_not_retried(body, delays):
-    calls = []
-
-    def respond(request):
-        calls.append(request)
-        return httpx.Response(400, json=body)
-
-    async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(httpx.MockTransport(respond), max_attempts=2)
-        ) as client:
-            assert (await client.post("https://model.invalid")).status_code == 400
-
-    asyncio.run(run())
-    assert len(calls) == 1
-    assert delays == []
-
-
-def test_exhausted_retry_preserves_sdk_rate_limit_error_and_body(delays):
+@pytest.mark.parametrize("max_attempts", [1, 3, 6])
+def test_exhaustion_preserves_sdk_rate_limit_error_and_body(max_attempts, delays):
     calls = []
 
     def respond(request):
@@ -160,52 +131,35 @@ def test_exhausted_retry_preserves_sdk_rate_limit_error_and_body(delays):
         return httpx.Response(429, json={"error": {"code": "1302", "message": "busy"}})
 
     async def run():
-        async with AsyncOpenAI(
-            api_key="test",
-            base_url="https://model.invalid",
-            max_retries=0,
-            http_client=httpx.AsyncClient(
-                transport=ModelRetryTransport(
-                    httpx.MockTransport(respond), max_attempts=3
-                )
-            ),
-        ) as client:
-            with pytest.raises(RateLimitError) as error:
-                await client.chat.completions.create(
-                    model="test", messages=[{"role": "user", "content": "test"}]
-                )
-            assert error.value.status_code == 429
-            assert error.value.body["code"] == "1302"
+        async with sdk_client(respond, max_attempts=max_attempts) as client:
+            with pytest.raises(RateLimitError) as caught:
+                await client.chat.completions.create(model="test", messages=[])
+            assert caught.value.status_code == 429
+            assert caught.value.body["code"] == "1302"
 
     asyncio.run(run())
-    assert len(calls) == 3
-    assert delays == [15, 30]
+    assert len(calls) == max_attempts
+    assert len(delays) == max_attempts - 1
 
 
-def test_server_delay_beyond_budget_stops_without_retrying_early(delays):
-    calls = []
-
-    def respond(request):
-        calls.append(request)
-        return httpx.Response(
-            429, headers={"Retry-After": "600"}, json={"error": "busy"}
-        )
-
+@pytest.mark.parametrize(
+    "header, expected_delay", [("2", 2), ("20.5", 20.5), ("600", 0.5), ("invalid", 0.5)]
+)
+def test_sdk_owns_retry_after_handling(header, expected_delay, delays):
     async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(
-                httpx.MockTransport(respond), retry_budget_seconds=300
-            )
+        async with sdk_client(
+            lambda _: httpx.Response(503, headers={"Retry-After": header}),
+            max_attempts=2,
         ) as client:
-            assert (await client.post("https://model.invalid")).status_code == 429
+            with pytest.raises(APIStatusError):
+                await client.get("/", cast_to=httpx.Response)
 
     asyncio.run(run())
-    assert len(calls) == 1
-    assert delays == []
+    assert delays == [expected_delay]
 
 
 @pytest.mark.parametrize("failure", [httpx.ConnectError, httpx.ReadTimeout])
-def test_connection_errors_recover_with_backoff(failure, delays):
+def test_sdk_connection_errors_recover_with_backoff(failure, delays):
     calls = []
 
     def respond(request):
@@ -215,32 +169,38 @@ def test_connection_errors_recover_with_backoff(failure, delays):
         return httpx.Response(200)
 
     async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(httpx.MockTransport(respond))
-        ) as client:
-            assert (await client.post("https://model.invalid")).status_code == 200
+        async with sdk_client(respond) as client:
+            assert (await client.get("/", cast_to=httpx.Response)).status_code == 200
 
     asyncio.run(run())
     assert len(calls) == 2
-    assert delays == [15]
+    assert delays == [0.5]
 
 
-def test_cancellation_is_not_retried(delays):
+@pytest.mark.parametrize(
+    "failure, sdk_error",
+    [(httpx.ConnectError, APIConnectionError), (httpx.ReadTimeout, APITimeoutError)],
+)
+def test_sdk_exhaustion_preserves_network_error_as_cause(failure, sdk_error, delays):
+    error = failure("request failed")
+    calls = []
+
     def respond(request):
-        raise asyncio.CancelledError
+        calls.append(request)
+        raise error
 
     async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(httpx.MockTransport(respond))
-        ) as client:
-            with pytest.raises(asyncio.CancelledError):
-                await client.post("https://model.invalid")
+        async with sdk_client(respond, max_attempts=2) as client:
+            with pytest.raises(sdk_error) as caught:
+                await client.get("/", cast_to=httpx.Response)
+            assert caught.value.__cause__ is error
 
     asyncio.run(run())
-    assert delays == []
+    assert len(calls) == 2
+    assert delays == [0.5]
 
 
-def test_non_streaming_response_body_failure_is_retried(delays):
+def test_sdk_recovers_from_non_streaming_body_read_failure(delays):
     calls = []
     closed = []
 
@@ -255,56 +215,85 @@ def test_non_streaming_response_body_failure_is_retried(delays):
     def respond(request):
         calls.append(request.content)
         if len(calls) == 1:
-            return httpx.Response(
-                200, headers={"content-type": "application/json"}, stream=BrokenBody()
-            )
+            return httpx.Response(200, stream=BrokenBody())
         return httpx.Response(200, json={"complete": True})
 
     async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(httpx.MockTransport(respond))
-        ) as client:
-            response = await client.post("https://model.invalid", json={"x": 1})
+        async with sdk_client(respond, max_attempts=2) as client:
+            response = await client.post("/", cast_to=httpx.Response, body={"x": 1})
             assert response.json() == {"complete": True}
 
     asyncio.run(run())
     assert len(calls) == 2 and calls[0] == calls[1]
     assert closed == [True]
-    assert delays == [15]
+    assert delays == [0.5]
 
 
-def test_unlimited_retries_outlast_old_budget_then_recover(delays):
-    bodies = []
+def test_partial_sse_stream_is_not_replayed(delays):
+    calls = []
+    closed = []
+
+    class BrokenStream(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b'data: {"id":"chunk","choices":[{"index":0,"delta":{"content":"partial"}}]}\n\n'
+            raise httpx.ReadError("stream disconnected")
+
+        async def aclose(self):
+            closed.append(True)
 
     def respond(request):
-        bodies.append(request.content)
-        if len(bodies) <= 9:
-            return httpx.Response(
-                429,
-                headers={"Retry-After": "600"} if len(bodies) == 8 else {},
-                json={"error": {"code": "1302"}},
-            )
-        return httpx.Response(200)
+        calls.append(request)
+        return httpx.Response(
+            200, headers={"content-type": "text/event-stream"}, stream=BrokenStream()
+        )
 
     async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(
-                httpx.MockTransport(respond),
-                max_attempts=None,
-                retry_budget_seconds=None,
-                pacer=RequestPacer(5),
-            )
-        ) as client:
-            assert (
-                await client.post("https://model.invalid", json={"x": 1})
-            ).is_success
+        async with (
+            sdk_client(respond) as client,
+            await client.chat.completions.create(
+                model="test", messages=[], stream=True
+            ) as stream,
+        ):
+            chunks = stream.__aiter__()
+            assert (await anext(chunks)).choices[0].delta.content == "partial"
+            with pytest.raises(httpx.ReadError, match="stream disconnected"):
+                await anext(chunks)
 
     asyncio.run(run())
-    assert len(bodies) == 10 and len(set(bodies)) == 1
-    assert delays == [15, 30, 60, 120, 240, 300, 300, 600, 300]
+    assert len(calls) == 1
+    assert closed == [True]
+    assert delays == []
 
 
-def test_cancellation_during_unlimited_backoff_stops_requests(monkeypatch, delays):
+@pytest.mark.parametrize("status", [200, 400, 429, 503])
+def test_cancellation_during_body_read_closes_response(status, delays):
+    calls = []
+    closed = []
+
+    class CancelledBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b'{"partial":'
+            raise asyncio.CancelledError
+
+        async def aclose(self):
+            closed.append(True)
+
+    def respond(request):
+        calls.append(request)
+        return httpx.Response(status, stream=CancelledBody())
+
+    async def run():
+        async with sdk_client(respond) as client:
+            with pytest.raises(asyncio.CancelledError):
+                await client.get("/", cast_to=httpx.Response)
+
+    asyncio.run(run())
+    assert len(calls) == 1
+    assert closed == [True]
+    assert delays == []
+
+
+def test_cancellation_during_backoff_stops_requests(monkeypatch):
     calls = []
 
     def respond(request):
@@ -314,98 +303,45 @@ def test_cancellation_during_unlimited_backoff_stops_requests(monkeypatch, delay
     async def cancel_sleep(_seconds):
         raise asyncio.CancelledError
 
-    monkeypatch.setattr(retries.asyncio, "sleep", cancel_sleep)
+    monkeypatch.setattr("openai._base_client.anyio.sleep", cancel_sleep)
 
     async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(
-                httpx.MockTransport(respond),
-                max_attempts=None,
-                retry_budget_seconds=None,
-            )
-        ) as client:
+        async with sdk_client(respond) as client:
             with pytest.raises(asyncio.CancelledError):
-                await client.post("https://model.invalid")
+                await client.get("/", cast_to=httpx.Response)
 
     asyncio.run(run())
     assert len(calls) == 1
 
 
-def test_pacing_and_cooldown_are_shared_across_clients_and_event_loops(delays):
-    pacer = RequestPacer(5)
-    starts = []
-
-    def respond(request):
-        starts.append(retries.time.monotonic())
-        return httpx.Response(429 if len(starts) == 1 else 200, json={})
-
-    async def request_once():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(
-                httpx.MockTransport(respond), max_attempts=1, pacer=pacer
-            )
-        ) as client:
-            return await client.post("https://model.invalid")
-
-    assert asyncio.run(request_once()).status_code == 429
-    assert asyncio.run(request_once()).is_success
-    assert asyncio.run(request_once()).is_success
-    assert starts == [0, 15, 20]
-
-
-def test_waiting_request_observes_extended_cooldown(monkeypatch, delays):
-    pacer = RequestPacer(5)
-    advance_time = retries.asyncio.sleep
-
-    async def sleep(seconds):
-        await advance_time(seconds)
-        if len(delays) == 1:
-            pacer.defer(20)
-
-    monkeypatch.setattr(retries.asyncio, "sleep", sleep)
-    asyncio.run(pacer.wait())
-    asyncio.run(pacer.wait())
-    assert delays == [5, 20]
-
-
-def test_concurrent_requests_are_spaced():
-    starts = []
-
-    def respond(request):
-        starts.append(retries.time.monotonic())
-        return httpx.Response(200)
-
+@pytest.mark.parametrize("zai", [False, True])
+def test_native_provider_recreation_preserves_hook_and_sdk_retries(zai, delays):
     async def run():
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(
-                httpx.MockTransport(respond), pacer=RequestPacer(0.02)
-            )
-        ) as client:
-            await asyncio.gather(
-                *(client.get("https://model.invalid") for _ in range(4))
-            )
+        provider = create_provider(api_key="test", zai=zai)
+        assert type(provider) is (ZaiProvider if zai else OpenAIProvider)
+        previous = None
+        for _ in range(2):
+            async with provider:
+                http_client = provider.client._client
+                assert http_client is not previous and not http_client.is_closed
+                assert provider.client.max_retries == 5
+                assert http_client.timeout.read == 600
+                assert http_client.timeout.connect == 5
+                await http_client._transport.aclose()
+                http_client._transport = httpx.MockTransport(
+                    lambda _: httpx.Response(
+                        429,
+                        headers={"x-should-retry": "true"},
+                        json={"error": {"code": "insufficient_quota"}},
+                    )
+                )
+                with pytest.raises(RateLimitError):
+                    await provider.client.get("/", cast_to=httpx.Response)
+            assert http_client.is_closed
+            previous = http_client
 
     asyncio.run(run())
-    assert len(starts) == 4
-    assert all(b - a >= 0.019 for a, b in pairwise(starts))
-
-
-def test_retry_after_parsing():
-    date = format_datetime(datetime.now(UTC) + timedelta(seconds=90))
-    assert (
-        88
-        < retry_after_seconds(httpx.Response(429, headers={"Retry-After": date}))
-        <= 90
-    )
-    for value in ("bad", "-1", "nan", "inf"):
-        assert (
-            retry_after_seconds(httpx.Response(429, headers={"Retry-After": value}))
-            is None
-        )
-    assert (
-        retry_after_seconds(httpx.Response(429, headers={"Retry-After": "20.5"}))
-        == 20.5
-    )
+    assert delays == []
 
 
 @pytest.mark.parametrize(
@@ -459,14 +395,7 @@ def test_retry_after_tool_call_does_not_restart_agent_work(
         )
 
     async def run():
-        async with AsyncOpenAI(
-            api_key="test",
-            base_url="https://model.invalid",
-            max_retries=0,
-            http_client=httpx.AsyncClient(
-                transport=ModelRetryTransport(httpx.MockTransport(respond))
-            ),
-        ) as client:
+        async with sdk_client(respond) as client:
             agent = Agent(
                 model_class("glm-5.3", provider=provider_class(openai_client=client))
             )
@@ -486,29 +415,7 @@ def test_retry_after_tool_call_does_not_restart_agent_work(
     assert assistant["reasoning_content"] == "Need to look up the answer first."
     if model_class is ZaiModel:
         assert all(r["thinking"] == {"clear_thinking": False} for r in requests)
-    assert delays == [15]
-
-
-@pytest.mark.parametrize(
-    "provider_class", [RetryingOpenAIProvider, RetryingZaiProvider]
-)
-def test_provider_closes_and_recreates_client_without_sdk_retries(provider_class):
-    async def run():
-        provider = provider_class(api_key="test")
-        async with provider:
-            first = provider._own_http_client
-            assert not first.is_closed
-            assert provider.client.max_retries == 0
-            assert first.timeout.read == 600
-            assert first._transport.retry_budget_seconds == 1_800
-        assert first.is_closed
-        async with provider:
-            assert provider._own_http_client is not first
-            assert not provider._own_http_client.is_closed
-            assert provider.client.max_retries == 0
-        assert provider._own_http_client.is_closed
-
-    asyncio.run(run())
+    assert delays == [0.5]
 
 
 def test_model_retry_settings_are_recorded_in_metadata(monkeypatch):
@@ -525,13 +432,11 @@ def test_model_retry_settings_are_recorded_in_metadata(monkeypatch):
         otel_exporter_otlp_endpoint="http://otel.invalid",
         model_provider="openai",
         model_request_max_attempts=4,
-        model_request_retry_budget_seconds=120,
-        model_request_min_interval_seconds=5,
     )
     metadata = config.experiment_metadata()
     assert metadata["model_request_max_attempts"] == 4
-    assert metadata["model_request_retry_budget_seconds"] == 120
-    assert metadata["model_request_min_interval_seconds"] == 5
+    assert "model_request_retry_budget_seconds" not in metadata
+    assert "model_request_min_interval_seconds" not in metadata
 
     default_config = AgentConfig(
         _env_file=None,
@@ -541,36 +446,5 @@ def test_model_retry_settings_are_recorded_in_metadata(monkeypatch):
         otel_exporter_otlp_endpoint="http://otel.invalid",
         model_provider="openai",
     )
-    assert default_config.model_request_retry_budget_seconds == 1_800
-    assert (
-        default_config.experiment_metadata()["model_request_retry_budget_seconds"]
-        == 1_800
-    )
-
-
-@pytest.mark.parametrize("blocked", ["pacing", "request"])
-def test_positive_budget_bounds_pacing_and_inflight_requests(blocked):
-    calls = []
-
-    async def respond(request):
-        calls.append(request)
-        await asyncio.Event().wait()
-        raise AssertionError("unreachable")
-
-    async def run():
-        pacer = RequestPacer()
-        if blocked == "pacing":
-            pacer.defer(60)
-        async with httpx.AsyncClient(
-            transport=ModelRetryTransport(
-                httpx.MockTransport(respond),
-                pacer=pacer,
-                max_attempts=20,
-                retry_budget_seconds=0.02,
-            )
-        ) as client:
-            with pytest.raises(httpx.ReadTimeout, match="budget exhausted"):
-                await asyncio.wait_for(client.post("https://model.invalid"), timeout=1)
-
-    asyncio.run(run())
-    assert len(calls) == (blocked == "request")
+    assert default_config.model_request_max_attempts == 6
+    assert default_config.experiment_metadata()["model_request_max_attempts"] == 6

@@ -1,21 +1,22 @@
 from __future__ import annotations
 
+from functools import partial
 from pathlib import Path
 from typing import Any, Literal
 
+import httpx
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from pydantic_ai.models.openai import OpenAIChatModel, OpenAIResponsesModel
 from pydantic_ai.models.zai import ZaiModel
 from pydantic_ai.profiles import InlineDefsJsonSchemaTransformer, ModelProfile
 from pydantic_ai.profiles.qwen import qwen_model_profile
+from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.providers.zai import ZaiProvider
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .capabilities import EnabledCapabilities
-from .model_retry import (
-    DEFAULT_MODEL_REQUEST_RETRY_BUDGET_SECONDS,
-    RetryingOpenAIProvider,
-    RetryingZaiProvider,
-)
+
+DEFAULT_MODEL_REQUEST_TIMEOUT_SECONDS = 600
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 DEFAULT_ENABLED_CAPABILITIES = frozenset(
@@ -82,11 +83,7 @@ class AgentConfig(BaseSettings):
     pricing: PricingReference | None = None
     temperature: float | None = Field(default=None, ge=0.0)
     request_limit: int = Field(default=50, ge=1)
-    model_request_max_attempts: int | None = Field(default=6, ge=1)
-    model_request_retry_budget_seconds: float | None = Field(
-        default=DEFAULT_MODEL_REQUEST_RETRY_BUDGET_SECONDS, ge=0
-    )
-    model_request_min_interval_seconds: float = Field(default=0, ge=0)
+    model_request_max_attempts: int = Field(default=6, ge=1)
     enabled_capabilities: EnabledCapabilities = DEFAULT_ENABLED_CAPABILITIES
     otel_exporter_otlp_endpoint: str
     logfire_service_name: str = "secha-agent"
@@ -120,12 +117,8 @@ class AgentConfig(BaseSettings):
             # TUNI aliases need Qwen's streamed leading-whitespace handling.
             profile = qwen_model_profile(model_name.lower())
 
-        provider_class = (
-            RetryingZaiProvider
-            if isinstance(provider_config, ZaiProviderConfig)
-            else RetryingOpenAIProvider
-        )
-        provider = provider_class(
+        provider = create_provider(
+            zai=isinstance(provider_config, ZaiProviderConfig),
             base_url=(
                 provider_config.url
                 if isinstance(provider_config, (TuniProviderConfig, ZaiProviderConfig))
@@ -133,8 +126,6 @@ class AgentConfig(BaseSettings):
             ),
             api_key=api_key,
             max_attempts=self.model_request_max_attempts,
-            retry_budget_seconds=self.model_request_retry_budget_seconds,
-            min_interval_seconds=self.model_request_min_interval_seconds,
         )
 
         if isinstance(provider_config, ZaiProviderConfig):
@@ -179,10 +170,54 @@ class AgentConfig(BaseSettings):
             "temperature": self.temperature,
             "request_limit": self.request_limit,
             "model_request_max_attempts": self.model_request_max_attempts,
-            "model_request_retry_budget_seconds": self.model_request_retry_budget_seconds,
-            "model_request_min_interval_seconds": self.model_request_min_interval_seconds,
             "enabled_capabilities": sorted(self.enabled_capabilities),
             "catalog_name": self.catalog_name,
             "schema_name": self.schema_name,
             "table_column_page_size": self.table_column_page_size,
         }
+
+
+async def _provider_retry_hint(response: httpx.Response) -> None:
+    """Override the SDK's retry decision only for TUNI and exhausted quota."""
+    if response.status_code not in {400, 429}:
+        return
+    await response.aread()
+    try:
+        body = response.json()
+    except ValueError:
+        return
+    # AsyncOpenAI honors this response header before its normal status checks.
+    match response.status_code, body:
+        case 400, {"detail": "Open WebUI: Server Connection Error"}:
+            response.headers["x-should-retry"] = "true"
+        case 429, {
+            "error": {"code": "insufficient_quota" | "billing_hard_limit_reached"}
+        }:
+            response.headers["x-should-retry"] = "false"
+
+
+def create_provider(
+    *,
+    api_key: str,
+    base_url: str | None = None,
+    zai: bool = False,
+    max_attempts: int = 6,
+) -> OpenAIProvider | ZaiProvider:
+    provider = (
+        ZaiProvider(api_key=api_key)
+        if zai
+        else OpenAIProvider(api_key=api_key, base_url=base_url)
+    )
+    if zai and base_url:
+        provider.client.base_url = base_url
+    provider.client.max_retries = max_attempts - 1
+    http_client = provider.client._client
+    http_client.event_hooks["response"].append(_provider_retry_hint)
+    # Preserve the hook when Pydantic AI recreates a closed, owned client.
+    provider._http_client_factory = partial(
+        httpx.AsyncClient,
+        timeout=http_client.timeout,
+        headers=http_client.headers,
+        event_hooks=http_client.event_hooks,
+    )
+    return provider

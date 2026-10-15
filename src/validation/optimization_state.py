@@ -12,7 +12,6 @@ from tempfile import NamedTemporaryFile
 from threading import Lock
 from typing import Any
 
-from src.agent.model_retry import TRANSIENT_STATUS_CODES
 from src.validation.progress_log import ProgressLog
 
 
@@ -78,7 +77,7 @@ def model_service_error(message: str) -> bool:
 
 def retryable_service_error(message: str) -> bool:
     status = re.search(r"status_code[=:]\s*(\d+)", message)
-    return status is None or int(status[1]) in TRANSIENT_STATUS_CODES
+    return status is None or int(status[1]) in {408, 409, 429, 500, 502, 503, 504}
 
 
 def clear_service_failures(checkpoint: Path) -> list[str]:

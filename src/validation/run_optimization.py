@@ -62,7 +62,6 @@ DEFAULTS = {
     "reflection_minibatch_size": 3,
     "seed": 0,
     "model_request_max_attempts": 20,
-    "model_request_retry_budget_seconds": 1800.0,
 }
 
 
@@ -104,11 +103,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--model-request-max-attempts",
         type=int,
         help="Optimizer-only request retry ceiling (default: 20)",
-    )
-    parser.add_argument(
-        "--model-request-retry-budget-seconds",
-        type=float,
-        help="Optimizer-only request deadline (default: 1800)",
     )
     parser.add_argument(
         "--max-resumes",
@@ -197,14 +191,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--train and --validation are required (or provide --split-file)")
     if args.max_metric_calls < len(args.validation):
         parser.error("--max-metric-calls must cover the initial validation set")
-    if not math.isfinite(args.model_request_retry_budget_seconds) or (
-        min(
-            args.reflection_minibatch_size,
-            args.model_request_max_attempts,
-            args.model_request_retry_budget_seconds,
-        )
-        <= 0
-    ):
+    if min(args.reflection_minibatch_size, args.model_request_max_attempts) <= 0:
         parser.error("Minibatch size and model request limits must be positive")
     return args
 
@@ -251,7 +238,6 @@ def bounded_agent(agent, args):
     return agent.model_copy(
         update={
             "model_request_max_attempts": args.model_request_max_attempts,
-            "model_request_retry_budget_seconds": args.model_request_retry_budget_seconds,
         }
     )
 
@@ -289,7 +275,6 @@ def reflection_agent(target, args):
             "temperature": None,
             "pricing": None,
             "enabled_capabilities": frozenset(),
-            "model_request_min_interval_seconds": 5,
         }
     )
 
@@ -432,9 +417,6 @@ def prepare_run(args):
         for evaluator in case.evaluators:
             if isinstance(evaluator, ValidateVisualizationQuality):
                 evaluator.model_request_max_attempts = args.model_request_max_attempts
-                evaluator.model_request_retry_budget_seconds = (
-                    args.model_request_retry_budget_seconds
-                )
     splits = split_cases(dataset, args.train, args.validation, args.test)
     return (
         directory,

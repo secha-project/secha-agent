@@ -412,7 +412,6 @@ def test_reflection_settings_do_not_inherit_target_model_options(adapter):
     target = adapter.config.agent.model_copy(
         update={
             "temperature": 0.7,
-            "model_request_min_interval_seconds": 9,
             "pricing": PricingReference(model_name="target-pricing"),
         }
     )
@@ -422,11 +421,7 @@ def test_reflection_settings_do_not_inherit_target_model_options(adapter):
     )
     assert reflection.temperature is None and reflection.pricing is None
     assert not reflection.enabled_capabilities
-    assert reflection.model_request_min_interval_seconds == 5
-    assert (
-        reflection.model_request_max_attempts,
-        reflection.model_request_retry_budget_seconds,
-    ) == (20, 1800)
+    assert reflection.model_request_max_attempts == 20
     assert target.model_name == "target" and target.temperature == 0.7
 
 
@@ -618,12 +613,7 @@ def resumable_cli(adapter, monkeypatch, tmp_path):
         return name, state.config
 
     def model(settings):
-        state.model_settings.append(
-            (
-                settings.model_request_max_attempts,
-                settings.model_request_retry_budget_seconds,
-            )
-        )
+        state.model_settings.append(settings.model_request_max_attempts)
         return FunctionModel(
             propose if settings.model_name == "reflection" else respond
         )
@@ -828,7 +818,7 @@ def test_cli_resume_replays_saved_operations_and_restores_sampling(
             record["feedback"]["case_name"].split(" [")[0]
             for record in request["feedback"]
         } <= {"train_a", "train_b"}
-    assert set(state.model_settings) == {(20, 1800.0)}
+    assert set(state.model_settings) == {20}
     assert "INTERRUPTED" in (state.directory / "progress.log").read_text()
     assert "FINISHED" in (state.directory / "progress.log").read_text()
 

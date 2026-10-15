@@ -48,7 +48,7 @@ def test_default_judge_loads_credentials_and_uses_max_reasoning(
         assert isinstance(model, OpenAIResponsesModel)
         assert model.model_name == "gpt-6-luna"
         assert model.client.api_key == (environment_key or "dotenv-test-key")
-        assert model.client.max_retries == 0
+        assert model.client.max_retries == 5
         assert kwargs["model_settings"] == {"openai_reasoning_effort": "max"}
         return SimpleNamespace(run=run)
 
