@@ -24,7 +24,9 @@ uv run python -m src.agent.main "What units does the active energy column use?"
 
 ## Validation
 
-The validation suite, built with Pydantic Evals, aims to validate the quality of the agent's answers across different themes and knowledge domains. A run is configured with a YAML file such as `src/validation/run_configs/gpt-6-sol__baseline.yaml`, that points to a dataset file (containing question-answer pairs). That example config file evaluates the agent in the dataset in `src/validation/benchmark/power-quality-monitoring/dataset.yaml`, you can run it with:
+The power-quality-monitoring benchmark contains 55 tasks covering data discovery, data transformations, semantic integration, and domain knowledge using SECHA's power-quality data. The questions and expected answers are defined in [dataset.yaml](src/validation/benchmark/power-quality-monitoring/dataset.yaml), with reference SQL queries, tables, and visualizations in the adjacent [artifacts directory](src/validation/benchmark/power-quality-monitoring/artifacts/).
+
+The validation suite uses Pydantic Evals to compare the agent's responses with the benchmark's expected answers. YAML files in [run_configs](src/validation/run_configs/) select the dataset, model, enabled capabilities, and execution settings. For example, run the benchmark with the [GPT-6 Sol baseline configuration](src/validation/run_configs/gpt-6-sol__baseline.yaml) using:
 
 ```bash
 uv run python -m src.validation.run_benchmark --config gpt-6-sol__baseline
